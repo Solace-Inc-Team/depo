@@ -12,7 +12,7 @@ import { formatBRL } from "@/lib/money";
 import { PLANO, dataBR, situacaoAssinatura } from "@/lib/plano";
 import { todayISO } from "@/lib/period";
 import { INCLUSO } from "@/app/inicio/contato";
-import { Check } from "lucide-react";
+import { ArrowLeft, Check, LogOut } from "lucide-react";
 
 export const metadata = { title: "Assinatura" };
 
@@ -48,7 +48,21 @@ export default async function Assinatura() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-6 py-16">
       <div className="w-full max-w-md">
-        <MarcaDaSessao size={28} />
+        {/* uma saída só, com cara de botão: voltar ao sistema; com o acesso pausado não há para onde voltar, então é sair */}
+        <div className="flex items-center justify-between gap-4">
+          <MarcaDaSessao size={28} />
+          {!sit.bloqueado ? (
+            <Link href={casa} className="btn h-9">
+              <ArrowLeft size={15} strokeWidth={1.75} aria-hidden="true" /> Voltar ao sistema
+            </Link>
+          ) : (
+            <form action={logout}>
+              <button className="btn h-9">
+                <LogOut size={15} strokeWidth={1.75} aria-hidden="true" /> Sair
+              </button>
+            </form>
+          )}
+        </div>
         <h1 className="mt-8 text-[1.75rem] leading-tight font-semibold tracking-[-0.03em]">{titulo}</h1>
         <p className="mt-2 text-muted">{situacao}</p>
 
@@ -97,17 +111,6 @@ export default async function Assinatura() {
             </ul>
           </section>
         )}
-
-        <div className="mt-8 flex items-center justify-between text-[13px]">
-          {!sit.bloqueado ? (
-            <Link href={casa} className="alvo font-medium hover:underline">Voltar ao sistema</Link>
-          ) : (
-            <span />
-          )}
-          <form action={logout}>
-            <button className="text-muted hover:text-fg">Sair</button>
-          </form>
-        </div>
       </div>
     </main>
   );

@@ -203,6 +203,7 @@ test("assinatura: o selo do plano fica à vista desde o cadastro; vencida, o sis
   await expect(page).toHaveURL(/\/assinatura/);
   await expect(page.getByRole("heading", { name: "O acesso está pausado" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Voltar ao sistema" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Sair" })).toBeVisible();
   await page.screenshot({ path: "../qa/evidencias/assinatura-pausado.png" });
   await sql.end();
 });
