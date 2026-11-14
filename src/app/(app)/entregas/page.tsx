@@ -10,6 +10,7 @@ import { Empty, Money, PageHeader, SiteBadge, fmtTime, paymentLabel } from "@/co
 import { ResultadoRua } from "@/components/resultado-rua";
 import { Printer } from "lucide-react";
 import { formatBRL } from "@/lib/money";
+import { sugerirEntregadores } from "@/lib/sugestao";
 
 export const metadata = { title: "Entregas" };
 
@@ -41,6 +42,20 @@ export default async function Entregas() {
   const onShift = drivers.filter((d) => open.some((s) => s.driverId === d.id));
   // mais antigo primeiro: é o próximo a sair
   const queue = [...waiting].reverse();
+  // entregador sugerido para cada pedido da fila: quem já vai para o bairro, senão quem está mais livre
+  const sugestoes = sugerirEntregadores(
+    queue.map((o) => ({ id: o.id, endereco: o.customerAddress })),
+    onShift.map((d) => {
+      const turno = open.find((s) => s.driverId === d.id)!;
+      return {
+        id: d.id,
+        nome: d.name,
+        enderecosNaRua: inRoute.filter((o) => o.driverId === d.id).map((o) => o.customerAddress),
+        entreguesNoTurno: turno.orderCount - turno.inRoute,
+      };
+    }),
+  );
+  const primeiroNome = (id: string) => onShift.find((d) => d.id === id)?.name.split(" ")[0] ?? "";
   const late = (o: { createdAt: Date }) => minutesSince(o.createdAt) > settings.lateAfterMinutes;
   const lateCount = [...waiting, ...inRoute].filter(late).length;
 
@@ -118,12 +133,16 @@ export default async function Entregas() {
                       <ActionForm action={dispatchAction} className="mt-2 flex flex-wrap gap-2">
                         <input type="hidden" name="orderId" value={o.id} />
                         <label className="sr-only" htmlFor={`d-${o.id}`}>Entregador</label>
-                        <select id={`d-${o.id}`} name="driverId" className="input min-w-40 flex-1" required defaultValue={onShift.length === 1 ? onShift[0].id : ""}>
+                        <select id={`d-${o.id}`} name="driverId" className="input min-w-40 flex-1" required defaultValue={sugestoes.get(o.id)?.entregadorId ?? ""}>
                           <option value="" disabled>Entregador</option>
                           {onShift.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
                         </select>
                         <button className="btn btn-primary">Saiu para entrega</button>
                       </ActionForm>
+                    )}
+                    {/* o porquê da sugestão só quando não é óbvio: o entregador já vai para o mesmo bairro */}
+                    {onShift.length > 1 && sugestoes.get(o.id)?.motivo === "bairro" && (
+                      <p className="mt-1.5 text-[13px] text-muted">{primeiroNome(sugestoes.get(o.id)!.entregadorId)} já vai ao bairro {sugestoes.get(o.id)!.bairroEscrito}</p>
                     )}
                   </li>
                 </Card>
