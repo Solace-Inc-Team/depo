@@ -87,7 +87,7 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
                       <td className="num whitespace-nowrap text-muted">{fmtDay(e.paidOn)}</td>
                       <td>
                         <p className={`font-medium ${e.voidedAt ? "line-through" : ""}`}>
-                          {e.orderId ? <Link href={`/pedidos/${e.orderId}`} className="hover:underline">{e.description}</Link> : e.description}
+                          {e.orderId ? <Link href={`/pedidos/${e.orderId}`} className="alvo hover:underline">{e.description}</Link> : e.description}
                         </p>
                         <p className="text-[13px] text-muted">
                           {expenseCategories[e.category as ExpenseCategory] ?? e.category}, por {e.by}

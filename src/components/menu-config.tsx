@@ -101,7 +101,7 @@ export function MenuConfig({ secoes, className = "" }: { secoes: Record<Secao, R
         <div className="janela-cartao config-cartao outline-none" tabIndex={-1} autoFocus>
           <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3.5">
             <h2 id="config-titulo" className="font-semibold">Configurações</h2>
-            <button type="button" onClick={fechar} aria-label="Fechar" className="grid size-8 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
+            <button type="button" onClick={fechar} aria-label="Fechar" className="grid size-11 place-items-center sm:size-8 rounded-md text-muted hover:bg-subtle hover:text-fg">
               <X size={16} strokeWidth={1.75} aria-hidden="true" />
             </button>
           </div>

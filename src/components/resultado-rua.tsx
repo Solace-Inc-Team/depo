@@ -12,7 +12,7 @@ export function ResultadoRua({ id, numero, totalCents, pagamento }: { id: string
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
       <ActionForm action={deliverAction} confirm={`Confirmar a entrega do pedido #${numero}? Total ${formatBRL(totalCents)}, ${pagamento.toLowerCase()}.`}>
         <input type="hidden" name="orderId" value={id} />
-        <button className="btn h-8 px-3 text-[13px]">Entregue</button>
+        <button className="btn h-11 px-4 text-[13px] sm:h-8 sm:px-3">Entregue</button>
       </ActionForm>
       <Link href={`/pedidos/${id}#resultado`} className="tap text-[13px] text-muted hover:text-fg">
         Parcial ou não entregue

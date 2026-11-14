@@ -381,7 +381,8 @@ export function NewOrderForm({
               <span className="font-semibold">Total</span>
               <LiveNumber value={shownTotal} cents className="text-4xl font-semibold" />
             </p>
-            <button className="btn btn-primary mt-4 h-12 w-full text-lg" disabled={!items.length}>
+            {/* no celular quem lança é a barra de baixo, sempre à vista: aqui seria o mesmo botão duas vezes */}
+            <button className="btn btn-primary mt-4 h-12 w-full text-lg max-lg:hidden" disabled={!items.length}>
               {mode === "balcao" ? "Registrar venda" : "Lançar pedido"}
             </button>
             <p className="mt-2 hidden text-center text-[13px] text-muted lg:block">Ctrl + Enter também lança</p>

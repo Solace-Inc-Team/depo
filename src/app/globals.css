@@ -341,8 +341,7 @@ details[open] > :not(summary) {
 }
 .popover-left {
   transform-origin: top left;
-}
-/* <details> fecha como abre: o conteúdo some e recolhe (a lista de filiais, os formulários de "Revelar", as
+}/* <details> fecha como abre: o conteúdo some e recolhe (a lista de filiais, os formulários de "Revelar", as
    perguntas). Os que flutuam (data-popover) só somem, sem recolher, para a altura não cortar o formulário. */
 @supports selector(::details-content) {
   :root {
@@ -1274,10 +1273,12 @@ body[data-confirmando] .deliver-btn {
 /* conteúdo das telas entra em cascata --------------------------------------------------------------
    Ao abrir uma tela do sistema: cabeçalho, blocos e cartões sobem em sequência, e as linhas de tabelas e
    listas aparecem uma depois da outra. Curto de propósito (menos de meio segundo no total) para não fazer
-   quem trabalha esperar. Linha que chega depois (pedido novo após uma ação) entra do mesmo jeito. */
+   quem trabalha esperar. Linha que chega depois (pedido novo após uma ação) entra do mesmo jeito.
+   "backwards", não "both": terminada a entrada, nada fica preso no elemento. Com "both" cada linha virava
+   uma camada própria e a linha de baixo passava por cima do formulário aberto na linha de cima. */
 .pagina > *,
 .pagina :is(.grid, .space-y-6) > :is(.panel, section, article, div) {
-  animation: entra 420ms var(--ease-out) both;
+  animation: entra 420ms var(--ease-out) backwards;
 }
 .pagina > *:nth-child(2) { animation-delay: 45ms; }
 .pagina > *:nth-child(3) { animation-delay: 90ms; }
@@ -1289,7 +1290,7 @@ body[data-confirmando] .deliver-btn {
 .pagina :is(.grid, .space-y-6) > :is(.panel, section, article, div):nth-child(4) { animation-delay: 210ms; }
 .pagina :is(.grid, .space-y-6) > :is(.panel, section, article, div):nth-child(n + 5) { animation-delay: 260ms; }
 .pagina :is(.table tbody tr, .panel > ul > li) {
-  animation: linha 340ms var(--ease-out) both;
+  animation: linha 340ms var(--ease-out) backwards;
   animation-delay: 140ms;
 }
 .pagina :is(.table tbody tr, .panel > ul > li):nth-child(2) { animation-delay: 162ms; }
@@ -1306,7 +1307,7 @@ body[data-confirmando] .deliver-btn {
 /* linha nova: entra e ainda acende */
 .pagina :is(.table tbody tr, .panel > ul > li).row-new {
   animation:
-    linha 340ms var(--ease-out) both,
+    linha 340ms var(--ease-out) backwards,
     flash 2.4s var(--ease-out);
 }
 @keyframes entra {
@@ -1479,6 +1480,8 @@ body[data-confirmando] .deliver-btn {
     display: none;
   }
   .config-item {
+    /* alvo de dedo: 44px */
+    height: 2.75rem;
     white-space: nowrap;
     transition:
       color var(--dur-fast),
