@@ -7,7 +7,7 @@ import { centsToInput } from "@/lib/money";
 
 export const metadata = { title: "Produtos e preços" };
 
-type P = { id?: string; name?: string; priceCents?: number; containerPriceCents?: number; returnable?: boolean; minStock?: number; active?: boolean };
+type P = { id?: string; name?: string; priceCents?: number; containerPriceCents?: number; returnable?: boolean; minStock?: number; active?: boolean; precoSugerido?: boolean };
 
 // no computador as linhas se alinham em colunas: o rótulo aparece só na primeira, as outras o têm para leitor de tela
 function Fields({ p = {}, rotulos = true }: { p?: P; rotulos?: boolean }) {
@@ -22,6 +22,7 @@ function Fields({ p = {}, rotulos = true }: { p?: P; rotulos?: boolean }) {
       <div className="w-32">
         <label className={rotulo} htmlFor={`p-${k}`}>Preço</label>
         <input id={`p-${k}`} name="price" required inputMode="decimal" data-mascara="dinheiro" defaultValue={p.priceCents !== undefined ? centsToInput(p.priceCents) : ""} className="input" />
+        {p.precoSugerido && <p className="mt-1 text-[12px] text-warn-fg">Preço sugerido</p>}
       </div>
       <div className="w-32">
         <label className={rotulo} htmlFor={`c-${k}`}>Preço do vasilhame</label>
@@ -58,6 +59,8 @@ export default async function Produtos() {
             <label className="flex min-h-11 items-center gap-2 lg:min-h-9">
               <input type="checkbox" name="active" defaultChecked={p.active} /> À venda
             </label>
+            {/* preço que veio com o cadastro: se já está certo, um clique confirma (salvar tira a marca) */}
+            {p.precoSugerido && <button className="btn btn-sm tap">Preço certo</button>}
           </ActionForm>
         ))}
       </section>

@@ -155,6 +155,13 @@
       "when": 1794692662139,
       "tag": "0021_assinatura",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1794697625337,
+      "tag": "0022_preco_sugerido",
+      "breakpoints": true
     }
   ]
 }

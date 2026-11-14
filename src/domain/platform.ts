@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { branches, sessions, tenantDeletions, tenants, users } from "@/db/schema";
+import { branches, products, sessions, tenantDeletions, tenants, users } from "@/db/schema";
 import { DomainError } from "@/lib/ctx";
 import { hashPassword } from "@/lib/password";
 import type { SessionUser } from "@/lib/auth";
@@ -38,14 +38,29 @@ export async function createTenant(admin: SessionUser, input: z.infer<typeof new
 }
 
 /** Cadastro feito pelo próprio dono, na página pública: ele já aceita os termos ao criar. */
+/** O que a revenda vende: decide os produtos que já nascem cadastrados. */
+export const VENDE = ["agua", "gas", "ambos"] as const;
+const PRODUTOS_INICIAIS = {
+  agua: [{ name: "Galão de água 20L", priceCents: 1400, minStock: 10 }],
+  gas: [
+    { name: "Gás P13", priceCents: 11500, minStock: 10 },
+    { name: "Gás P45", priceCents: 42000, minStock: 2 },
+  ],
+};
+
 export const cadastroSchema = newTenantSchema.extend({
+  vende: z.enum(VENDE, "Escolha o que a revenda vende."),
   ownerName: z.string().trim().min(2, "Informe seu nome.").max(80, "O nome pode ter até 80 letras."),
   company: z.string().trim().min(2, "Informe o nome da revenda.").max(120, "O nome pode ter até 120 letras."),
   password: z.string().min(8, "A senha precisa de ao menos 8 caracteres.").max(200),
 });
 
 export async function cadastrarEmpresa(input: z.infer<typeof cadastroSchema>, termsVersion: string) {
-  return novaEmpresa(input, null, termsVersion);
+  const r = await novaEmpresa(input, null, termsVersion);
+  // os produtos mais comuns já entram, com preço sugerido para o dono conferir nos primeiros passos
+  const lista = input.vende === "ambos" ? [...PRODUTOS_INICIAIS.agua, ...PRODUTOS_INICIAIS.gas] : PRODUTOS_INICIAIS[input.vende];
+  await db.insert(products).values(lista.map((p) => ({ ...p, tenantId: r.tenant.id, returnable: true, precoSugerido: true })));
+  return r;
 }
 
 // empresa com a filial principal e o dono; quem registra na auditoria é o admin da Solace ou o próprio dono

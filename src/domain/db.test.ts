@@ -798,7 +798,7 @@ test("primeiros passos: empresa nova começa do zero e cada passo se completa co
   const [t] = await db.insert(tenants).values({ name: "Nova", slug: `teste-nova-${Date.now()}` }).returning();
   await db.insert(users).values({ tenantId: t.id, name: "Dono Nova", email: `dono@${t.id}.test`, role: "dono", passwordHash: "x" });
 
-  assert.deepEqual(await m.q.primeirosPassos(t.id), { produtos: false, estoque: false, equipe: false, pix: false, turno: false, pedido: false });
+  assert.deepEqual(await m.q.primeirosPassos(t.id), { produtos: false, sugeridos: false, estoque: false, equipe: false, pix: false, turno: false, pedido: false });
 
   await db.insert(products).values({ tenantId: t.id, name: "Gás P13", priceCents: 11500 });
   // entregador desativado não conta: quem saiu não faz entrega
@@ -1248,7 +1248,8 @@ test("cadastro pelo próprio dono: empresa, principal e dono com termos aceitos;
   const { users, branches } = m.schema;
   const { eq } = await import("drizzle-orm");
   const email = `novo-${Date.now()}@cadastro.test`;
-  const input = { company: "Água Boa", ownerName: "Rita", email, password: "senha-boa-1" };
+  const input = { company: "Água Boa", ownerName: "Rita", email, password: "senha-boa-1", vende: "ambos" as const };
+  assert.throws(() => m.platform.cadastroSchema.parse({ ...input, vende: "pao" }), /Escolha o que a revenda vende/);
   await assert.rejects(m.platform.cadastrarEmpresa(m.platform.cadastroSchema.parse({ ...input, email: A.owner.email }), "v1"), /Já existe/);
   assert.throws(() => m.platform.cadastroSchema.parse({ ...input, password: "curta" }), /8 caracteres/);
   const { tenant, ownerId } = await m.platform.cadastrarEmpresa(m.platform.cadastroSchema.parse({ ...input, email: email.toUpperCase() }), "v1");
@@ -1258,8 +1259,13 @@ test("cadastro pelo próprio dono: empresa, principal e dono com termos aceitos;
   assert.equal(dono.termsVersion, "v1");
   const filiais = await db.select().from(branches).where(eq(branches.tenantId, tenant.id));
   assert.deepEqual(filiais.map((b) => [b.name, b.main]), [["Principal", true]]);
-  // começa vazia: nada da empresa A aparece
-  assert.equal((await m.q.stockOverview(tenant.id, filiais[0].id)).length, 0);
+  // nasce com os produtos do que vende, com preço sugerido, e nada da empresa A aparece
+  const prods = await m.q.listProducts(tenant.id);
+  assert.deepEqual(prods.map((p) => [p.name, p.precoSugerido]), [["Galão de água 20L", true], ["Gás P13", true], ["Gás P45", true]]);
+  assert.equal((await m.q.primeirosPassos(tenant.id)).produtos, false);
+  await m.registry.saveProduct({ tenantId: tenant.id, userId: ownerId, role: "dono", branchId: filiais[0].id }, { name: "Gás P13", priceCents: 12000, returnable: true, minStock: 10, active: true }, prods[1].id);
+  assert.equal((await m.q.listProducts(tenant.id)).find((p) => p.id === prods[1].id)!.precoSugerido, false);
+  assert.equal((await m.q.stockOverview(tenant.id, filiais[0].id)).length, 3);
 });
 
 test("mensalidade: teste grátis no cadastro, Pix na conta da Solace, pago soma um mês uma vez só", async () => {
@@ -1273,7 +1279,7 @@ test("mensalidade: teste grátis no cadastro, Pix na conta da Solace, pago soma 
   const hoje = todayISO();
 
   const { tenant, ownerId } = await m.platform.cadastrarEmpresa(
-    m.platform.cadastroSchema.parse({ company: "Gás Pago", ownerName: "Davi", email: `davi-${Date.now()}@cadastro.test`, password: "senha-boa-1" }),
+    m.platform.cadastroSchema.parse({ company: "Gás Pago", ownerName: "Davi", email: `davi-${Date.now()}@cadastro.test`, password: "senha-boa-1", vende: "gas" }),
     "v1",
   );
   const pagoAte = async () => (await db.select({ p: tenants.pagoAte }).from(tenants).where(eq(tenants.id, tenant.id)))[0].p;

@@ -14,6 +14,18 @@ async function entrar(page: Page, email: string) {
   await expect(page).not.toHaveURL(/login/);
 }
 
+/** Cadastro em dois passos: você, depois a revenda. */
+async function cadastrar(page: Page, d: { nome: string; email: string; revenda: string; vende: "Água" | "Gás" | "Os dois" }) {
+  await page.getByLabel("Seu nome").fill(d.nome);
+  await page.getByLabel("E-mail").fill(d.email);
+  await page.getByLabel("Senha", { exact: true }).fill("senha-boa-1");
+  await page.getByRole("button", { name: "Continuar" }).click();
+  await page.getByLabel("Nome da revenda").fill(d.revenda);
+  await page.getByText(d.vende, { exact: true }).click();
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Criar conta" }).click();
+}
+
 const mais = (page: Page, produto: string) => page.getByRole("group", { name: `Quantidade de ${produto}` }).getByRole("button", { name: "Aumentar" });
 
 test("pedido em dinheiro: atendente lança, entregador entrega, caixa faz o acerto", async ({ page }) => {
@@ -153,17 +165,29 @@ test("cadastro: o dono cria a conta pela página inicial e cai no painel com os 
   await page.getByRole("link", { name: "Criar conta" }).first().click();
   await expect(page).toHaveURL(/\/cadastro/);
   await page.waitForLoadState("networkidle");
-  await page.getByLabel("Nome da revenda").fill("Gás do Teste");
+  // sem e-mail não passa do primeiro passo
   await page.getByLabel("Seu nome").fill("Rita");
+  await page.getByRole("button", { name: "Continuar" }).click();
+  await expect(page.getByText(/Preencha o campo "E-mail"/)).toBeVisible();
+  // e-mail que já tem conta: volta ao primeiro passo, com o aviso no próprio campo
+  await cadastrar(page, { nome: "Rita", email: "dono@demo.com", revenda: "Gás do Teste", vende: "Gás" });
+  await expect(page.getByText("Já existe um usuário com este e-mail.")).toBeVisible();
+  await expect(page.getByLabel("E-mail")).toBeFocused();
   await page.getByLabel("E-mail").fill(`rita-${Date.now()}@cadastro.test`);
-  await page.getByLabel("Senha").fill("senha-boa-1");
+  await page.getByRole("button", { name: "Continuar" }).click();
+  // o segundo passo guardou o que foi digitado
+  await expect(page.getByLabel("Nome da revenda")).toHaveValue("Gás do Teste");
   await page.getByRole("button", { name: "Criar conta" }).click();
-  // sem marcar os termos o navegador segura o envio
-  await expect(page).toHaveURL(/\/cadastro/);
-  await page.getByRole("checkbox").check();
-  await page.getByRole("button", { name: "Criar conta" }).click();
+  await expect(page.getByText("Gás do Teste está no ar.")).toBeVisible();
   await expect(page.getByRole("heading", { name: "Primeiros passos" })).toBeVisible();
-  await expect(page.getByText("Gás do Teste").first()).toBeVisible();
+  await expect(page).toHaveURL(/\/$/);
+  // vende gás: os botijões já estão cadastrados, com preço para conferir
+  await expect(page.getByText("Confira os preços sugeridos")).toBeVisible();
+  await page.goto("/produtos");
+  await expect(page.getByLabel("Nome").first()).toHaveValue("Gás P13");
+  await expect(page.getByText("Preço sugerido")).toHaveCount(2);
+  await page.getByRole("button", { name: "Preço certo" }).first().click();
+  await expect(page.getByText("Preço sugerido")).toHaveCount(1);
 });
 
 test("assinatura: o selo do plano fica à vista desde o cadastro; vencida, o sistema pausa e só abre a tela de pagar", async ({ page }) => {
@@ -173,13 +197,9 @@ test("assinatura: o selo do plano fica à vista desde o cadastro; vencida, o sis
   await page.context().clearCookies();
   await page.goto("/cadastro");
   await page.waitForLoadState("networkidle");
-  await page.getByLabel("Nome da revenda").fill("Água da Ana");
-  await page.getByLabel("Seu nome").fill("Ana");
-  await page.getByLabel("E-mail").fill(email);
-  await page.getByLabel("Senha").fill("senha-boa-1");
-  await page.getByRole("checkbox").check();
-  await page.getByRole("button", { name: "Criar conta" }).click();
+  await cadastrar(page, { nome: "Ana", email, revenda: "Água da Ana", vende: "Água" });
   await expect(page.getByRole("heading", { name: "Primeiros passos" })).toBeVisible();
+  await expect(page).toHaveURL(/\/$/);
   // logo depois de criar a conta: o selo no menu e o aviso nos primeiros passos
   const selo = page.getByRole("link", { name: /Teste grátis.*Assinar/ });
   await expect(selo).toContainText("Faltam 14 dias");

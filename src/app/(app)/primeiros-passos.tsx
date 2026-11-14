@@ -6,9 +6,10 @@ import { formatBRL } from "@/lib/money";
 // O que uma empresa nova precisa fazer, na ordem em que faz sentido. Cada passo se completa
 // sozinho quando a coisa existe no sistema; o bloco some quando todos estão feitos.
 
-type Feito = { produtos: boolean; estoque: boolean; equipe: boolean; pix: boolean; turno: boolean; pedido: boolean };
+type Feito = { produtos: boolean; estoque: boolean; equipe: boolean; pix: boolean; turno: boolean; pedido: boolean; sugeridos?: boolean };
+type Chave = Exclude<keyof Feito, "sugeridos">;
 
-const passos: { chave: keyof Feito; titulo: string; texto: string; href: string; acao: string }[] = [
+const passos: { chave: Chave; titulo: string; texto: string; href: string; acao: string }[] = [
   { chave: "produtos", titulo: "Cadastre os produtos e preços", texto: "Gás, galão, o que você vende. O preço do pedido sempre vem daqui.", href: "/produtos", acao: "Cadastrar produtos" },
   { chave: "estoque", titulo: "Lance o estoque inicial", texto: "Quantos cheios e vazios tem na loja hoje. Use a entrada de compra ou o inventário.", href: "/estoque", acao: "Lançar estoque" },
   { chave: "equipe", titulo: "Adicione os entregadores", texto: "Com celular, cada um vê só as próprias entregas. Sem celular, a loja imprime a folha da rota.", href: "/equipe", acao: "Adicionar equipe" },
@@ -21,6 +22,8 @@ export function PrimeirosPassos({ feito, testeAte }: { feito: Feito; testeAte?: 
   const prontos = passos.filter((p) => feito[p.chave]).length;
   if (prontos === passos.length) return null;
   const proximo = passos.find((p) => !feito[p.chave])!;
+  // conta criada pelo cadastro: os produtos já estão lá, falta conferir o preço
+  const conferir = { titulo: "Confira os preços sugeridos", texto: "Os produtos mais comuns já estão cadastrados com preço de mercado. Ajuste para o seu.", acao: "Conferir preços" };
   return (
     <section aria-labelledby="primeiros-passos" className="panel mb-6 overflow-hidden">
       <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
@@ -41,11 +44,12 @@ export function PrimeirosPassos({ feito, testeAte }: { feito: Feito; testeAte?: 
         <div className="h-full bg-accent transition-[width] duration-500" style={{ width: `${(prontos / passos.length) * 100}%` }} />
       </div>
       <ol>
-        {passos.map((p, i) => {
+        {passos.map((passo, i) => {
+          const p = passo.chave === "produtos" && feito.sugeridos ? { ...passo, ...conferir } : passo;
           const ok = feito[p.chave];
-          const atual = p === proximo;
+          const atual = passo === proximo;
           return (
-            <li key={p.chave} className={`flex items-start gap-3 border-b border-line px-4 py-3 last:border-0 ${atual ? "bg-subtle/60" : ""}`}>
+            <li key={passo.chave} className={`flex items-start gap-3 border-b border-line px-4 py-3 last:border-0 ${atual ? "bg-subtle/60" : ""}`}>
               <span
                 aria-hidden="true"
                 className={`num mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-[12px] font-semibold ${

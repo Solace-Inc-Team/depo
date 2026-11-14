@@ -156,6 +156,8 @@ export const products = pgTable(
     minStock: integer("min_stock").notNull().default(0),
     // cobrado a mais quando o cliente não devolve um vazio e fica com o vasilhame
     containerPriceCents: integer("container_price_cents").notNull().default(0),
+    // cadastrado sozinho na criação da conta, com preço de mercado: fica marcado até o dono salvar o produto
+    precoSugerido: boolean("preco_sugerido").notNull().default(false),
     active: boolean("active").notNull().default(true),
     createdAt: createdAt(),
   },

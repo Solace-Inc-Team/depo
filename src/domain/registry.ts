@@ -150,7 +150,8 @@ export async function saveProduct(ctx: Ctx, raw: z.input<typeof productSchema>, 
         .from(products)
         .where(and(eq(products.id, id), eq(products.tenantId, ctx.tenantId)));
       if (!before) throw new DomainError("Produto não encontrado.");
-      const [p] = await tx.update(products).set(input).where(eq(products.id, id)).returning();
+      // salvou o produto: o preço deixa de ser o sugerido, é o da loja
+      const [p] = await tx.update(products).set({ ...input, precoSugerido: false }).where(eq(products.id, id)).returning();
       await audit(tx, ctx, "produto.editar", "product", p.id, { before, after: input });
       return p;
     }

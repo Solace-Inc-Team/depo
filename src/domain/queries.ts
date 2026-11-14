@@ -675,7 +675,10 @@ export const listAudit = scoped(async function listAudit(
 export const primeirosPassos = scoped(async function primeirosPassos(tenantId: string) {
   const [r] = await db
     .select({
-      produtos: sql<boolean>`exists (select 1 from ${products} where ${products.tenantId} = ${tenantId})`,
+      // produto que nasceu com o cadastro, com preço sugerido, só conta depois que o dono confere
+      produtos: sql<boolean>`exists (select 1 from ${products} where ${products.tenantId} = ${tenantId})
+        and not exists (select 1 from ${products} where ${products.tenantId} = ${tenantId} and ${products.precoSugerido} and ${products.active})`,
+      sugeridos: sql<boolean>`exists (select 1 from ${products} where ${products.tenantId} = ${tenantId} and ${products.precoSugerido} and ${products.active})`,
       estoque: sql<boolean>`exists (select 1 from ${stockMovements} where ${stockMovements.tenantId} = ${tenantId})`,
       equipe: sql<boolean>`exists (select 1 from ${users} where ${users.tenantId} = ${tenantId} and ${users.role} = 'entregador' and ${users.active})`,
       pix: sql<boolean>`(select ${tenants.pixKey} <> '' or ${tenants.mpTokenEnc} is not null from ${tenants} where ${tenants.id} = ${tenantId})`,

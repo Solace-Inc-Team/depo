@@ -131,12 +131,13 @@ export async function cadastrarAction(fd: FormData): Promise<ActionState> {
   if (await attempt(`cadastro:${await clientIp()}`, 5)) return { error: "Muitos cadastros daqui. Espere 15 minutos e tente de novo." };
   let ownerId = "";
   const r = await run(async () => {
-    const input = cadastroSchema.parse({ company: str(fd, "company"), ownerName: str(fd, "ownerName"), email: str(fd, "email"), password: String(fd.get("password") ?? "") });
+    const input = cadastroSchema.parse({ company: str(fd, "company"), ownerName: str(fd, "ownerName"), email: str(fd, "email"), password: String(fd.get("password") ?? ""), vende: str(fd, "vende") });
     ownerId = (await cadastrarEmpresa(input, TERMS_VERSION)).ownerId;
   }, []);
   if (r?.error) return r;
   await createSession(ownerId);
-  redirect("/");
+  // o Painel abre com a chegada: a revenda no ar, antes do dia a dia
+  redirect("/?chegada=1");
 }
 
 // hash de uma senha que ninguém usa, para o login gastar o mesmo tempo quando o e-mail não existe

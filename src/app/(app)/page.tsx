@@ -12,6 +12,8 @@ import { DivisaoPagamento } from "@/components/divisao-pagamento";
 import { FiltroPainel } from "./filtro-painel";
 import { PrimeirosPassos } from "./primeiros-passos";
 import { emTesteGratis } from "@/domain/assinatura";
+import { Chegada } from "./chegada";
+import { PLANO } from "@/lib/plano";
 import { Money, StatusBadge, Empty, fmtTime, paymentLabel } from "@/components/ui";
 
 export const metadata = { title: "Painel" };
@@ -101,6 +103,7 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
         </FiltroPainel>
       </div>
 
+      {sp.chegada === "1" && user.role === "dono" && <Chegada nome={user.tenantName} dias={PLANO.diasGratis} />}
       {passos && <PrimeirosPassos feito={passos} testeAte={testeAte} />}
 
       {/* no celular o que pede atenção vem antes dos números: é o que tem de ser feito agora */}

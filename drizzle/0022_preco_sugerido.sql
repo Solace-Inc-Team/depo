@@ -1,0 +1,1 @@
+ALTER TABLE "products" ADD COLUMN "preco_sugerido" boolean DEFAULT false NOT NULL;
