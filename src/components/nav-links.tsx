@@ -38,7 +38,8 @@ const icons: Record<string, LucideIcon> = {
   "/ajuda": CircleHelp,
 };
 
-export type NavGroup = { title?: string; links: { href: string; label: string }[] };
+// soCelular: no computador o item mora no rodapé lateral (Ajuda), e o menu cabe na tela do notebook
+export type NavGroup = { title?: string; soCelular?: boolean; links: { href: string; label: string }[] };
 
 export function NavLinks({ groups }: { groups: NavGroup[] }) {
   const path = usePathname();
@@ -71,9 +72,9 @@ export function NavLinks({ groups }: { groups: NavGroup[] }) {
   }, [path]);
 
   return (
-    <nav ref={nav} aria-label="Principal" className="nav-rola relative flex gap-1 overflow-x-auto px-3 pb-3 lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-5 lg:overflow-x-visible lg:overflow-y-auto lg:pb-4 lg:[scrollbar-width:none]">
+    <nav ref={nav} aria-label="Principal" className="nav-rola relative flex gap-1 overflow-x-auto px-3 pb-3 lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-5 lg:[@media(max-height:780px)]:gap-3 lg:overflow-x-visible lg:overflow-y-auto lg:pb-4 lg:[scrollbar-width:none]">
       {groups.map((g, i) => (
-        <div key={i} className="flex shrink-0 gap-1 lg:flex-col lg:gap-0.5">
+        <div key={i} className={`flex shrink-0 gap-1 lg:flex-col lg:gap-0.5 ${g.soCelular ? "lg:hidden" : ""}`}>
           {g.title && <p className="hidden px-2 pb-1 text-xs font-medium text-muted lg:block">{g.title}</p>}
           {g.links.map((l) => {
             const Icon = icons[l.href];

@@ -10,7 +10,7 @@ import { CustomerFields } from "@/components/customer-fields";
 import { PopoverForm } from "@/components/popover-form";
 import { addAddressAction, removeAddressAction, anonymizeCustomerAction, receivePaymentAction, saveCustomerAction, voidPaymentAction, devolverVasilhameAction, registrarComodatoAction } from "@/app/actions";
 import { customerStatement } from "@/domain/receivables";
-import { centsToInput } from "@/lib/money";
+import { centsToInput, formatBRL } from "@/lib/money";
 import { Empty, Money, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
 
 export const metadata = { title: "Cliente" };
@@ -96,7 +96,7 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                         className={e.voidedAt ? "line-through" : e.kind === "pagamento" ? "text-ok" : ""}
                       />
                       {e.kind === "pagamento" && !e.voidedAt && user.role === "dono" && (
-                        <PopoverForm label="Estornar" action={voidPaymentAction} submit="Estornar pagamento" danger>
+                        <PopoverForm label="Estornar" titulo={`Pagamento de ${formatBRL(e.amount)}`} action={voidPaymentAction} submit="Estornar pagamento" danger>
                           <input type="hidden" name="paymentId" value={e.id} />
                           <label className="label mb-0" htmlFor={`v-${e.id}`}>Motivo</label>
                           <input id={`v-${e.id}`} name="reason" required minLength={3} className="input" />

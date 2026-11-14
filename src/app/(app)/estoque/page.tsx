@@ -2,7 +2,8 @@ import { requireUser } from "@/lib/auth";
 import Link from "next/link";
 import { listProducts, listSuppliers, recentMovements, stockOverview } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
-import { adjustAction, damagedAction, purchaseAction } from "@/app/actions";
+import { damagedAction, purchaseAction } from "@/app/actions";
+import { JanelaAcao } from "@/components/janela-acao";
 import { PageHeader, fmtDateTime } from "@/components/ui";
 import { NivelVasilhame } from "@/components/nivel-vasilhame";
 import { comodatoPorProduto } from "@/domain/comodato";
@@ -25,8 +26,78 @@ export default async function Estoque() {
       <PageHeader title="Estoque">
         <Link href="/fornecedores" className="btn">Fornecedores</Link>
         {user.role === "dono" && <Link href="/estoque/inventario" className="btn">Fazer inventário</Link>}
+        <JanelaAcao label="Registrar avaria" titulo="Registrar avaria">
+          <ActionForm action={damagedAction} className="grid gap-3 sm:grid-cols-2" reset>
+            <div>
+              <label className="label" htmlFor="d-product">Produto</label>
+              <select id="d-product" name="productId" className="input" required>
+                {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label" htmlFor="d-from">Estava</label>
+              <select id="d-from" name="from" className="input">
+                <option value="cheio">Cheio</option>
+                <option value="vazio">Vazio</option>
+              </select>
+            </div>
+            <div>
+              <label className="label" htmlFor="d-qty">Quantidade</label>
+              <input id="d-qty" name="quantity" type="number" min={1} max={100000} required defaultValue={1} className="input" />
+            </div>
+            <div>
+              <label className="label" htmlFor="d-note">Defeito</label>
+              <input id="d-note" name="note" required minLength={3} maxLength={120} className="input" />
+            </div>
+            <button className="btn btn-primary mt-1 sm:col-span-2">Registrar avaria</button>
+          </ActionForm>
+        </JanelaAcao>
+        <JanelaAcao label="Entrada de compra" titulo="Entrada de compra" primario>
+          <ActionForm action={purchaseAction} className="grid gap-3 sm:grid-cols-2" reset>
+            <div className="sm:col-span-2">
+              <label className="label" htmlFor="p-product">Produto</label>
+              <select id="p-product" name="productId" className="input" required>
+                {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label" htmlFor="p-full">Cheios recebidos</label>
+              <input id="p-full" name="full" type="number" min={1} max={100000} required className="input" />
+            </div>
+            <div>
+              <label className="label" htmlFor="p-empties">Vazios devolvidos</label>
+              <input id="p-empties" name="empties" type="number" min={0} defaultValue={0} className="input" />
+            </div>
+            <div>
+              <label className="label" htmlFor="p-supplier">Fornecedor</label>
+              <select id="p-supplier" name="supplierId" className="input" defaultValue="">
+                <option value="">Não informar</option>
+                {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label" htmlFor="p-note">Nota fiscal ou observação</label>
+              <input id="p-note" name="note" maxLength={120} className="input" />
+            </div>
+            <div>
+              <label className="label" htmlFor="p-cost">Valor pago (opcional)</label>
+              <input id="p-cost" name="cost" inputMode="decimal" maxLength={12} className="input" placeholder="0,00" />
+            </div>
+            <div>
+              <label className="label" htmlFor="p-method">Pago com</label>
+              <select id="p-method" name="costMethod" className="input" defaultValue="boleto">
+                <option value="boleto">Boleto</option>
+                <option value="pix">Pix</option>
+                <option value="dinheiro">Dinheiro</option>
+                <option value="cartao">Cartão</option>
+              </select>
+            </div>
+            <p className="text-[13px] text-muted sm:col-span-2">Com valor, entra nas despesas de hoje.</p>
+            <button className="btn btn-primary mt-1 sm:col-span-2">Registrar entrada</button>
+          </ActionForm>
+        </JanelaAcao>
       </PageHeader>
-      <section className="panel mb-6 overflow-x-auto">
+      <section className="panel overflow-x-auto">
         <table className="table min-w-[46rem]">
           <thead>
             <tr>
@@ -79,117 +150,6 @@ export default async function Estoque() {
           O total de vasilhames não deve cair. Se cair, há casco que saiu sem voltar.
         </p>
       </section>
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section className="panel p-4">
-          <h2 className="h2 mb-1">Entrada de compra</h2>
-          <ActionForm action={purchaseAction} className="grid gap-3 sm:grid-cols-2" reset>
-            <div className="sm:col-span-2">
-              <label className="label" htmlFor="p-product">Produto</label>
-              <select id="p-product" name="productId" className="input" required>
-                {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label" htmlFor="p-full">Cheios recebidos</label>
-              <input id="p-full" name="full" type="number" min={1} max={100000} required className="input" />
-            </div>
-            <div>
-              <label className="label" htmlFor="p-empties">Vazios devolvidos</label>
-              <input id="p-empties" name="empties" type="number" min={0} defaultValue={0} className="input" />
-            </div>
-            <div>
-              <label className="label" htmlFor="p-supplier">Fornecedor</label>
-              <select id="p-supplier" name="supplierId" className="input" defaultValue="">
-                <option value="">Não informar</option>
-                {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label" htmlFor="p-note">Nota fiscal ou observação</label>
-              <input id="p-note" name="note" maxLength={120} className="input" />
-            </div>
-            <div>
-              <label className="label" htmlFor="p-cost">Valor pago (opcional)</label>
-              <input id="p-cost" name="cost" inputMode="decimal" maxLength={12} className="input" placeholder="0,00" />
-            </div>
-            <div>
-              <label className="label" htmlFor="p-method">Pago com</label>
-              <select id="p-method" name="costMethod" className="input" defaultValue="boleto">
-                <option value="boleto">Boleto</option>
-                <option value="pix">Pix</option>
-                <option value="dinheiro">Dinheiro</option>
-                <option value="cartao">Cartão</option>
-              </select>
-            </div>
-            <p className="text-[13px] text-muted sm:col-span-2">Com valor, entra nas despesas de hoje.</p>
-            <button className="btn btn-primary sm:col-span-2 sm:justify-self-start">Registrar entrada</button>
-          </ActionForm>
-        </section>
-
-        <section className="panel p-4">
-          <h2 className="h2 mb-1">Registrar avaria</h2>
-          <ActionForm action={damagedAction} className="grid gap-3 sm:grid-cols-2" reset>
-            <div>
-              <label className="label" htmlFor="d-product">Produto</label>
-              <select id="d-product" name="productId" className="input" required>
-                {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="label" htmlFor="d-from">Estava</label>
-              <select id="d-from" name="from" className="input">
-                <option value="cheio">Cheio</option>
-                <option value="vazio">Vazio</option>
-              </select>
-            </div>
-            <div>
-              <label className="label" htmlFor="d-qty">Quantidade</label>
-              <input id="d-qty" name="quantity" type="number" min={1} max={100000} required defaultValue={1} className="input" />
-            </div>
-            <div>
-              <label className="label" htmlFor="d-note">Defeito</label>
-              <input id="d-note" name="note" required minLength={3} maxLength={120} className="input" />
-            </div>
-            <button className="btn sm:col-span-2 sm:justify-self-start">Registrar avaria</button>
-          </ActionForm>
-        </section>
-
-        {user.role === "dono" && (
-          <section className="panel p-4">
-            <h2 className="h2 mb-1">Ajuste por contagem</h2>
-            <ActionForm action={adjustAction} className="grid gap-3 sm:grid-cols-2" reset confirm="Registrar o ajuste de estoque?">
-              <div>
-                <label className="label" htmlFor="a-product">Produto</label>
-                <select id="a-product" name="productId" className="input" required>
-                  {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="label" htmlFor="a-state">Tipo</label>
-                <select id="a-state" name="state" className="input">
-                  <option value="cheio">Cheios</option>
-                  <option value="vazio">Vazios</option>
-                  <option value="avariado">Avariados</option>
-                </select>
-              </div>
-              <div>
-                <label className="label" htmlFor="a-counted">Quantidade contada</label>
-                <input id="a-counted" name="counted" type="number" min={0} max={100000} required className="input" />
-              </div>
-              <div>
-                <label className="label" htmlFor="a-reason">Motivo</label>
-                <input id="a-reason" name="reason" required minLength={3} className="input" />
-              </div>
-              <div className="sm:col-span-2">
-                <label className="label" htmlFor="a-pw">Sua senha, para confirmar</label>
-                <input id="a-pw" name="confirmPassword" type="password" autoComplete="current-password" required className="input sm:max-w-xs" />
-              </div>
-              <button className="btn sm:col-span-2 sm:justify-self-start">Registrar ajuste</button>
-            </ActionForm>
-          </section>
-        )}
-      </div>
 
       <section className="panel mt-6 overflow-x-auto">
         <h2 className="h2 border-b border-line px-4 py-3">Últimas movimentações</h2>

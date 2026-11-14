@@ -125,7 +125,10 @@ export function ActionForm({
           if (r?.ok) toast(r.ok);
           const menu = form.closest("details");
           if (menu) menu.open = false;
-          if (reset || menu) form.reset();
+          // dentro de uma JanelaAcao: deu certo, a janela fecha
+          const janela = form.closest("dialog");
+          janela?.dispatchEvent(new Event("fechar"));
+          if (reset || menu || janela) form.reset();
         });
       }}
     >

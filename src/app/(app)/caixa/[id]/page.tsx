@@ -191,7 +191,7 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
                     <div className="flex items-center gap-4">
                       <Money cents={e.amountCents} className={e.voidedAt ? "line-through" : "font-semibold"} />
                       {isOpen && !e.voidedAt && user.role === "dono" && (
-                        <PopoverForm label="Estornar" action={voidCashEntryAction} submit="Estornar lançamento" danger>
+                        <PopoverForm label="Estornar" titulo={`${e.kind === "repasse" ? "Repasse" : "Gasto"} de ${formatBRL(e.amountCents)}`} action={voidCashEntryAction} submit="Estornar lançamento" danger>
                           <input type="hidden" name="entryId" value={e.id} />
                           <label className="label mb-0" htmlFor={`ve-${e.id}`}>Motivo</label>
                           <input id={`ve-${e.id}`} name="reason" required minLength={3} className="input" />

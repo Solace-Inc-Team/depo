@@ -8,6 +8,7 @@ import { expenseCategories, listExpenses, type ExpenseCategory } from "@/domain/
 import { createExpenseAction, voidExpenseAction } from "@/app/actions";
 import { ActionForm } from "@/components/action-form";
 import { PopoverForm } from "@/components/popover-form";
+import { formatBRL } from "@/lib/money";
 import { Money, PageHeader } from "@/components/ui";
 
 export const metadata = { title: "Despesas" };
@@ -99,7 +100,7 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
                       {user.role === "dono" && (
                         <td className="text-right">
                           {!e.voidedAt && !e.orderId && (
-                            <PopoverForm label="Cancelar" action={voidExpenseAction} submit="Cancelar despesa" danger>
+                            <PopoverForm label="Cancelar" titulo={`${e.description}, ${formatBRL(e.amountCents)}`} action={voidExpenseAction} submit="Cancelar despesa" danger>
                               <input type="hidden" name="expenseId" value={e.id} />
                               <label className="label mb-0" htmlFor={`r-${e.id}`}>Motivo</label>
                               <input id={`r-${e.id}`} name="reason" required minLength={3} className="input" />

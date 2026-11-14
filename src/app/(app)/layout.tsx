@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { TemaBotao } from "@/components/tema-botao";
-import { KeyRound, LogOut } from "lucide-react";
+import { CircleHelp, KeyRound, LogOut } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { logout } from "@/app/actions";
 import { MarcaDaSessao } from "@/components/logo";
@@ -58,7 +58,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           : []),
       ],
     },
-    { links: [{ href: "/ajuda", label: "Ajuda" }] },
+    { soCelular: true, links: [{ href: "/ajuda", label: "Ajuda" }] },
   ];
 
   return (
@@ -109,18 +109,24 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           <span className="grid size-8 shrink-0 place-items-center rounded-full bg-subtle text-xs font-semibold">
             {initials(user.name)}
           </span>
-          <div className="min-w-0 flex-1 leading-tight">
-            <p className="line-clamp-2 text-[13px] font-medium break-words">{user.name}</p>
+          {/* o primeiro nome: com Ajuda, senha e Sair ao lado, o nome inteiro quebraria no meio */}
+          <div className="min-w-0 flex-1 leading-tight" title={user.name}>
+            <p className="truncate text-[13px] font-medium">{user.name.split(" ")[0]}</p>
             <p className="text-xs text-muted">{roleLabel[user.role]}</p>
           </div>
-          <Link href="/senha" title="Trocar senha" aria-label="Trocar senha" className="grid size-11 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg lg:size-8">
-            <KeyRound size={15} strokeWidth={1.75} />
-          </Link>
-          <form action={logout}>
-            <button title="Sair" aria-label="Sair" className="grid size-11 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg lg:size-8">
-              <LogOut size={15} strokeWidth={1.75} />
-            </button>
-          </form>
+          <div className="-mr-1.5 flex shrink-0">
+            <Link href="/ajuda" title="Ajuda" aria-label="Ajuda" className="grid size-8 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
+              <CircleHelp size={15} strokeWidth={1.75} />
+            </Link>
+            <Link href="/senha" title="Trocar senha" aria-label="Trocar senha" className="grid size-8 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
+              <KeyRound size={15} strokeWidth={1.75} />
+            </Link>
+            <form action={logout}>
+              <button title="Sair" aria-label="Sair" className="grid size-8 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
+                <LogOut size={15} strokeWidth={1.75} />
+              </button>
+            </form>
+          </div>
         </div>
       </aside>
       <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-10 lg:py-10">

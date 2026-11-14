@@ -20,7 +20,7 @@ import { conectarMercadoPago, desconectarMercadoPago, pixDoPedido } from "@/doma
 import { devolverVasilhame, registrarComodato } from "@/domain/comodato";
 import { createExpense, expenseSchema, voidExpense } from "@/domain/expenses";
 import { openShift, closeShift, addCashEntry, cashEntrySchema, voidCashEntry, resolveDifference } from "@/domain/shifts";
-import { receivePurchase, adjustStock, markDamaged, runInventory, saveSupplier, supplierSchema } from "@/domain/stock";
+import { receivePurchase, markDamaged, runInventory, saveSupplier, supplierSchema } from "@/domain/stock";
 import { receivePayment, paymentSchema, voidPayment } from "@/domain/receivables";
 import { createTenant, deleteTenant, newTenantSchema, resetOwnerAccess, setTenantActive } from "@/domain/platform";
 import { resolveError, sendTestAlert } from "@/domain/monitoring";
@@ -361,19 +361,6 @@ export async function purchaseAction(fd: FormData) {
       }),
     ["/"],
     "Entrada registrada.",
-  );
-}
-
-export async function adjustAction(fd: FormData) {
-  const user = await requireUser("dono");
-  const state = z.enum(["cheio", "vazio", "avariado"]).catch("cheio").parse(str(fd, "state"));
-  return run(
-    async () => {
-      await confirmPassword(user, fd);
-      await adjustStock(user, { productId: str(fd, "productId"), state, counted: int(fd, "counted"), reason: str(fd, "reason") });
-    },
-    ["/"],
-    "Estoque ajustado.",
   );
 }
 
