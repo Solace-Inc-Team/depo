@@ -151,6 +151,12 @@ export function descrever(action: string, dados: Dados, nomes: Record<string, st
       det(qtd(d.quantity, txt(d.from)));
       det(txt(d.note));
       break;
+    case "estoque.transferencia":
+      l.titulo = `Transferiu ${alvo} para ${txt(d.para) || "outra filial"}`;
+      det([typeof d.cheios === "number" && d.cheios > 0 && qtd(d.cheios, "cheio"), typeof d.vazios === "number" && d.vazios > 0 && qtd(d.vazios, "vazio")].filter(Boolean).join(", "));
+      det(txt(d.de) && `Saiu de ${txt(d.de)}`);
+      det(txt(d.note));
+      break;
     case "estoque.inventario": {
       l.titulo = "Registrou inventário";
       const diffs = Array.isArray(d.diffs) ? (d.diffs as Record<string, unknown>[]) : [];

@@ -925,6 +925,19 @@ test("filiais: estoque, equipe e turno separados; o dono mexe em todas e a equip
   await m.orders.refundOrder(noCentro, { orderId: venda.id, reason: "devolveu", restock: true });
   assert.equal(await doCentro(), 5);
 
+  // transferência: sai do Centro e entra na principal de uma vez; o que está em pedido não sai
+  await assert.rejects(m.stock.transferirEstoque(noCentro, { productId: A.product.id, para: centro.id, cheios: 1, vazios: 0, note: "" }), /filial que vai receber/);
+  await assert.rejects(m.stock.transferirEstoque(noCentro, { productId: A.product.id, para: A.branch.id, cheios: 6, vazios: 0, note: "" }), /Há 5 cheios/);
+  await assert.rejects(m.stock.transferirEstoque({ ...noCentro, role: "entregador" }, { productId: A.product.id, para: A.branch.id, cheios: 1, vazios: 0, note: "" }), /Sem permissão/);
+  const segura = await m.orders.createOrder(noCentro, { ...balcao, mode: "entrega", customerId: A.customer.id, items: [{ productId: A.product.id, quantity: 1, returnsEmpty: true }] });
+  await assert.rejects(m.stock.transferirEstoque(noCentro, { productId: A.product.id, para: A.branch.id, cheios: 5, vazios: 0, note: "" }), /Há 4 cheios/);
+  await m.stock.transferirEstoque(noCentro, { productId: A.product.id, para: A.branch.id, cheios: 3, vazios: 0, note: "reforço" });
+  assert.equal(await doCentro(), 2);
+  assert.equal(await principal(), antes + 3);
+  await m.orders.cancelOrder(noCentro, segura.id, "teste");
+  // filial de outra empresa não recebe
+  await assert.rejects(m.stock.transferirEstoque(noCentro, { productId: A.product.id, para: B.branch.id, cheios: 1, vazios: 0, note: "" }), /Filial não encontrada/);
+
   // link de pedido da filial; filial que não existe cai na principal
   await m.registry.saveSettings(A.ctx, { portalEnabled: true });
   assert.equal((await m.portal.portalTenant(A.t.slug, "centro"))?.branchId, centro.id);

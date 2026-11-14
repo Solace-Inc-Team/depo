@@ -3,24 +3,28 @@ import Link from "next/link";
 import { Package } from "lucide-react";
 import { listProducts, listSuppliers, recentMovements, stockOverview } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
-import { damagedAction, purchaseAction } from "@/app/actions";
+import { damagedAction, purchaseAction, transferirAction } from "@/app/actions";
 import { JanelaAcao } from "@/components/janela-acao";
 import { PagamentoCompra } from "./pagamento-compra";
 import { PageHeader, fmtDateTime } from "@/components/ui";
 import { NivelVasilhame } from "@/components/nivel-vasilhame";
 import { comodatoPorProduto } from "@/domain/comodato";
+import { listFiliais } from "@/domain/filiais";
 
 export const metadata = { title: "Estoque" };
 
 export default async function Estoque() {
   const user = await requireUser("dono", "atendente", "caixa");
-  const [stock, moves, products, suppliers, comodato] = await Promise.all([
+  const [stock, moves, products, suppliers, comodato, filiais] = await Promise.all([
     stockOverview(user.tenantId, user.branchId),
     recentMovements(user.tenantId, user.branchId, 20),
     listProducts(user.tenantId, true),
     listSuppliers(user.tenantId, true),
     comodatoPorProduto(user.tenantId),
+    listFiliais(user.tenantId),
   ]);
+  // só existe transferência quando há outra filial ativa para receber
+  const outras = filiais.filter((b) => b.active && b.id !== user.branchId);
   const stateLabel = { cheio: "cheio", vazio: "vazio", avariado: "avariado" } as const;
 
   return (
@@ -54,6 +58,37 @@ export default async function Estoque() {
             <button className="btn btn-primary mt-1 sm:col-span-2">Registrar avaria</button>
           </ActionForm>
         </JanelaAcao>
+        {outras.length > 0 && (
+          <JanelaAcao label="Transferir" titulo="Transferir para outra filial">
+            <ActionForm action={transferirAction} className="grid gap-3 sm:grid-cols-2" reset>
+              <div>
+                <label className="label" htmlFor="t-product">Produto</label>
+                <select id="t-product" name="productId" className="input" required>
+                  {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label" htmlFor="t-para">Para</label>
+                <select id="t-para" name="para" className="input" required>
+                  {outras.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label" htmlFor="t-cheios">Cheios</label>
+                <input id="t-cheios" name="cheios" type="number" min={0} max={100000} defaultValue={0} className="input" />
+              </div>
+              <div>
+                <label className="label" htmlFor="t-vazios">Vazios</label>
+                <input id="t-vazios" name="vazios" type="number" min={0} max={100000} defaultValue={0} className="input" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="label" htmlFor="t-note">Observação</label>
+                <input id="t-note" name="note" maxLength={120} className="input" />
+              </div>
+              <button className="btn btn-primary mt-1 sm:col-span-2">Transferir</button>
+            </ActionForm>
+          </JanelaAcao>
+        )}
         <JanelaAcao label="Entrada de compra" titulo="Entrada de compra" primario>
           <ActionForm action={purchaseAction} className="grid gap-3 sm:grid-cols-2" reset>
             <div className="sm:col-span-2">

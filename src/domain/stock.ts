@@ -1,8 +1,8 @@
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { tenantTransaction, type Tx } from "@/db";
 import { z } from "zod";
-import { products, stockMovements, auditLog, suppliers, expenses, orders, orderItems } from "@/db/schema";
-import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
+import { products, stockMovements, auditLog, suppliers, expenses, orders, orderItems, branches } from "@/db/schema";
+import { type Ctx, DomainError, assertRole, isUuid } from "@/lib/ctx";
 import { telefoneSchema } from "./telefone";
 import { contaSchema, criarContaTx } from "./contas";
 import { todayISO } from "@/lib/period";
@@ -165,6 +165,43 @@ export async function markDamaged(ctx: Ctx, input: { productId: string; from: "c
     await move(tx, ctx, { ...base, state: input.from, quantity: -input.quantity }, p.name);
     await move(tx, ctx, { ...base, state: "avariado", quantity: input.quantity }, p.name);
     await audit(tx, ctx, "estoque.avaria", "product", p.id, input);
+  });
+}
+
+/**
+ * Leva cheios e vazios desta filial para outra, na hora: sai daqui e entra lá na mesma transação.
+ * Cheio que um pedido aberto já segura não sai.
+ */
+export async function transferirEstoque(ctx: Ctx, input: { productId: string; para: string; cheios: number; vazios: number; note: string }) {
+  assertRole(ctx, "dono", "atendente", "caixa");
+  const { cheios, vazios } = input;
+  if (!Number.isInteger(cheios) || !Number.isInteger(vazios) || cheios < 0 || vazios < 0 || cheios + vazios < 1) {
+    throw new DomainError("Informe quantos cheios ou vazios vão.");
+  }
+  if (!isUuid(input.para) || input.para === ctx.branchId) throw new DomainError("Escolha a filial que vai receber.");
+  await tenantTransaction(ctx, async (tx) => {
+    const [p] = await lockProducts(tx, ctx, [input.productId]);
+    if (!p) throw new DomainError("Produto não encontrado.");
+    if (vazios && !p.returnable) throw new DomainError(`${p.name} não tem vasilhame que volta.`);
+    const filiais = await tx
+      .select({ id: branches.id, name: branches.name, active: branches.active })
+      .from(branches)
+      .where(and(eq(branches.tenantId, ctx.tenantId), inArray(branches.id, [ctx.branchId, input.para])));
+    const origem = filiais.find((b) => b.id === ctx.branchId);
+    const destino = filiais.find((b) => b.id === input.para && b.active);
+    if (!origem || !destino) throw new DomainError("Filial não encontrada.");
+    if (cheios) {
+      const livres = (await disponivelNaLoja(tx, ctx.tenantId, ctx.branchId, [p.id])).get(p.id) ?? 0;
+      if (livres < cheios) throw new DomainError(`Há ${Math.max(livres, 0)} cheios de ${p.name} livres aqui. O resto está em pedidos aguardando.`);
+    }
+    const nota = input.note.trim() ? `: ${input.note.trim()}` : "";
+    const la = { ...ctx, branchId: destino.id };
+    for (const [state, q] of [["cheio", cheios], ["vazio", vazios]] as const) {
+      if (!q) continue;
+      await move(tx, ctx, { productId: p.id, state, driverId: null, quantity: -q, reason: `transferência para ${destino.name}${nota}` }, p.name);
+      await move(tx, la, { productId: p.id, state, driverId: null, quantity: q, reason: `transferência de ${origem.name}${nota}` }, p.name);
+    }
+    await audit(tx, ctx, "estoque.transferencia", "product", p.id, { cheios, vazios, de: origem.name, para: destino.name, note: input.note.trim() });
   });
 }
 

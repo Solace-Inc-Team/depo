@@ -21,7 +21,7 @@ import { cancelarConta, criarConta, pagarConta } from "@/domain/contas";
 import { devolverVasilhame, registrarComodato } from "@/domain/comodato";
 import { createExpense, expenseSchema, voidExpense } from "@/domain/expenses";
 import { openShift, closeShift, addCashEntry, cashEntrySchema, voidCashEntry, resolveDifference } from "@/domain/shifts";
-import { receivePurchase, markDamaged, runInventory, saveSupplier, supplierSchema } from "@/domain/stock";
+import { receivePurchase, markDamaged, runInventory, saveSupplier, supplierSchema, transferirEstoque } from "@/domain/stock";
 import { receivePayment, paymentSchema, voidPayment } from "@/domain/receivables";
 import { createTenant, deleteTenant, newTenantSchema, resetOwnerAccess, setTenantActive } from "@/domain/platform";
 import { resolveError, sendTestAlert } from "@/domain/monitoring";
@@ -388,6 +388,16 @@ export async function damagedAction(fd: FormData) {
     async () => markDamaged(user, { productId: str(fd, "productId"), from, quantity: int(fd, "quantity"), note: str(fd, "note") }),
     ["/"],
     "Avaria registrada. O item saiu do estoque de venda.",
+  );
+}
+
+export async function transferirAction(fd: FormData) {
+  const user = await requireUser("dono", "atendente", "caixa");
+  return run(
+    async () =>
+      transferirEstoque(user, { productId: str(fd, "productId"), para: str(fd, "para"), cheios: int(fd, "cheios"), vazios: int(fd, "vazios"), note: str(fd, "note") }),
+    ["/"],
+    "Transferência registrada.",
   );
 }
 
