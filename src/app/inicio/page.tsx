@@ -49,8 +49,8 @@ function BotaoContato({ className = "" }: { className?: string }) {
       <MessageCircle className="size-4" aria-hidden="true" /> Conversar no WhatsApp
     </a>
   ) : (
-    <Link href="/login" className={`btn btn-primary h-11 px-5 text-[15px] ${className}`}>
-      Entrar no sistema <ArrowRight className="size-4" aria-hidden="true" />
+    <Link href="/cadastro" className={`btn btn-primary h-11 px-5 text-[15px] ${className}`}>
+      Criar conta <ArrowRight className="size-4" aria-hidden="true" />
     </Link>
   );
 }

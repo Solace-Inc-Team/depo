@@ -23,7 +23,7 @@ import { createExpense, expenseSchema, voidExpense } from "@/domain/expenses";
 import { openShift, closeShift, addCashEntry, cashEntrySchema, voidCashEntry, resolveDifference } from "@/domain/shifts";
 import { receivePurchase, markDamaged, runInventory, saveSupplier, supplierSchema, transferirEstoque } from "@/domain/stock";
 import { receivePayment, paymentSchema, voidPayment } from "@/domain/receivables";
-import { createTenant, deleteTenant, newTenantSchema, resetOwnerAccess, setTenantActive } from "@/domain/platform";
+import { cadastrarEmpresa, cadastroSchema, createTenant, deleteTenant, newTenantSchema, resetOwnerAccess, setTenantActive } from "@/domain/platform";
 import { resolveError, sendTestAlert } from "@/domain/monitoring";
 import { addAddress, addressSchema, removeAddress, saveSettings, settingsSchema, anonymizeCustomer, saveCustomer, customerSchema, saveProduct, productSchema, createUser, userSchema, setUserActive, resetUserPassword, acceptTerms } from "@/domain/registry";
 import { TERMS_VERSION } from "@/lib/legal";
@@ -112,6 +112,23 @@ export async function login(fd: FormData): Promise<ActionState> {
   }
   await createSession(u.user.id);
   redirect(homeFor(u.user));
+}
+
+/** Cadastro público: o dono cria a empresa e já entra logado. */
+export async function cadastrarAction(fd: FormData): Promise<ActionState> {
+  // campo escondido que só robô preenche
+  if (str(fd, "site")) return { error: "Não foi possível criar a conta." };
+  if (fd.get("agree") !== "on") return { error: "Para criar a conta, marque que leu e aceita os termos." };
+  // conta toda tentativa, deu certo ou não: segura quem tenta criar empresas em série
+  if (await attempt(`cadastro:${await clientIp()}`, 5)) return { error: "Muitos cadastros daqui. Espere 15 minutos e tente de novo." };
+  let ownerId = "";
+  const r = await run(async () => {
+    const input = cadastroSchema.parse({ company: str(fd, "company"), ownerName: str(fd, "ownerName"), email: str(fd, "email"), password: String(fd.get("password") ?? "") });
+    ownerId = (await cadastrarEmpresa(input, TERMS_VERSION)).ownerId;
+  }, []);
+  if (r?.error) return r;
+  await createSession(ownerId);
+  redirect("/");
 }
 
 // hash de uma senha que ninguém usa, para o login gastar o mesmo tempo quando o e-mail não existe

@@ -1242,3 +1242,22 @@ test("entregador sem celular: entra na equipe sem e-mail nem senha, e a loja lan
   await m.orders.deliverOrder(atendente, o.id);
   assert.equal((await m.q.getOrder(A.t.id, o.id))!.status, "entregue");
 });
+
+test("cadastro pelo próprio dono: empresa, principal e dono com termos aceitos; e-mail repetido não passa", async () => {
+  const { db } = m.db;
+  const { users, branches } = m.schema;
+  const { eq } = await import("drizzle-orm");
+  const email = `novo-${Date.now()}@cadastro.test`;
+  const input = { company: "Água Boa", ownerName: "Rita", email, password: "senha-boa-1" };
+  await assert.rejects(m.platform.cadastrarEmpresa(m.platform.cadastroSchema.parse({ ...input, email: A.owner.email }), "v1"), /Já existe/);
+  assert.throws(() => m.platform.cadastroSchema.parse({ ...input, password: "curta" }), /8 caracteres/);
+  const { tenant, ownerId } = await m.platform.cadastrarEmpresa(m.platform.cadastroSchema.parse({ ...input, email: email.toUpperCase() }), "v1");
+  const [dono] = await db.select().from(users).where(eq(users.id, ownerId));
+  assert.equal(dono.email, email);
+  assert.equal(dono.role, "dono");
+  assert.equal(dono.termsVersion, "v1");
+  const filiais = await db.select().from(branches).where(eq(branches.tenantId, tenant.id));
+  assert.deepEqual(filiais.map((b) => [b.name, b.main]), [["Principal", true]]);
+  // começa vazia: nada da empresa A aparece
+  assert.equal((await m.q.stockOverview(tenant.id, filiais[0].id)).length, 0);
+});

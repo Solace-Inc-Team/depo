@@ -146,3 +146,22 @@ test("na raiz, visitante vê a apresentação e quem está logado cai no painel"
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Painel do dia" })).toBeVisible();
 });
+
+test("cadastro: o dono cria a conta pela página inicial e cai no painel com os primeiros passos", async ({ page }) => {
+  await page.context().clearCookies();
+  await page.goto("/");
+  await page.getByRole("link", { name: "Criar conta" }).first().click();
+  await expect(page).toHaveURL(/\/cadastro/);
+  await page.waitForLoadState("networkidle");
+  await page.getByLabel("Nome da revenda").fill("Gás do Teste");
+  await page.getByLabel("Seu nome").fill("Rita");
+  await page.getByLabel("E-mail").fill(`rita-${Date.now()}@cadastro.test`);
+  await page.getByLabel("Senha").fill("senha-boa-1");
+  await page.getByRole("button", { name: "Criar conta" }).click();
+  // sem marcar os termos o navegador segura o envio
+  await expect(page).toHaveURL(/\/cadastro/);
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Criar conta" }).click();
+  await expect(page.getByRole("heading", { name: "Primeiros passos" })).toBeVisible();
+  await expect(page.getByText("Gás do Teste").first()).toBeVisible();
+});

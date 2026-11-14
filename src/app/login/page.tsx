@@ -37,6 +37,9 @@ export default async function LoginPage() {
             <summary className="alvo cursor-pointer text-muted hover:text-fg">Esqueci a senha</summary>
             <p className="mt-2 text-muted">Peça ao dono da empresa para redefinir. Se você é o dono, fale com a Solace.</p>
           </details>
+          <p className="mt-6 text-center text-[13px] text-muted">
+            Ainda não usa? <Link href="/cadastro" className="alvo font-medium text-fg hover:underline">Criar conta</Link>
+          </p>
           {process.env.SEED_DEMO === "true" && (
             <details className="pergunta mt-10 rounded-xl border border-line bg-surface/60 text-[13px] text-muted">
               <summary className="flex cursor-pointer items-center justify-between gap-4 px-4 py-3 font-medium text-fg">

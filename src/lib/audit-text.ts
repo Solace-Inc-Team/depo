@@ -290,6 +290,9 @@ export function descrever(action: string, dados: Dados, nomes: Record<string, st
     case "empresa.criar":
       l.titulo = "Solace criou a empresa";
       break;
+    case "empresa.cadastro":
+      l.titulo = "Criou a conta da empresa";
+      break;
     case "empresa.suspender":
       l.titulo = "Solace suspendeu a empresa";
       break;

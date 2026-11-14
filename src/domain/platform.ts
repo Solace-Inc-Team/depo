@@ -32,6 +32,22 @@ export const slugFor = (name: string) =>
 
 export async function createTenant(admin: SessionUser, input: z.infer<typeof newTenantSchema>) {
   assertAdmin(admin);
+  return (await novaEmpresa(input, admin.userId)).tenant;
+}
+
+/** Cadastro feito pelo próprio dono, na página pública: ele já aceita os termos ao criar. */
+export const cadastroSchema = newTenantSchema.extend({
+  ownerName: z.string().trim().min(2, "Informe seu nome.").max(80, "O nome pode ter até 80 letras."),
+  company: z.string().trim().min(2, "Informe o nome da revenda.").max(120, "O nome pode ter até 120 letras."),
+  password: z.string().min(8, "A senha precisa de ao menos 8 caracteres.").max(200),
+});
+
+export async function cadastrarEmpresa(input: z.infer<typeof cadastroSchema>, termsVersion: string) {
+  return novaEmpresa(input, null, termsVersion);
+}
+
+// empresa com a filial principal e o dono; quem registra na auditoria é o admin da Solace ou o próprio dono
+async function novaEmpresa(input: z.infer<typeof newTenantSchema>, criadoPor: string | null, termsVersion?: string) {
   const passwordHash = await hashPassword(input.password);
   return db.transaction(async (tx) => {
     const [taken] = await tx.select({ id: users.id }).from(users).where(eq(users.email, input.email));
@@ -40,13 +56,20 @@ export async function createTenant(admin: SessionUser, input: z.infer<typeof new
     await tx.insert(branches).values({ tenantId: t.id, name: "Principal", slug: "principal", main: true });
     const [owner] = await tx
       .insert(users)
-      .values({ tenantId: t.id, name: input.ownerName, email: input.email, role: "dono", passwordHash })
+      .values({
+        tenantId: t.id,
+        name: input.ownerName,
+        email: input.email,
+        role: "dono",
+        passwordHash,
+        ...(termsVersion && { termsVersion, termsAcceptedAt: new Date() }),
+      })
       .returning({ id: users.id });
-    await audit(tx, { tenantId: t.id, userId: admin.userId }, "empresa.criar", "tenant", t.id, {
+    await audit(tx, { tenantId: t.id, userId: criadoPor ?? owner.id }, criadoPor ? "empresa.criar" : "empresa.cadastro", "tenant", t.id, {
       ownerId: owner.id,
       email: input.email,
     });
-    return t;
+    return { tenant: t, ownerId: owner.id };
   });
 }
 
