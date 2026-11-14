@@ -10,7 +10,7 @@ export function CustomerFields({ c = {} }: { c?: C }) {
       </div>
       <div className="sm:col-span-2">
         <label className="label" htmlFor="c-phone">Telefone</label>
-        <input id="c-phone" name="phone" inputMode="tel" data-mascara="telefone" autoComplete="tel" placeholder="(11) 91111-1111" defaultValue={c.phone} className="input sm:max-w-56" />
+        <input id="c-phone" name="phone" inputMode="tel" data-mascara="telefone" autoComplete="tel" defaultValue={c.phone} className="input sm:max-w-56" />
       </div>
       <div className="sm:col-span-2">
         <label className="label" htmlFor="c-addr">Endereço</label>

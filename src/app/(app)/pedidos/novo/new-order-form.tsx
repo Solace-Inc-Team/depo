@@ -164,7 +164,7 @@ export function NewOrderForm({
               </div>
               <div>
                 <label className="label" htmlFor="nc-phone">Telefone</label>
-                <input id="nc-phone" name="newCustomerPhone" inputMode="tel" data-mascara="telefone" placeholder="(11) 91111-1111" className="input" />
+                <input id="nc-phone" name="newCustomerPhone" inputMode="tel" data-mascara="telefone" className="input" />
               </div>
               <div>
                 <label className="label" htmlFor="nc-ref">Referência</label>

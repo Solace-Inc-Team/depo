@@ -124,7 +124,7 @@ export function PortalForm({
           </div>
           <div>
             <label className="label" htmlFor="phone">Telefone com DDD</label>
-            <input id="phone" name="phone" required inputMode="tel" data-mascara="telefone" autoComplete="tel" className="input" placeholder="(11) 98888-7777" />
+            <input id="phone" name="phone" required inputMode="tel" data-mascara="telefone" autoComplete="tel" className="input" />
           </div>
           <div>
             <label className="label" htmlFor="address">Endereço</label>
