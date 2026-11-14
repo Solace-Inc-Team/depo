@@ -98,10 +98,10 @@ export default async function FolhaDaRota({ params }: PageProps<"/entregas/rota/
                     {o.paymentMethod === "pix" && (o.pixConfirmedAt ? <p>Pix já recebido pela loja.</p> : <p>{qr ? "Pix: o cliente lê o QR ao lado." : "Pix: o cliente paga direto para a loja."}</p>)}
                     {o.notes && <p className="text-muted">Obs.: {o.notes}</p>}
                     {/* o entregador marca à caneta; na volta a loja lança */}
-                    <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1">
-                      <span>☐ Entregue</span>
-                      <span>☐ Só uma parte</span>
-                      <span>☐ Não entregue: ____________</span>
+                    <p className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+                      <span className="flex items-center gap-1.5"><Caixinha /> Entregue</span>
+                      <span className="flex items-center gap-1.5"><Caixinha /> Só uma parte</span>
+                      <span className="flex items-center gap-1.5"><Caixinha /> Não entregue: ____________</span>
                     </p>
                   </div>
                   {/* SVG gerado aqui a partir do código Pix, sem nada digitado por usuário */}
@@ -115,12 +115,26 @@ export default async function FolhaDaRota({ params }: PageProps<"/entregas/rota/
 
       {pedidos.length > 0 && (
         <footer className="mt-5 flex flex-wrap items-end justify-between gap-6 border-t border-line pt-4 text-[13px]">
-          <p>
-            Dinheiro a receber nesta rota: <b className="num">{formatBRL(dinheiro)}</b>
-          </p>
+          {/* a conta pronta: ele não precisa somar o troco com o que recebe */}
+          <div>
+            <p>
+              Dinheiro a receber nesta rota: <b className="num">{formatBRL(dinheiro)}</b>
+            </p>
+            {turno && turno.openingCashCents > 0 && (
+              <p className="mt-1 text-[15px]">
+                Volte com <b className="num">{formatBRL(turno.openingCashCents + dinheiro)}</b>{" "}
+                <span className="text-[13px] text-muted">(troco {formatBRL(turno.openingCashCents)} + entregas)</span>
+              </p>
+            )}
+          </div>
           <p className="text-muted">Assinatura do entregador: ______________________________</p>
         </footer>
       )}
     </div>
   );
+}
+
+// quadradinho para marcar à caneta: desenhado, do tamanho de uma marca de verdade
+function Caixinha() {
+  return <span aria-hidden="true" className="inline-block size-3.5 shrink-0 rounded-[3px] border-[1.5px] border-current" />;
 }

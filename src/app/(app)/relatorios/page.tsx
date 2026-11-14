@@ -119,7 +119,7 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
           ]}
         />
         <p className="border-t border-line px-5 py-3 text-[13px] text-muted sm:col-span-3">
-          Fiado recebido no período: <Money cents={fiadoTotal} className="font-medium text-fg" />. Já contado como venda no dia da entrega. Devoluções de pedidos estornados não entram nas despesas acima, porque a venda estornada já saiu das vendas.
+          Fiado recebido no período: <Money cents={fiadoTotal} className="font-medium text-fg" /> (já contado nas vendas, no dia da entrega).
         </p>
       </section>
 

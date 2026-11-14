@@ -36,18 +36,23 @@ export function PartialDeliveryForm({ order, items, forDriver }: { order: Partia
           <label htmlFor={`qty-${i.id}`} className="min-w-0 flex-1">
             {i.name} <span className="text-muted">(pedido: {i.quantity})</span>
           </label>
-          <input
-            id={`qty-${i.id}`}
-            name={`qty:${i.id}`}
-            type="number"
-            inputMode="numeric"
-            min={0}
-            max={i.quantity}
-            required
-            value={got[i.id] ?? ""}
-            onChange={(e) => setGot((g) => ({ ...g, [i.id]: e.target.value }))}
-            className="input num w-20 text-center"
-          />
+          {/* o mesmo − e + do resto do sistema, até o que foi pedido; começa vazio para ninguém confirmar sem escolher */}
+          <div className="flex items-center gap-1" role="group" aria-label={`Quanto o cliente recebeu de ${i.name}`}>
+            <button type="button" className="btn h-11 w-11 px-0 text-xl" aria-label="Diminuir" onClick={() => setGot((g) => ({ ...g, [i.id]: String(Math.max(0, (qty(i) ?? i.quantity) - 1)) }))}>−</button>
+            <input
+              id={`qty-${i.id}`}
+              name={`qty:${i.id}`}
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={i.quantity}
+              required
+              value={got[i.id] ?? ""}
+              onChange={(e) => setGot((g) => ({ ...g, [i.id]: e.target.value }))}
+              className="input num h-11 w-14 px-0 text-center text-lg font-semibold"
+            />
+            <button type="button" className="btn h-11 w-11 px-0 text-xl" aria-label="Aumentar" onClick={() => setGot((g) => ({ ...g, [i.id]: String(Math.min(i.quantity, (qty(i) ?? -1) + 1)) }))}>+</button>
+          </div>
         </div>
       ))}
       <Aparece quando={filled}>

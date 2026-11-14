@@ -151,15 +151,19 @@ export function PortalForm({
                   type="button"
                   aria-pressed={payment === v}
                   onClick={() => setPayment(v)}
-                  className={`btn justify-start ${payment === v ? "border-fg bg-fg text-bg hover:bg-fg" : ""}`}
+                  // escolha, não envio: marcador e borda na cor da marca (branco cheio parecia o botão de enviar)
+                  className={`btn justify-start gap-2.5 ${payment === v ? "border-accent bg-accent/10 hover:bg-accent/10" : ""}`}
                 >
+                  <span aria-hidden="true" className={`grid size-4 shrink-0 place-items-center rounded-full border-[1.5px] transition-colors ${payment === v ? "border-accent" : "border-muted"}`}>
+                    <span className={`size-2 rounded-full bg-accent transition-transform duration-200 ${payment === v ? "scale-100" : "scale-0"}`} />
+                  </span>
                   {l}
                 </button>
               ))}
           </div>
           <Aparece quando={payment === "dinheiro"}>
               <label className="label" htmlFor="changeFor">Precisa de troco para quanto? (opcional)</label>
-              <input id="changeFor" name="changeFor" inputMode="decimal" maxLength={12} className="input" placeholder="100,00" />
+              <input id="changeFor" name="changeFor" inputMode="decimal" maxLength={12} className="input" />
           </Aparece>
           <Aparece quando={payment === "pix"}>
             <p className="text-sm text-muted">Depois de enviar, aparece o QR e o código Pix com o valor do pedido.</p>

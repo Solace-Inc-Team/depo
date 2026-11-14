@@ -19,10 +19,12 @@ const fmtDay = (d: string) => d.split("-").reverse().join("/");
 export default async function Despesas({ searchParams }: PageProps<"/despesas">) {
   const user = await requireUser("dono", "atendente", "caixa");
   const sp = await searchParams;
-  const today = todayISO();
-  const { fromStr, toStr } = parsePeriod({ de: today.slice(0, 8) + "01", ...sp });
+  // o mesmo período padrão dos relatórios: o número de despesas bate entre as duas telas
+  const { fromStr, toStr } = parsePeriod(sp);
   const list = await listExpenses(user.tenantId, fromStr, toStr, filialDoRelatorio(user, sp));
-  const valid = list.filter((e) => !e.voidedAt);
+  // a devolução de pedido estornado aparece na lista, mas fora do total: a venda estornada já saiu das vendas
+  const valid = list.filter((e) => !e.voidedAt && e.category !== "estorno");
+  const devolvido = list.filter((e) => !e.voidedAt && e.category === "estorno").reduce((s, e) => s + e.amountCents, 0);
   const total = valid.reduce((s, e) => s + e.amountCents, 0);
   const byCategory = Object.entries(
     valid.reduce<Record<string, number>>((acc, e) => ((acc[e.category] = (acc[e.category] ?? 0) + e.amountCents), acc), {}),
@@ -52,6 +54,11 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
             <div className="p-5 sm:pr-8">
               <p className="text-[13px] text-muted">Total no período</p>
               <Money cents={total} className="mt-1 block text-[2rem] leading-tight font-semibold tracking-[-0.03em]" />
+              {devolvido > 0 && (
+                <p className="mt-1 text-[13px] text-muted">
+                  Fora do total: <Money cents={devolvido} /> devolvidos em estornos
+                </p>
+              )}
             </div>
             <ul className="space-y-1.5 border-t border-line p-5 text-[13px] sm:border-t-0">
               {byCategory.length ? (
@@ -136,7 +143,7 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
               </div>
               <div>
                 <label className="label" htmlFor="paidOn">Data</label>
-                <input id="paidOn" name="paidOn" type="date" required defaultValue={today} className="input" />
+                <input id="paidOn" name="paidOn" type="date" required defaultValue={todayISO()} className="input" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">

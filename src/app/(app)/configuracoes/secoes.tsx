@@ -5,7 +5,7 @@ import { listFiliais } from "@/domain/filiais";
 import { ActionForm } from "@/components/action-form";
 import { CaixaQueSalva } from "@/components/caixa-que-salva";
 import { CopyButton } from "@/components/copy-button";
-import { Revelar } from "@/components/revelar";
+import { JanelaAcao } from "@/components/janela-acao";
 import {
   ativarFilialAction,
   conectarMercadoPagoAction,
@@ -85,10 +85,10 @@ export async function secoesConfig(tenantId: string) {
           ) : (
             <>
               <p className="mt-1 mb-3 text-[13px] text-muted">Confirma o Pix de cada pedido sozinho.</p>
-              <Revelar label="Conectar conta">
-                <ActionForm action={conectarMercadoPagoAction} className="space-y-3 pt-3" reset>
+              <JanelaAcao label="Conectar Mercado Pago" titulo="Conectar Mercado Pago">
+                <ActionForm action={conectarMercadoPagoAction} className="space-y-3" reset>
                   <div>
-                    <label className="label" htmlFor="mp-token">Access Token</label>
+                    <label className="label" htmlFor="mp-token">Chave de acesso (Access Token)</label>
                     <input id="mp-token" name="token" type="password" required autoComplete="off" spellCheck={false} className="input num" placeholder="APP_USR-..." />
                     <p className="mt-1 text-[13px] text-muted">Em mercadopago.com.br/developers, Credenciais de produção.</p>
                   </div>
@@ -96,9 +96,9 @@ export async function secoesConfig(tenantId: string) {
                     <label className="label" htmlFor="mp-senha">Sua senha</label>
                     <input id="mp-senha" name="confirmPassword" type="password" autoComplete="current-password" required className="input sm:max-w-xs" />
                   </div>
-                  <button className="btn btn-primary">Conectar</button>
+                  <button className="btn btn-primary w-full">Conectar</button>
                 </ActionForm>
-              </Revelar>
+              </JanelaAcao>
             </>
           )}
         </div>
@@ -116,14 +116,17 @@ export async function secoesConfig(tenantId: string) {
           </label>
         </ActionForm>
         {links.map((l) => (
-          <div key={l.id} className="flex flex-wrap items-center gap-4 border-t border-line pt-6">
-            <div className="rounded-md bg-white p-1.5" dangerouslySetInnerHTML={{ __html: l.qr }} />
-            <div className="min-w-0 flex-1">
-              {l.nome && <p className="font-medium">{l.nome}</p>}
-              <a href={l.url} target="_blank" rel="noreferrer" className="block text-[13px] break-all text-accent underline">{l.url}</a>
-              <div className="mt-3">
-                <CopyButton text={l.url} label="Copiar link" />
-              </div>
+          <div key={l.id} className="border-t border-line pt-5">
+            {l.nome && <p className="mb-1 font-medium">{l.nome}</p>}
+            {/* o link numa linha só (quebrado no meio da palavra parecia defeito); o inteiro vai no Copiar */}
+            <a href={l.url} target="_blank" rel="noreferrer" title={l.url} className="block truncate text-[13px] text-accent underline">{l.url}</a>
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <CopyButton text={l.url} label="Copiar link" />
+              {/* o QR é branco para o celular ler; fica guardado até alguém pedir, para não ofuscar o escuro */}
+              <details className="basis-full">
+                <summary className="tap w-fit cursor-pointer list-none text-[13px] text-muted hover:text-fg">QR code para imprimir</summary>
+                <div className="mt-2 w-fit rounded-md bg-white p-1.5" dangerouslySetInnerHTML={{ __html: l.qr }} />
+              </details>
             </div>
           </div>
         ))}
@@ -154,7 +157,7 @@ export async function secoesConfig(tenantId: string) {
         <ActionForm action={criarFilialAction} className="mt-4 flex items-end gap-2" reset>
           <div className="min-w-0 flex-1">
             <label className="label" htmlFor="filial-nome">Nova filial</label>
-            <input id="filial-nome" name="name" required minLength={2} maxLength={60} className="input" placeholder="Ex.: Centro" />
+            <input id="filial-nome" name="name" required minLength={2} maxLength={60} className="input" />
           </div>
           <button className="btn">Criar</button>
         </ActionForm>

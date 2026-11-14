@@ -193,11 +193,11 @@ export function descrever(action: string, dados: Dados, nomes: Record<string, st
       break;
 
     case "cliente.criar":
-      l.titulo = `Cadastrou o cliente ${alvo}`;
+      l.titulo = alvo ? `Cadastrou o cliente ${alvo}` : "Cadastrou um cliente";
       if (d.origin === "portal") det("Pelo pedido no site");
       break;
     case "cliente.editar":
-      l.titulo = `Editou o cadastro de ${alvo}`;
+      l.titulo = alvo ? `Editou o cadastro de ${alvo}` : "Editou o cadastro de um cliente";
       break;
     case "cliente.endereco":
       l.titulo = `Adicionou um endereço para ${alvo}`;
@@ -282,10 +282,10 @@ export function descrever(action: string, dados: Dados, nomes: Record<string, st
       break;
 
     case "fornecedor.criar":
-      l.titulo = `Cadastrou o fornecedor ${alvo}`;
+      l.titulo = alvo ? `Cadastrou o fornecedor ${alvo}` : "Cadastrou um fornecedor";
       break;
     case "fornecedor.editar":
-      l.titulo = `Editou o fornecedor ${alvo}`;
+      l.titulo = alvo ? `Editou o fornecedor ${alvo}` : "Editou um fornecedor";
       break;
   }
   return l;

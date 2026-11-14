@@ -35,7 +35,7 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
   return (
     <>
       <div className="mb-6 flex flex-wrap items-center gap-3">
-        <Link href="/caixa" className="alvo text-accent hover:underline">Caixa</Link>
+        <Link href="/caixa" className="alvo text-accent hover:underline">Caixa e acertos</Link>
         <span className="text-muted">/</span>
         <h1 className="h1">Acerto de {s.driverName}</h1>
       </div>
@@ -93,9 +93,20 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
             { rotulo: "Fiado", cents: s.summary.fiado },
           ]}
         />
-        <p className="mt-5 text-sm text-muted">
-          Pix {formatBRL(s.summary.pix)}, cartão {formatBRL(s.summary.cartao)} e fiado {formatBRL(s.summary.fiado)} não passam pela mão do entregador.
-        </p>
+        {/* só o que existe: tudo zero não diz nada */}
+        {s.summary.pix + s.summary.cartao + s.summary.fiado > 0 && (
+          <p className="mt-5 text-sm text-muted">
+            Não passa pela mão do entregador:{" "}
+            {[
+              s.summary.pix > 0 && `Pix ${formatBRL(s.summary.pix)}`,
+              s.summary.cartao > 0 && `cartão ${formatBRL(s.summary.cartao)}`,
+              s.summary.fiado > 0 && `fiado ${formatBRL(s.summary.fiado)}`,
+            ]
+              .filter(Boolean)
+              .join(", ")}
+            .
+          </p>
+        )}
       </section>
 
       {pending && (

@@ -4,6 +4,8 @@ import { useSyncExternalStore } from "react";
 import { Monitor, Moon, Sun } from "lucide-react";
 import { aplicar, lerEscolha, temaEscuro, type Escolha } from "@/lib/tema";
 
+// os ícones dos três estados (o automático só aparece para quem já o tinha escolhido); o clique alterna escuro e claro,
+// porque com o automático no meio uma das voltas não mudava nada na tela
 const ordem: Escolha[] = ["escuro", "claro", "auto"];
 const info = {
   auto: { icone: Monitor, texto: "Tema automático, igual ao do aparelho" },
@@ -11,11 +13,13 @@ const info = {
   escuro: { icone: Moon, texto: "Tema escuro" },
 };
 
-/** Um botão que alterna automático, claro e escuro. O título diz o atual; o clique passa ao próximo. */
+/** Um botão que alterna escuro e claro. O título diz o atual; o clique passa ao outro. */
 export function TemaBotao({ className = "" }: { className?: string }) {
   // no servidor é o escuro padrão; no navegador lê a escolha guardada e acompanha qualquer troca de tema
   const escolha = useSyncExternalStore(temaEscuro.assinar, lerEscolha, () => "escuro" as Escolha);
-  const proxima = ordem[(ordem.indexOf(escolha) + 1) % ordem.length];
+  // quem ainda está no automático vai para o oposto do que está vendo
+  const vendo = escolha === "auto" ? (typeof document !== "undefined" && document.documentElement.dataset.tema === "claro" ? "claro" : "escuro") : escolha;
+  const proxima: Escolha = vendo === "escuro" ? "claro" : "escuro";
   return (
     <button
       type="button"

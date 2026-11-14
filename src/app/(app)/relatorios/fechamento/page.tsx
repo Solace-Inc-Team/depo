@@ -140,11 +140,21 @@ export default async function Fechamento({ searchParams }: PageProps<"/relatorio
         <Row label="Despesas" cents={spent ? -spent : 0} />
         <Row label="Resultado do dia" cents={d.total - spent} strong />
         <Row label="Fiado recebido hoje (venda de outro dia)" cents={fiadoIn} muted />
-        <p className="pt-2 text-[13px] text-muted">
-          Fora do normal: {b.cancelled} {b.cancelled === 1 ? "cancelado" : "cancelados"}, {b.refunded} {b.refunded === 1 ? "estornado" : "estornados"},{" "}
-          {b.occurrences} {b.occurrences === 1 ? "tentativa de entrega sem sucesso" : "tentativas de entrega sem sucesso"} e {b.partials}{" "}
-          {b.partials === 1 ? "entrega parcial" : "entregas parciais"}.
-        </p>
+        {/* só o que aconteceu: num dia normal a linha não aparece */}
+        {b.cancelled + b.refunded + b.occurrences + b.partials > 0 && (
+          <p className="pt-2 text-[13px] text-muted">
+            Fora do normal:{" "}
+            {[
+              b.cancelled > 0 && `${b.cancelled} ${b.cancelled === 1 ? "cancelado" : "cancelados"}`,
+              b.refunded > 0 && `${b.refunded} ${b.refunded === 1 ? "estornado" : "estornados"}`,
+              b.occurrences > 0 && `${b.occurrences} ${b.occurrences === 1 ? "entrega sem sucesso" : "entregas sem sucesso"}`,
+              b.partials > 0 && `${b.partials} ${b.partials === 1 ? "entrega parcial" : "entregas parciais"}`,
+            ]
+              .filter(Boolean)
+              .join(", ")}
+            .
+          </p>
+        )}
       </Block>
 
       <div className="mt-12 hidden grid-cols-2 gap-12 text-center text-[13px] print:grid">

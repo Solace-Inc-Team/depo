@@ -327,7 +327,7 @@ export function NewOrderForm({
           </div>
           <Aparece quando={payment === "dinheiro"} className="pt-3">
               <label className="label" htmlFor="change">Troco para (opcional)</label>
-              <input id="change" name="changeFor" maxLength={12} inputMode="decimal" className="input" placeholder="100,00" />
+              <input id="change" name="changeFor" maxLength={12} inputMode="decimal" className="input" />
           </Aparece>
           <Aparece quando={payment === "pix" || payment === "cartao"} className="pt-3">
               <label className="label" htmlFor="cashPart">Parte em dinheiro (opcional)</label>
@@ -377,7 +377,8 @@ export function NewOrderForm({
                   <span><span className="flex justify-between pb-1"><span>Desconto</span><span className="num">−{formatBRL(discountCents)}</span></span></span>
                 </li>
               </ul>
-            <p className="flex items-baseline justify-between">
+            {/* no celular o total já está na barra de baixo, sempre à vista */}
+            <p className="flex items-baseline justify-between max-lg:hidden">
               <span className="font-semibold">Total</span>
               <LiveNumber value={shownTotal} cents className="text-4xl font-semibold" />
             </p>

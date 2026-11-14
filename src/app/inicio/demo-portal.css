@@ -126,12 +126,59 @@
   font-weight: 600;
 }
 
-.dp .dp-pagamento {
-  height: 44px;
+.dp .dp-opcoes {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
 }
 
-.dp .dp-pagamento .ss-seg__option {
-  font-size: 16px;
+.dp .dp-opcao {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 44px;
+  border: 1px solid var(--ss-line);
+  border-radius: 12px;
+  color: var(--ss-text-strong);
+  font-size: 15px;
+  font-weight: 500;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s;
+}
+
+.dp .dp-opcao[data-on] {
+  border-color: var(--marca);
+  background: color-mix(in srgb, var(--marca) 12%, transparent);
+}
+
+.dp .dp-opcao__marca {
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border: 1.5px solid var(--ss-text-faint, var(--ss-icon));
+  border-radius: 50%;
+  transition: border-color 0.2s;
+}
+
+.dp .dp-opcao__marca::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--marca);
+  scale: 0;
+  transition: scale 0.25s var(--ease-chegada, ease-out);
+}
+
+.dp .dp-opcao[data-on] .dp-opcao__marca {
+  border-color: var(--marca);
+}
+
+.dp .dp-opcao[data-on] .dp-opcao__marca::after {
+  scale: 1;
 }
 
 .dp .dp-total {

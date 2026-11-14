@@ -1,7 +1,7 @@
 import { ViewTransition } from "react";
 import Link from "next/link";
 import { TemaBotao } from "@/components/tema-botao";
-import { CircleHelp, Clock3, KeyRound, LogOut, MapPin, Phone } from "lucide-react";
+import { Clock3, MapPin, Phone } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { getShift, itemsForOrders, listOrders, openShiftFor, getOrder } from "@/domain/queries";
 import { conferirPixMp, pixDoPedido } from "@/domain/pix";
@@ -33,18 +33,11 @@ export default async function Entregador() {
     <div className="mx-auto min-h-screen max-w-lg">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-bg/85 px-4 py-3 backdrop-blur">
         <MarcaDaSessao />
-        <div className="flex gap-1">
-          <Link href="/ajuda" aria-label="Ajuda" className="grid size-11 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
-            <CircleHelp size={17} strokeWidth={1.75} />
-          </Link>
-          <TemaBotao className="size-11" />
-          <Link href="/senha" aria-label="Trocar senha" className="grid size-11 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
-            <KeyRound size={17} strokeWidth={1.75} />
-          </Link>
+        {/* no alto, só o que tem nome: quem nunca viu o sistema não adivinha ícone solto */}
+        <div className="flex items-center gap-1">
+          <Link href="/ajuda" className="tap rounded-md px-3 text-[15px] text-muted hover:bg-subtle hover:text-fg">Ajuda</Link>
           <form action={logout}>
-            <button aria-label="Sair" className="grid size-11 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
-              <LogOut size={17} strokeWidth={1.75} />
-            </button>
+            <button className="tap rounded-md px-3 text-[15px] text-muted hover:bg-subtle hover:text-fg">Sair</button>
           </form>
         </div>
       </header>
@@ -174,6 +167,13 @@ export default async function Entregador() {
           </>
         )}
       </div>
+
+      {/* o que se ajusta uma vez fica no pé, longe do trabalho */}
+      <footer className="flex items-center justify-center gap-2 border-t border-line px-4 py-4 text-[13px] text-muted">
+        <Link href="/senha" className="tap rounded-md px-2 hover:text-fg">Trocar senha</Link>
+        <span aria-hidden="true">·</span>
+        <TemaBotao className="size-11" />
+      </footer>
     </div>
   );
 }

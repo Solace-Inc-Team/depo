@@ -136,7 +136,7 @@ export default function Inicio() {
 
         {/* capítulo 1, o maior: a entrega acontecendo nas duas pontas, celular e loja. É a virada da página:
             uma faixa sempre escura, de ponta a ponta, com a demonstração acesa no meio; o rótulo vem no âmbar do gás */}
-        <section id="rua" style={{ "--luz": "color-mix(in srgb, var(--marca) 75%, var(--chama))" } as React.CSSProperties} className="faixa-escura mt-32 scroll-mt-14 py-28 sm:mt-44 sm:py-36">
+        <section id="rua" style={{ "--luz": "color-mix(in srgb, var(--marca) 75%, var(--chama))" } as React.CSSProperties} className="faixa-escura mt-32 scroll-mt-14 py-28 sm:mt-36 sm:py-36">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <Capitulo
             tom="text-chama"
@@ -155,7 +155,7 @@ export default function Inicio() {
         </section>
 
         {/* capítulo 2: o fim do dia, com o texto do outro lado para o ritmo não repetir */}
-        <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 pt-32 sm:px-6 sm:pt-44 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-16">
+        <section className="mx-auto grid max-w-6xl items-center gap-12 px-4 pt-32 sm:px-6 sm:pt-36 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)] lg:gap-16">
           <div
             role="img"
             aria-label="Acerto do João: deve apresentar R$ 165,00, o caixa digita 165,00, o sistema mostra bateu, sem diferença, e o acerto é fechado"
@@ -175,7 +175,7 @@ export default function Inicio() {
         </section>
 
         {/* mosaico: os detalhes em peças menores, cada uma com a sua prova */}
-        <section style={{ "--luz": "color-mix(in srgb, var(--marca) 45%, var(--chama))" } as React.CSSProperties} className="mx-auto max-w-6xl px-4 pt-32 sm:px-6 sm:pt-44">
+        <section style={{ "--luz": "color-mix(in srgb, var(--marca) 45%, var(--chama))" } as React.CSSProperties} className="mx-auto max-w-6xl px-4 pt-32 sm:px-6 sm:pt-36">
           <Capitulo centro rotulo="Os detalhes" titulo="Feito em cima do que dá errado numa revenda." apoio="O que não aparece no dia bom e salva o dia ruim." />
           <LuzCursor>
           <InView className="mt-14 grid gap-4 lg:grid-cols-3">
@@ -235,7 +235,7 @@ export default function Inicio() {
           </LuzCursor>
         </section>
 
-        <section className="mx-auto grid max-w-6xl gap-16 px-4 pt-32 sm:px-6 sm:pt-44 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-20">
+        <section className="mx-auto grid max-w-6xl gap-16 px-4 pt-32 sm:px-6 sm:pt-36 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-20">
           <div id="preco" className="scroll-mt-24">
             <p className="text-[13px] font-medium text-accent">Preço</p>
             <h2 className="reveal mt-3 text-[2rem] leading-[1.08] font-semibold tracking-[-0.04em] sm:text-[2.25rem]">
@@ -288,7 +288,7 @@ export default function Inicio() {
         </section>
 
         {/* fechamento: a mesma luz do topo, uma frase e o botão; nada mais */}
-        <section className="relative isolate mt-32 overflow-hidden px-4 py-32 text-center sm:mt-44 sm:px-6 sm:py-40">
+        <section className="relative isolate mt-32 overflow-hidden px-4 py-32 text-center sm:mt-36 sm:px-6 sm:py-40">
           <div aria-hidden="true" className="fecho-luz absolute inset-0 -z-10" />
           <h2 className="reveal mx-auto max-w-[18ch] text-[2.25rem] leading-[1.06] font-semibold tracking-[-0.04em] text-balance sm:text-[3.25rem]">
             Feche o dia sabendo de tudo.

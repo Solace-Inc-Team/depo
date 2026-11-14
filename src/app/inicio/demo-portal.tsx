@@ -1,7 +1,7 @@
 "use client";
 
 import QRCode from "qrcode";
-import { Button, Check, Count, Phone, Segmented, Stage, type Act } from "@/vendor/stageshow";
+import { Button, Check, Count, Phone, Stage, type Act } from "@/vendor/stageshow";
 import { pixPayload } from "@/lib/pix";
 import { brl, useEscuro } from "./palco";
 import "./demo-portal.css";
@@ -82,7 +82,15 @@ export function DemoPortal({ escuro = false }: { escuro?: boolean }) {
               </div>
 
               <span className="dp-titulo">Pagamento</span>
-              <Segmented items={["Dinheiro", "Pix", "Cartão"]} value={s.pagamento} targets={[undefined, "pix", undefined]} className="dp-pagamento" />
+              {/* o mesmo desenho da escolha no portal: marcador redondo e borda na cor da marca */}
+              <div className="dp-opcoes">
+                {["Dinheiro", "Pix", "Cartão"].map((l, i) => (
+                  <span key={l} className="dp-opcao" data-on={s.pagamento === i || undefined} data-target={l === "Pix" ? "pix" : undefined}>
+                    <span className="dp-opcao__marca" aria-hidden="true" />
+                    {l}
+                  </span>
+                ))}
+              </div>
 
               <div className="dp-card dp-total">
                 <span className="dp-total__linha">

@@ -53,8 +53,6 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
     });
   for (const p of d.lowStock)
     alertas.push({ tom: "aviso", texto: `${p.name}: ${p.fullStore} cheios na loja (mínimo ${p.minStock})`, href: "/estoque", acao: "Ver estoque" });
-  if (user.role === "dono" && !user.totpEnabled)
-    alertas.push({ tom: "dica", texto: "Proteja o acesso ao caixa: ative a verificação em duas etapas", href: "/senha", acao: "Ativar" });
 
   return (
     <>
@@ -64,7 +62,8 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
           <h1 className="h1">Painel do dia{entregador ? `: ${entregador.name}` : ""}</h1>
         </div>
         {/* filtro: as vendas mudam com o dia e o entregador; fila e dinheiro na rua são sempre de agora */}
-        <FiltroPainel ativo={filtrado} acao={<Link href="/pedidos/novo" className="btn btn-primary">Novo pedido</Link>}>
+        {/* "Novo pedido" fica só no menu, à vista em todas as telas */}
+        <FiltroPainel ativo={filtrado}>
           <div>
             <label className="label" htmlFor="dia">Dia</label>
             <input id="dia" name="dia" type="date" max={hojeISO} defaultValue={dia} className="input" />
@@ -84,62 +83,66 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
 
       {passos && <PrimeirosPassos feito={passos} />}
 
-      <section className="panel mb-6 grid divide-line sm:grid-cols-3 sm:divide-x">
-        {/* cada número no alto e a explicação no pé: os três cartões ficam alinhados mesmo com o gráfico só no primeiro */}
-        <div className="flex flex-col p-5">
-          <p className="text-muted">Vendido {noDia}</p>
-          <LiveNumber value={d.revenue} cents fromZero="once" className="text-[2rem] leading-tight font-semibold tracking-[-0.03em]" />
-          <p className="mt-1 text-sm text-muted">
-            {d.deliveredCount} {d.deliveredCount === 1 ? "pedido entregue" : "pedidos entregues"}
-            {comparativo && (
-              <>
-                {" · "}
-                <span className={comparativo.tom === "sobe" ? "text-ok" : comparativo.tom === "desce" ? "text-danger" : ""}>{comparativo.texto}</span>
-              </>
-            )}
-          </p>
-          <SemanaBarras semana={d.week} />
-        </div>
-        <div className="flex flex-col border-t border-line p-5 sm:border-t-0">
-          <p className="text-muted">Dinheiro na rua agora</p>
-          <LiveNumber value={d.cashInStreet} cents fromZero="once" className="text-[2rem] leading-tight font-semibold tracking-[-0.03em]" />
-          <p className="mt-1 text-sm text-muted sm:mt-auto">
-            com {d.openShifts.length} {d.openShifts.length === 1 ? "entregador" : "entregadores"}, a acertar
-          </p>
-        </div>
-        <div className="flex flex-col border-t border-line p-5 sm:border-t-0">
-          <p className="text-muted">Fila agora</p>
-          <p className="num text-[2rem] leading-tight font-semibold tracking-[-0.03em]">
-            <LiveNumber value={d.pending} fromZero="once" /> <span className="text-xl font-medium text-muted">aguardando</span>
-          </p>
-          <p className="mt-1 text-sm text-muted sm:mt-auto">{d.inRoute} em rota</p>
-        </div>
-      </section>
-
-      {alertas.length > 0 && (
-        // um bloco só, do mais grave para o menos: a gravidade fica no ponto (o urgente com um halo),
-        // o texto na cor normal; frase inteira em vermelho gritava, principalmente no escuro
-        <section aria-labelledby="atencao" className="panel mb-6">
-          <h2 id="atencao" className="h2 border-b border-line px-4 py-3">Precisa de atenção</h2>
-          <ul>
-            {alertas.map((a) => (
-              <li key={a.texto} className="border-b border-line last:border-0">
-                <Link href={a.href} className="group flex items-center gap-3 px-4 py-3 hover:bg-subtle">
-                  <span aria-hidden="true" className={`size-2 shrink-0 rounded-full ${tomPonto[a.tom]}`} />
-                  <span className={`flex-1 ${a.tom === "grave" ? "font-medium" : ""}`}>
-                    {a.texto}
-                    <span className="sr-only">{tomLeitura[a.tom]}</span>
-                  </span>
-                  <span className="flex shrink-0 items-center gap-1 text-sm text-muted transition-colors group-hover:text-fg">
-                    {a.acao}
-                    <ChevronRight size={14} strokeWidth={2} aria-hidden="true" className="transition-transform group-hover:translate-x-0.5" />
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
+      {/* no celular o que pede atenção vem antes dos números: é o que tem de ser feito agora */}
+      <div className="flex flex-col">
+        <section className="panel mb-6 grid divide-line sm:grid-cols-3 sm:divide-x">
+          {/* cada número no alto e a explicação no pé: os três cartões ficam alinhados mesmo com o gráfico só no primeiro */}
+          <div className="flex flex-col p-5">
+            <p className="text-muted">Vendido {noDia}</p>
+            <LiveNumber value={d.revenue} cents fromZero="once" className="text-[2rem] leading-tight font-semibold tracking-[-0.03em]" />
+            <p className="mt-1 text-sm text-muted">
+              {d.deliveredCount} {d.deliveredCount === 1 ? "pedido entregue" : "pedidos entregues"}
+              {comparativo && (
+                <>
+                  {" · "}
+                  <span className={comparativo.tom === "sobe" ? "text-ok" : comparativo.tom === "desce" ? "text-danger" : ""}>{comparativo.texto}</span>
+                </>
+              )}
+            </p>
+            <SemanaBarras semana={d.week} />
+          </div>
+          <div className="flex flex-col border-t border-line p-5 sm:border-t-0">
+            <p className="text-muted">Dinheiro na rua agora</p>
+            <LiveNumber value={d.cashInStreet} cents fromZero="once" className="text-[2rem] leading-tight font-semibold tracking-[-0.03em]" />
+            <p className="mt-1 text-sm text-muted sm:mt-auto">
+              com {d.openShifts.length} {d.openShifts.length === 1 ? "entregador" : "entregadores"}, a acertar
+            </p>
+          </div>
+          <div className="flex flex-col border-t border-line p-5 sm:border-t-0">
+            <p className="text-muted">Fila agora</p>
+            <p className="num text-[2rem] leading-tight font-semibold tracking-[-0.03em]">
+              <LiveNumber value={d.pending} fromZero="once" /> <span className="text-xl font-medium text-muted">aguardando</span>
+            </p>
+            <p className="mt-1 text-sm text-muted sm:mt-auto">{d.inRoute} em rota</p>
+          </div>
         </section>
-      )}
+
+        {alertas.length > 0 && (
+          // um bloco só, do mais grave para o menos: a gravidade fica no ponto (o urgente com um halo),
+          // o texto na cor normal; frase inteira em vermelho gritava, principalmente no escuro
+          <section aria-labelledby="atencao" className="panel mb-6 max-sm:order-first">
+            <h2 id="atencao" className="h2 border-b border-line px-4 py-3">Precisa de atenção</h2>
+            <ul>
+              {alertas.map((a) => (
+                <li key={a.texto} className="border-b border-line last:border-0">
+                  <Link href={a.href} className="group flex items-center gap-3 px-4 py-3 hover:bg-subtle">
+                    <span aria-hidden="true" className={`size-2 shrink-0 rounded-full ${tomPonto[a.tom]}`} />
+                    <span className={`flex-1 ${a.tom === "grave" ? "font-medium" : ""}`}>
+                      {a.texto}
+                      <span className="sr-only">{tomLeitura[a.tom]}</span>
+                    </span>
+                    <span className="flex shrink-0 items-center gap-1 text-sm text-muted transition-colors group-hover:text-fg">
+                      {a.acao}
+                      <ChevronRight size={14} strokeWidth={2} aria-hidden="true" className="transition-transform group-hover:translate-x-0.5" />
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <section className="panel">
@@ -194,7 +197,7 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
                     </div>
                     <Link href={`/caixa/${s.id}`} className="text-right">
                       <Money cents={s.expected} className="block font-semibold" />
-                      <span className="text-sm text-accent">Fazer acerto</span>
+                      <span className="text-sm text-accent">Acerto</span>
                     </Link>
                   </li>
                 ))}
@@ -230,6 +233,14 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
           </section>
         </div>
       </div>
+
+      {/* segurança da conta não é da operação do dia: fica num pé de página discreto, fora de "Precisa de atenção" */}
+      {user.role === "dono" && !user.totpEnabled && (
+        <p className="mt-8 text-[13px] text-muted">
+          Verificação em duas etapas desligada.{" "}
+          <Link href="/senha" className="alvo text-accent hover:underline">Ativar</Link>
+        </p>
+      )}
     </>
   );
 }

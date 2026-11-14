@@ -17,6 +17,8 @@ export default async function Fiado() {
     <>
       <PageHeader title="Fiado" />
 
+      {/* sem ninguém devendo, os zeros repetiriam o que o vazio da lista já diz */}
+      {debtors.length > 0 && (
       <section className="panel mb-6 grid sm:grid-cols-2 sm:divide-x sm:divide-line">
         <div className="p-5">
           <p className="text-[13px] text-muted">A receber</p>
@@ -27,6 +29,7 @@ export default async function Fiado() {
           <p className="num mt-1 text-[2rem] leading-tight font-semibold tracking-[-0.03em]">{debtors.length}</p>
         </div>
       </section>
+      )}
 
       <div className="panel overflow-x-auto">
         {debtors.length ? (

@@ -56,8 +56,12 @@ export function MenuConfig({ secoes, className = "" }: { secoes: Record<Secao, R
   }, [pedida, mostrada]);
 
   // só o endereço muda (history do navegador, que o Next acompanha): abrir e trocar de seção não vão ao servidor
+  // a janela abre no próprio clique; o endereço vem depois (esperar o Next atualizar deixava 170ms parado)
   const abrir = () => {
     abriuAqui.current = true;
+    setMostrada("regras");
+    janela.current?.removeAttribute("data-saindo");
+    janela.current?.showModal();
     window.history.pushState(null, "", endereco("regras"));
   };
   // aberta pela engrenagem: fechar é voltar (o histórico fica limpo); aberta por link: tira o ?config
@@ -67,11 +71,37 @@ export function MenuConfig({ secoes, className = "" }: { secoes: Record<Secao, R
       window.history.back();
     } else window.history.replaceState(null, "", endereco());
   };
-  // no celular as seções rolam de lado: a escolhida vem para a vista
+  // no celular as seções rolam de lado: a escolhida vem para a vista, e a borda esmaece onde ainda há seção
   const trilho = useRef<HTMLElement>(null);
   useEffect(() => {
-    trilho.current?.querySelector("[aria-current]")?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+    const t = trilho.current;
+    if (!t) return;
+    t.querySelector("[aria-current]")?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+    const bordas = () => {
+      t.toggleAttribute("data-mais-esq", t.scrollLeft > 4);
+      t.toggleAttribute("data-mais-dir", t.scrollLeft + t.clientWidth < t.scrollWidth - 4);
+    };
+    bordas();
+    t.addEventListener("scroll", bordas, { passive: true });
+    return () => t.removeEventListener("scroll", bordas);
   }, [pedida]);
+  // a janela tem a altura da seção mostrada (sem vão embaixo das curtas) e muda de altura deslizando
+  const corpo = useRef<HTMLDivElement>(null);
+  const secao = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const c = corpo.current;
+    const s = secao.current;
+    if (!c || !s) return;
+    const medir = () => {
+      const conteudo = s.parentElement!;
+      const p = getComputedStyle(conteudo);
+      c.style.setProperty("--altura", `${s.offsetHeight + parseFloat(p.paddingTop) + parseFloat(p.paddingBottom)}px`);
+    };
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(s);
+    return () => ro.disconnect();
+  }, [mostrada]);
   const indice = SECOES.findIndex((s) => s.id === (pedida ?? mostrada));
 
   return (
@@ -105,7 +135,7 @@ export function MenuConfig({ secoes, className = "" }: { secoes: Record<Secao, R
               <X size={16} strokeWidth={1.75} aria-hidden="true" />
             </button>
           </div>
-          <div className="config-corpo">
+          <div ref={corpo} className="config-corpo">
             <nav ref={trilho} aria-label="Seções" className="config-trilho" style={{ "--i": indice } as React.CSSProperties}>
               {/* a marca da seção ativa é uma só e desliza até a escolhida */}
               <span aria-hidden="true" className="config-marca" />
@@ -122,7 +152,7 @@ export function MenuConfig({ secoes, className = "" }: { secoes: Record<Secao, R
               ))}
             </nav>
             <div className="config-conteudo" data-trocando={trocando || undefined}>
-              <div key={mostrada} className="config-secao">
+              <div key={mostrada} ref={secao} className="config-secao">
                 {secoes[mostrada]}
               </div>
             </div>

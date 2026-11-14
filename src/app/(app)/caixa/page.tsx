@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { listDrivers, listShifts } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
 import { openShiftAction } from "@/app/actions";
+import { JanelaAcao } from "@/components/janela-acao";
 import { Difference, Empty, Money, PageHeader, fmtDateTime } from "@/components/ui";
 
 export const metadata = { title: "Caixa e acertos" };
@@ -19,41 +20,10 @@ export default async function Caixa() {
 
   return (
     <>
-      <PageHeader title="Caixa e acertos" />
-
-      <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-        <section className="panel">
-          <h2 className="h2 border-b border-line px-4 py-3">Turnos abertos</h2>
-          {open.length ? (
-            <ul>
-              {open.map((s) => (
-                // mesma grade em toda linha: nome à esquerda, valor e botão à direita, sem pular de lugar por causa do texto
-                <li key={s.id} className="grid gap-3 border-b border-line px-4 py-4 last:border-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-                  <div className="min-w-0">
-                    <p className="text-lg font-semibold">{s.driverName}</p>
-                    <p className="text-sm text-muted">
-                      Desde {fmtDateTime(s.openedAt)}, {s.orderCount} {s.orderCount === 1 ? "pedido" : "pedidos"}
-                      {s.inRoute ? `, ${s.inRoute} em rota` : ""}
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-between gap-4 sm:justify-end">
-                    <div className="sm:text-right">
-                      <p className="text-sm text-muted">Deve apresentar</p>
-                      <Money cents={s.expected} className="text-2xl font-semibold" />
-                    </div>
-                    <Link href={`/caixa/${s.id}`} className="btn btn-primary">{canSettle ? "Repasse ou acerto" : "Ver turno"}</Link>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <Empty>Nenhum entregador em turno.</Empty>
-          )}
-        </section>
-
-        <section className="panel p-4">
-          <h2 className="h2 mb-1">Abrir turno</h2>
-          {free.length ? (
+      {/* abrir turno só aparece quando há entregador livre; a lista de turnos fica com a largura toda */}
+      <PageHeader title="Caixa e acertos">
+        {free.length > 0 && (
+          <JanelaAcao label="Abrir turno" titulo="Abrir turno" primario>
             <ActionForm action={openShiftAction} className="space-y-3" reset>
               <div>
                 <label className="label" htmlFor="driverId">Entregador</label>
@@ -66,18 +36,44 @@ export default async function Caixa() {
                 <label className="label" htmlFor="openingCash">Troco inicial</label>
                 <input id="openingCash" name="openingCash" inputMode="decimal" maxLength={12} className="input" placeholder="50,00" />
               </div>
-              <button className="btn btn-primary">Abrir turno</button>
+              <button className="btn btn-primary w-full">Abrir turno</button>
             </ActionForm>
-          ) : drivers.length ? (
-            <p className="text-muted">Todos os entregadores ativos já estão em turno.</p>
-          ) : (
-            <p className="text-muted">
-              Nenhum entregador cadastrado.{" "}
-              {user.role === "dono" ? <Link href="/equipe" className="text-accent underline">Cadastre em Equipe.</Link> : "Peça ao dono para cadastrar em Equipe."}
-            </p>
-          )}
-        </section>
-      </div>
+          </JanelaAcao>
+        )}
+      </PageHeader>
+
+      <section className="panel">
+        <h2 className="h2 border-b border-line px-4 py-3">Turnos abertos</h2>
+        {open.length ? (
+          <ul>
+            {open.map((s) => (
+              // mesma grade em toda linha: nome à esquerda, valor e botão à direita, sem pular de lugar por causa do texto
+              <li key={s.id} className="grid gap-3 border-b border-line px-4 py-4 last:border-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                <div className="min-w-0">
+                  <p className="text-lg font-semibold">{s.driverName}</p>
+                  <p className="text-sm text-muted">
+                    Desde {fmtDateTime(s.openedAt)}, {s.orderCount} {s.orderCount === 1 ? "pedido" : "pedidos"}
+                    {s.inRoute ? `, ${s.inRoute} em rota` : ""}
+                  </p>
+                </div>
+                <div className="flex items-center justify-between gap-4 sm:justify-end">
+                  <div className="sm:text-right">
+                    <p className="text-sm text-muted">Deve apresentar</p>
+                    <Money cents={s.expected} className="text-2xl font-semibold" />
+                  </div>
+                  <Link href={`/caixa/${s.id}`} className="btn btn-primary">{canSettle ? "Acerto" : "Ver turno"}</Link>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <Empty>
+            {drivers.length ? "Nenhum entregador em turno." : user.role === "dono" ? <>Nenhum entregador cadastrado. <Link href="/equipe" className="text-accent underline">Cadastre em Equipe</Link></> : "Nenhum entregador cadastrado. Peça ao dono para cadastrar em Equipe."}
+          </Empty>
+        )}
+      </section>
+
+
 
       <section className="panel mt-6 overflow-x-auto">
         <h2 className="h2 border-b border-line px-4 py-3">Acertos fechados</h2>

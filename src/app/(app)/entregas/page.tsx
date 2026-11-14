@@ -99,8 +99,10 @@ export default async function Entregas() {
         </section>
 
         <section className="panel">
-          <h2 className="h2 border-b border-line px-4 py-3">
-            Na rua <span className="font-normal text-muted">({inRoute.length})</span>
+          {/* a lista é de quem está em turno (livre ou na rua); o número é de pedidos que estão na rua */}
+          <h2 className="h2 flex items-baseline justify-between gap-3 border-b border-line px-4 py-3">
+            Entregadores em turno
+            {inRoute.length > 0 && <span className="text-[13px] font-normal text-muted">{inRoute.length === 1 ? "1 pedido na rua" : `${inRoute.length} pedidos na rua`}</span>}
           </h2>
           {onShift.length ? (
             onShift.map((d) => {

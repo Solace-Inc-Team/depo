@@ -20,7 +20,6 @@ export default async function Inventario() {
         <h1 className="h1">Inventário</h1>
       </div>
       <p className="mb-6 max-w-2xl text-muted">
-        Conte o que está fisicamente na loja e digite ao lado do que o sistema espera. Só as diferenças viram ajuste, cada uma registrada no histórico.
         Deixe em branco o que não foi contado.
       </p>
       {inRoute && (

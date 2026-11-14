@@ -84,7 +84,9 @@ export default async function Auditoria({ searchParams }: PageProps<"/auditoria"
               <h2 className="h2 border-b border-line px-4 py-3 first-letter:uppercase">{d.titulo}</h2>
               <ul>
                 {d.itens.map((r) => {
-                  const alvo = (r.entityId && nomes[r.entityId]) || "";
+                  // sem o registro original, vale o nome guardado na hora (nunca de cliente: dado pessoal some ao apagar)
+                  const guardado = r.entity !== "customer" && typeof (r.data as { name?: unknown } | null)?.name === "string" ? (r.data as { name: string }).name : "";
+                  const alvo = (r.entityId && nomes[r.entityId]) || guardado;
                   const l = descrever(r.action, r.data as Record<string, unknown> | null, nomes, alvo);
                   const href = destino(r.entity, r.entityId);
                   return (

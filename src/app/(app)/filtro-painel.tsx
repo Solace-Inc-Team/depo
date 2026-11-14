@@ -8,7 +8,7 @@ import { useSaida } from "@/components/saida";
 // No celular o filtro fica recolhido para os números do dia aparecerem primeiro;
 // no computador ele está sempre à vista. Começa aberto quando já há filtro aplicado.
 // Escolher o dia ou o entregador já aplica: sem botão "Ver" e sem recarregar a página.
-export function FiltroPainel({ ativo, children, acao }: { ativo: boolean; children: ReactNode; acao: ReactNode }) {
+export function FiltroPainel({ ativo, children }: { ativo: boolean; children: ReactNode }) {
   const [aberto, setAberto] = useState(ativo);
   const filtro = useSaida(aberto);
   const router = useRouter();
@@ -33,7 +33,6 @@ export function FiltroPainel({ ativo, children, acao }: { ativo: boolean; childr
         <SlidersHorizontal size={15} strokeWidth={1.75} aria-hidden="true" />
         {ativo ? "Filtrado" : "Filtrar"}
       </button>
-      {acao}
       <form
         id="filtro-painel"
         onSubmit={aplicar}

@@ -162,7 +162,8 @@ export async function saveSupplier(ctx: Ctx, input: z.infer<typeof supplierSchem
       return s;
     }
     const [s] = await tx.insert(suppliers).values({ ...input, tenantId: ctx.tenantId }).returning();
-    await audit(tx, ctx, "fornecedor.criar", "supplier", s.id);
+    // o nome vai junto: se o fornecedor sumir um dia, a auditoria ainda diz qual era
+    await audit(tx, ctx, "fornecedor.criar", "supplier", s.id, { name: s.name });
     return s;
   });
 }

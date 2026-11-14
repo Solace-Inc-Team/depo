@@ -12,7 +12,8 @@ export const metadata = { title: "Ajuda" };
 
 type Secao = { id: string; titulo: string; perfis: Role[]; corpo: ReactNode };
 
-const B = ({ children }: { children: ReactNode }) => <strong className="font-semibold text-fg">“{children}”</strong>;
+// nome de botão ou campo em negrito, sem aspas: aspas em todo termo pesavam o texto inteiro
+const B = ({ children }: { children: ReactNode }) => <strong className="font-semibold text-fg">{children}</strong>;
 
 const secoes: Secao[] = [
   {
@@ -160,16 +161,15 @@ export default async function Ajuda() {
           <Link href={voltar} aria-label="Voltar ao sistema" className="alvo">
             <Logo />
           </Link>
-          <Link href={voltar} className="btn h-9 text-[13px]">Voltar ao sistema</Link>
+          <Link href={voltar} className="btn h-11 text-[13px] sm:h-9">Voltar ao sistema</Link>
         </div>
       </header>
       <main className="stagger mx-auto max-w-3xl px-6 py-12">
         <p className="text-[13px] text-muted">Manual de operação, {roleLabel[user.role].toLowerCase()}</p>
         <h1 className="text-[2rem] leading-tight font-semibold tracking-[-0.03em]">Como usar o Depósito</h1>
-        <p className="mt-2 max-w-xl text-muted">O passo a passo de cada função e o que fazer quando algo sai do normal. Começa pelo que é seu.</p>
         <nav aria-label="Seções" className="mt-8 flex flex-wrap gap-2">
           {ordem.map((s) => (
-            <a key={s.id} href={`#${s.id}`} className="btn h-9 text-[13px]">{s.titulo.split(":")[0]}</a>
+            <a key={s.id} href={`#${s.id}`} className="btn h-11 text-[13px] sm:h-9">{s.titulo.split(":")[0]}</a>
           ))}
         </nav>
         <article className="legal manual mt-10">

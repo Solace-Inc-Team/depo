@@ -1393,10 +1393,12 @@ body[data-confirmando] .deliver-btn {
   /* recebe o foco ao abrir só para o X não ganhar o anel; ela mesma não mostra anel */
   outline: none;
 }
+/* a altura segue a seção mostrada (--altura, medida na janela), com o trilho como mínimo, e desliza ao trocar */
 .config-corpo {
   display: grid;
   grid-template-columns: 11rem minmax(0, 1fr);
-  height: min(28rem, 78vh);
+  height: min(max(var(--altura, 28rem), 13rem), 78vh);
+  transition: height var(--dur) var(--ease-out);
 }
 .config-trilho {
   position: relative;
@@ -1466,7 +1468,9 @@ body[data-confirmando] .deliver-btn {
   .config-corpo {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
-    height: 82vh;
+    /* na gaveta a altura é a do conteúdo, até 75% da tela (o resto rola) */
+    height: auto;
+    max-height: 75vh;
   }
   /* no celular as seções viram uma faixa que rola de lado; a marca vai no próprio item */
   .config-trilho {
@@ -1475,6 +1479,16 @@ body[data-confirmando] .deliver-btn {
     scrollbar-width: none;
     border-right: 0;
     border-bottom: 1px solid var(--line);
+  }
+  /* a faixa esmaece na borda onde ainda há seção, como o menu principal */
+  .config-trilho[data-mais-dir] {
+    mask-image: linear-gradient(to right, #000 calc(100% - 3rem), transparent);
+  }
+  .config-trilho[data-mais-esq] {
+    mask-image: linear-gradient(to left, #000 calc(100% - 3rem), transparent);
+  }
+  .config-trilho[data-mais-esq][data-mais-dir] {
+    mask-image: linear-gradient(to right, transparent, #000 3rem, #000 calc(100% - 3rem), transparent);
   }
   .config-marca {
     display: none;
@@ -2098,6 +2112,16 @@ details[open] > summary.desvio .desvio-seta {
     0 24px 64px -16px color-mix(in srgb, #000 22%, transparent);
   -webkit-mask-image: linear-gradient(to bottom, #000 62%, transparent 100%);
   mask-image: linear-gradient(to bottom, #000 62%, transparent 100%);
+}
+/* no celular a tela é mais larga que a página: a borda direita também se dissolve, para o corte parecer
+   enquadramento e não estouro */
+@media (max-width: 639px) {
+  .topo-tela {
+    -webkit-mask-image: linear-gradient(to bottom, #000 62%, transparent 100%), linear-gradient(to right, #000 72%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(to bottom, #000 62%, transparent 100%), linear-gradient(to right, #000 72%, transparent 100%);
+    mask-composite: intersect;
+  }
 }
 /* a tela chega deitada e endireita conforme a página rola: o movimento é a própria rolagem */
 @supports (animation-timeline: view()) {

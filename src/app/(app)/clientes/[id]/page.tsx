@@ -1,4 +1,5 @@
 import { Revelar } from "@/components/revelar";
+import { JanelaAcao } from "@/components/janela-acao";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isUuid } from "@/lib/ctx";
@@ -221,18 +222,58 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
             </section>
           ) : (
             <>
+              {/* ficha de consulta: os dados em leitura, e o formulário só quando alguém vai editar */}
               <section className="panel p-4">
-                <h2 className="h2 mb-3">Dados</h2>
-                <ActionForm action={saveCustomerAction} className="grid gap-3 sm:grid-cols-2">
-                  <input type="hidden" name="id" value={c.id} />
-                  <CustomerFields c={c} />
-                  <button className="btn btn-primary sm:col-span-2 sm:justify-self-start">Salvar alterações</button>
-                </ActionForm>
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h2 className="h2">Dados</h2>
+                  <JanelaAcao label="Editar" titulo={`Editar ${c.name}`}>
+                    <ActionForm action={saveCustomerAction} className="grid gap-3 sm:grid-cols-2">
+                      <input type="hidden" name="id" value={c.id} />
+                      <CustomerFields c={c} />
+                      <button className="btn btn-primary mt-1 sm:col-span-2">Salvar alterações</button>
+                    </ActionForm>
+                  </JanelaAcao>
+                </div>
+                <dl className="grid gap-x-4 gap-y-2 text-sm sm:grid-cols-[7rem_1fr]">
+                  {[
+                    ["Telefone", c.phone],
+                    ["Endereço", c.address],
+                    ["Referência", c.reference],
+                    ["Observações", c.notes],
+                  ]
+                    .filter(([, v]) => v)
+                    .map(([k, v]) => (
+                      <div key={k} className="contents">
+                        <dt className="text-muted">{k}</dt>
+                        <dd className="min-w-0 break-words">{k === "Telefone" ? <a href={`tel:${v!.replace(/D/g, "")}`} className="alvo num hover:text-accent">{v}</a> : v}</dd>
+                      </div>
+                    ))}
+                </dl>
               </section>
               <section className="panel p-4">
-                <h2 className="h2 mb-1">Outros endereços de entrega</h2>
-                {addresses.length > 0 && (
-                  <ul className="mb-4 divide-y divide-line rounded-md border border-line">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h2 className="h2">Outros endereços</h2>
+                  <JanelaAcao label="Adicionar" titulo="Adicionar endereço">
+                    <ActionForm action={addAddressAction} className="grid gap-3 sm:grid-cols-2" reset>
+                      <input type="hidden" name="customerId" value={c.id} />
+                      <div>
+                        <label className="label" htmlFor="addr-label">Nome do endereço</label>
+                        <input id="addr-label" name="label" required minLength={2} maxLength={40} className="input" placeholder="Trabalho" />
+                      </div>
+                      <div>
+                        <label className="label" htmlFor="addr-ref">Referência</label>
+                        <input id="addr-ref" name="reference" maxLength={200} className="input" />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="label" htmlFor="addr-address">Endereço</label>
+                        <input id="addr-address" name="address" required minLength={5} maxLength={200} className="input" />
+                      </div>
+                      <button className="btn btn-primary mt-1 sm:col-span-2">Adicionar endereço</button>
+                    </ActionForm>
+                  </JanelaAcao>
+                </div>
+                {addresses.length > 0 ? (
+                  <ul className="divide-y divide-line rounded-md border border-line">
                     {addresses.map((a) => (
                       <li key={a.id} className="flex items-start justify-between gap-3 px-3 py-2">
                         <div className="min-w-0">
@@ -246,23 +287,9 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                       </li>
                     ))}
                   </ul>
+                ) : (
+                  <p className="text-sm text-muted">Nenhum.</p>
                 )}
-                <ActionForm action={addAddressAction} className="grid gap-3 sm:grid-cols-2" reset>
-                  <input type="hidden" name="customerId" value={c.id} />
-                  <div>
-                    <label className="label" htmlFor="addr-label">Nome do endereço</label>
-                    <input id="addr-label" name="label" required minLength={2} maxLength={40} className="input" placeholder="Trabalho" />
-                  </div>
-                  <div>
-                    <label className="label" htmlFor="addr-ref">Referência</label>
-                    <input id="addr-ref" name="reference" maxLength={200} className="input" />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <label className="label" htmlFor="addr-address">Endereço</label>
-                    <input id="addr-address" name="address" required minLength={5} maxLength={200} className="input" />
-                  </div>
-                  <button className="btn sm:justify-self-start">Adicionar endereço</button>
-                </ActionForm>
               </section>
               {user.role === "dono" && (
                 <section className="panel p-4">
