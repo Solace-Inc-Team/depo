@@ -290,6 +290,24 @@ export const orders = pgTable(
   ],
 );
 
+// celular que pediu para ser avisado do andamento de um pedido (web push). Vale só para aquele pedido:
+// depois de entregue ou cancelado, a inscrição sai.
+export const avisosPedido = pgTable(
+  "avisos_pedido",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    endpoint: text("endpoint").notNull(),
+    p256dh: text("p256dh").notNull(),
+    auth: text("auth").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("avisos_pedido_endpoint_uq").on(t.orderId, t.endpoint)],
+);
+
 export const orderItems = pgTable("order_items", {
   id: id(),
   tenantId: tenantId(),

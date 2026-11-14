@@ -7,6 +7,7 @@ import { ErroMp, cancelarPixMp, contaMp, criarPixMp, pagamentoMp } from "@/lib/m
 import { pixPayload } from "@/lib/pix";
 import { audit } from "./stock";
 import { liberaParaFila } from "./orders";
+import { avisarCliente } from "./aviso";
 
 // Pix do pedido. Com a conta do Mercado Pago ligada, cada pedido no Pix vira uma cobrança própria, com o
 // valor certo, e o pedido fica pago sozinho quando o Mercado Pago confirma. Sem ela (ou se o Mercado Pago
@@ -148,7 +149,7 @@ export async function conferirPixMp(tenantId: string, orderId: string): Promise<
     return false;
   }
   if (!p.pago || p.referencia !== orderId || p.valorCents !== o.mpAmountCents) return false;
-  return tenantTransaction({ tenantId }, async (tx) => {
+  const liberado = await tenantTransaction({ tenantId }, async (tx) => {
     const [ok] = await tx
       .update(orders)
       .set({ pixConfirmedAt: new Date(), pixConfirmedBy: null, status: liberaParaFila })
@@ -156,8 +157,11 @@ export async function conferirPixMp(tenantId: string, orderId: string): Promise<
       .returning({ id: orders.id });
     // sem pessoa: quem confirmou foi o Mercado Pago
     if (ok) await tx.insert(auditLog).values({ tenantId, userId: null, action: "pedido.pix_mercadopago", entity: "order", entityId: orderId, data: { pagamento: o.mpPaymentId, valor: p.valorCents } });
-    return true;
+    return !!ok;
   });
+  // o pedido que esperava o Pix foi para a fila: o cliente fica sabendo
+  if (liberado && o.status === "aguardando_pagamento") void avisarCliente(tenantId, orderId, "pago");
+  return true;
 }
 
 /**
@@ -191,5 +195,6 @@ export async function cancelarPixVencidos(tenantId: string) {
       // sem pessoa: quem cancelou foi o prazo
       if (ok) await tx.insert(auditLog).values({ tenantId, userId: null, action: "pedido.pix_vencido", entity: "order", entityId: v.id, data: { number: v.number } });
     });
+    void avisarCliente(tenantId, v.id, "cancelado");
   }
 }

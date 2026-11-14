@@ -1076,6 +1076,61 @@ test("Mercado Pago: conecta com o token da loja, cobra o Pix do pedido, confirma
   assert.ok(conferido.pixConfirmedAt);
 });
 
+test("aviso no celular: o cliente se inscreve pelo link do pedido e recebe saiu e entregue; ao terminar, a inscrição sai", async () => {
+  const { db } = m.db;
+  const { avisosPedido } = m.schema;
+  const { eq } = await import("drizzle-orm");
+  const webpush = (await import("web-push")).default;
+  const k = webpush.generateVAPIDKeys();
+  process.env.NEXT_PUBLIC_VAPID_PUBLICA = k.publicKey;
+  process.env.VAPID_PRIVADA = k.privateKey;
+  const aviso = await import("@/domain/aviso");
+  const enviados: { endpoint: string; corpo: { title: string; body: string; url: string } }[] = [];
+  let morto = "";
+  aviso.usarEnvio(async (sub, payload) => {
+    if (sub.endpoint === morto) throw Object.assign(new Error("Gone"), { statusCode: 410 });
+    enviados.push({ endpoint: sub.endpoint, corpo: JSON.parse(String(payload)) });
+    return { statusCode: 201, body: "", headers: {} };
+  });
+  // o aviso roda depois da mudança gravada, sem segurar quem chamou: espera ele chegar
+  const esperar = async (n: number) => {
+    for (let i = 0; i < 50 && enviados.length < n; i++) await new Promise((r) => setTimeout(r, 20));
+  };
+  const insc = (n: string) => ({ endpoint: `https://push.exemplo.com/${n}`, keys: { p256dh: "B".repeat(87), auth: "a".repeat(22) } });
+
+  const o = await m.orders.createOrder(A.ctx, {
+    mode: "entrega", origin: "portal", customerId: A.customer.id, items: [{ productId: A.product.id, quantity: 1, returnsEmpty: true }],
+    paymentMethod: "dinheiro", deliveryFeeCents: 0, changeForCents: null, notes: "", driverId: null,
+  });
+  // só pelo link certo, na loja certa, com uma inscrição válida
+  await assert.rejects(m.portal.inscreverAviso(B.t.slug, o.trackingId, insc("x")), /não encontrado/);
+  await assert.rejects(m.portal.inscreverAviso(A.t.slug, o.trackingId, { endpoint: "http://inseguro", keys: {} }));
+  await m.portal.inscreverAviso(A.t.slug, o.trackingId, insc("celular"));
+  await m.portal.inscreverAviso(A.t.slug, o.trackingId, insc("celular"));
+  await m.portal.inscreverAviso(A.t.slug, o.trackingId, insc("velho"));
+  assert.equal((await db.select().from(avisosPedido).where(eq(avisosPedido.orderId, o.id))).length, 2);
+
+  // o navegador desfez uma inscrição (410): ela sai do banco no primeiro aviso
+  morto = "https://push.exemplo.com/velho";
+  await m.orders.dispatchOrder(A.ctx, o.id, A.driver.id);
+  await esperar(1);
+  await new Promise((r) => setTimeout(r, 100));
+  assert.equal(enviados.length, 1);
+  assert.match(enviados[0].corpo.body, /Saiu para entrega com Entregador/);
+  assert.match(enviados[0].corpo.url, new RegExp(`/acompanhar/${o.trackingId}$`));
+  assert.equal((await db.select().from(avisosPedido).where(eq(avisosPedido.orderId, o.id))).length, 1);
+
+  // entregue: avisa e a inscrição sai (o pedido acabou)
+  await m.orders.deliverOrder({ ...A.ctx, role: "entregador", userId: A.driver.id }, o.id);
+  await esperar(2);
+  await new Promise((r) => setTimeout(r, 100));
+  assert.match(enviados[1].corpo.body, /entregue/);
+  assert.equal((await db.select().from(avisosPedido).where(eq(avisosPedido.orderId, o.id))).length, 0);
+  await assert.rejects(m.portal.inscreverAviso(A.t.slug, o.trackingId, insc("tarde")), /já terminou/);
+  delete process.env.NEXT_PUBLIC_VAPID_PUBLICA;
+  delete process.env.VAPID_PRIVADA;
+});
+
 test("entregador sem celular: entra na equipe sem e-mail nem senha, e a loja lança a entrega dele", async () => {
   const { db } = m.db;
   const { users } = m.schema;

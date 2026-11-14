@@ -15,7 +15,7 @@ import { formatBRL, parseBRL } from "@/lib/money";
 import { clientIp } from "@/lib/request";
 import type { ActionState } from "@/components/action-form";
 import { createOrder, dispatchOrder, deliverOrder, cancelOrder, refundOrder, newOrderSchema, reportOccurrence, reassignOrder, confirmPix } from "@/domain/orders";
-import { placePortalOrder, portalOrderSchema, portalTenant } from "@/domain/portal";
+import { inscreverAviso, placePortalOrder, portalOrderSchema, portalTenant } from "@/domain/portal";
 import { conectarMercadoPago, desconectarMercadoPago, pixDoPedido } from "@/domain/pix";
 import { devolverVasilhame, registrarComodato } from "@/domain/comodato";
 import { createExpense, expenseSchema, voidExpense } from "@/domain/expenses";
@@ -221,6 +221,19 @@ export async function reassignAction(fd: FormData) {
 export async function confirmPixAction(fd: FormData) {
   const user = await requireUser("dono", "caixa");
   return run(() => confirmPix(user, str(fd, "orderId")), ["/"], "Pix conferido.");
+}
+
+/** O cliente aceitou ser avisado no celular do andamento deste pedido. Público, então com limite por IP. */
+export async function avisoPedidoAction(slug: string, codigo: string, inscricao: unknown): Promise<ActionState> {
+  if (await attempt(`aviso:${await clientIp()}`, 10)) return { error: "Muitas tentativas seguidas. Tente de novo em alguns minutos." };
+  try {
+    await inscreverAviso(slug, codigo, inscricao);
+    return { ok: "Avisaremos neste celular." };
+  } catch (e) {
+    if (e instanceof DomainError) return { error: e.message };
+    if (e instanceof z.ZodError) return { error: "Este navegador não aceitou os avisos." };
+    throw e;
+  }
 }
 
 export type PortalResult = { error?: string; number?: number; totalCents?: number; pix?: string | null; pixAutomatico?: boolean; acompanhar?: string };

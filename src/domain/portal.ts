@@ -6,6 +6,7 @@ import { type Ctx, DomainError, isUuid } from "@/lib/ctx";
 import { createOrder } from "./orders";
 import { audit } from "./stock";
 import { telefoneSchema } from "./telefone";
+import { salvarInscricao } from "./aviso";
 
 /**
  * Empresa do portal público. Só aparece se estiver ativa e com o portal ligado pelo dono.
@@ -151,4 +152,12 @@ export async function pedidoAcompanhado(slug: string, codigo: string) {
     // o id fica fora do pedido mostrado; serve só para o servidor cobrar e conferir o Pix
     return { loja: t, pedidoId: id, pedido: { ...pedido, entregador: driverName?.split(" ")[0] ?? null }, itens };
   });
+}
+
+/** O cliente aceitou ser avisado no celular: guarda a inscrição no pedido do link (sem login; o código é a chave). */
+export async function inscreverAviso(slug: string, codigo: string, inscricao: unknown) {
+  const achado = await pedidoAcompanhado(slug, codigo);
+  if (!achado) throw new DomainError("Pedido não encontrado.");
+  if (["entregue", "cancelado", "estornado"].includes(achado.pedido.status)) throw new DomainError("Este pedido já terminou.");
+  await salvarInscricao(achado.loja.id, achado.pedidoId, inscricao);
 }

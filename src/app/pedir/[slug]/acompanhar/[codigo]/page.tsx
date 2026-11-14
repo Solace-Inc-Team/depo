@@ -6,6 +6,7 @@ import { PixBox } from "@/components/pix-box";
 import { fmtDateTime, fmtTime } from "@/components/ui";
 import { formatBRL } from "@/lib/money";
 import { AtualizaSozinho } from "./atualiza";
+import { AvisoNoCelular } from "./aviso-celular";
 
 // Página que o cliente abre pelo link do pedido: a situação em destaque, o caminho até a porta
 // (recebido, saiu, entregue) e o que foi pedido. Sem login; o código do link é a chave.
@@ -95,6 +96,8 @@ export default async function Acompanhar({ params }: PageProps<"/pedir/[slug]/ac
             Não conseguimos entregar da última vez ({p.occurrence}). A loja vai combinar com você e mandar de novo.
           </p>
         )}
+        {/* enquanto o pedido anda, o cliente pode pedir para o celular avisar (e fechar a página) */}
+        {!cancelado && !entregue && <AvisoNoCelular slug={slug} codigo={codigo} />}
       </section>
 
       <section className="panel mt-4 p-5">

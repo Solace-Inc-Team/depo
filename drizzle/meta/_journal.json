@@ -134,6 +134,13 @@
       "when": 1794686049887,
       "tag": "0018_pix_antes_da_entrega",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794687545706,
+      "tag": "0019_avisos_pedido",
+      "breakpoints": true
     }
   ]
 }

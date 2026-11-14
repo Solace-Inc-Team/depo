@@ -8,6 +8,7 @@ import { formatBRL } from "@/lib/money";
 import { todayISO } from "@/lib/period";
 import { audit, lockProducts, move } from "./stock";
 import { fiadoBalance } from "./receivables";
+import { avisarCliente } from "./aviso";
 
 export const newOrderSchema = z
   .object({
@@ -227,6 +228,8 @@ export async function reportOccurrence(ctx: Ctx, orderId: string, kind: string, 
       .where(eq(orders.id, o.id));
     await audit(tx, ctx, "pedido.ocorrencia", "order", o.id, { kind, note: note.trim(), driverId: o.driverId });
   });
+  // o celular do cliente fica sabendo depois da mudança gravada (falha no aviso não desfaz nada)
+  void avisarCliente(ctx.tenantId, orderId, "nao_entregue");
 }
 
 /** Pix confirmado: o pedido que esperava pagamento entra na fila; os outros ficam como estão. */
@@ -235,6 +238,7 @@ export const liberaParaFila = sql`case when ${orders.status} = 'aguardando_pagam
 /** Quem confere o extrato marca o Pix como recebido. Antes disso o pedido aparece como "Pix a conferir". */
 export async function confirmPix(ctx: Ctx, orderId: string) {
   assertRole(ctx, "dono", "caixa");
+  const [antes] = await tenantTransaction(ctx, (tx) => tx.select({ status: orders.status }).from(orders).where(and(eq(orders.tenantId, ctx.tenantId), eq(orders.id, orderId))));
   await tenantTransaction(ctx, async (tx) => {
     const [o] = await tx
       .update(orders)
@@ -253,6 +257,7 @@ export async function confirmPix(ctx: Ctx, orderId: string) {
     if (!o) throw new DomainError("Este pedido não tem Pix a conferir.");
     await audit(tx, ctx, "pedido.pix_conferido", "order", o.id);
   });
+  if (antes?.status === "aguardando_pagamento") void avisarCliente(ctx.tenantId, orderId, "pago");
 }
 
 /** Passa um pedido em rota para outro entregador; a carga muda de mão junto. */
@@ -281,6 +286,7 @@ export async function reassignOrder(ctx: Ctx, orderId: string, driverId: string)
 export async function dispatchOrder(ctx: Ctx, orderId: string, driverId: string) {
   assertRole(ctx, "dono", "atendente", "caixa");
   await tenantTransaction(ctx, (tx) => dispatchInTx(tx, ctx, orderId, driverId));
+  void avisarCliente(ctx.tenantId, orderId, "saiu");
 }
 
 /**
@@ -288,7 +294,7 @@ export async function dispatchOrder(ctx: Ctx, orderId: string, driverId: string)
  * o total do pedido é refeito e o que sobrou continua com o entregador até o acerto.
  */
 export async function deliverOrder(ctx: Ctx, orderId: string, partial?: { delivered: Record<string, number>; note: string }) {
-  return tenantTransaction(ctx, async (tx) => {
+  const total = await tenantTransaction(ctx, async (tx) => {
     const { o, items, name, c } = await loadOrder(tx, ctx, orderId);
     if (ctx.role === "entregador" && o.driverId !== ctx.userId) throw new DomainError("Pedido de outro entregador.");
     // confirmação repetida (celular sem rede reenviando): já está entregue, não faz nada de novo
@@ -334,6 +340,8 @@ export async function deliverOrder(ctx: Ctx, orderId: string, partial?: { delive
     await audit(tx, ctx, isPartial ? "pedido.entrega_parcial" : "pedido.entregue", "order", o.id, isPartial ? { before: o.totalCents, after: changes.totalCents, note: partial!.note } : undefined);
     return changes.totalCents ?? o.totalCents;
   });
+  void avisarCliente(ctx.tenantId, orderId, "entregue");
+  return total;
 }
 
 export async function cancelOrder(ctx: Ctx, orderId: string, reason: string) {
@@ -349,6 +357,7 @@ export async function cancelOrder(ctx: Ctx, orderId: string, reason: string) {
     await tx.update(orders).set({ status: "cancelado", cancelReason: reason.trim() }).where(eq(orders.id, o.id));
     await audit(tx, ctx, "pedido.cancelar", "order", o.id, { reason, previous: o.status });
   });
+  void avisarCliente(ctx.tenantId, orderId, "cancelado");
 }
 
 /**
