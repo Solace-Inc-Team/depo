@@ -48,15 +48,16 @@ export default async function Produtos() {
       <p className="-mt-3 mb-6 max-w-2xl text-muted">
         Preço novo vale para os próximos pedidos; os já lançados guardam o preço da época.
       </p>
-      <section className="panel mb-6">
+      {/* a divisória vai na seção: cada linha é um formulário, e a borda no fieldset de dentro nunca aparecia */}
+      <section className="panel mb-6 divide-y divide-line">
         {products.map((p, i) => (
-          <ActionForm key={p.id} action={saveProductAction} className={`flex flex-wrap items-end gap-3 border-b border-line p-4 last:border-0 ${p.active ? "" : "opacity-60"}`}>
+          // cada linha salva sozinha ao sair do campo que mudou, como a caixa "Clientes podem pedir pelo link"
+          <ActionForm key={p.id} action={saveProductAction} salvaAoMudar className={`flex flex-wrap items-end gap-3 p-4 ${p.active ? "" : "opacity-60"}`}>
             <input type="hidden" name="id" value={p.id} />
             <Fields p={p} rotulos={i === 0} />
             <label className="flex min-h-11 items-center gap-2 lg:min-h-9">
               <input type="checkbox" name="active" defaultChecked={p.active} /> À venda
             </label>
-            <button className="btn">Salvar</button>
           </ActionForm>
         ))}
       </section>

@@ -80,7 +80,7 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                   <li key={e.id} className={`flex items-center justify-between gap-3 border-b border-line px-4 py-2.5 text-[13px] last:border-0 ${e.voidedAt ? "text-muted" : ""}`}>
                     <div className="min-w-0">
                       {e.kind === "compra" ? (
-                        <Link href={`/pedidos/${e.id}`} className="font-medium hover:underline">Compra #{e.number}</Link>
+                        <Link href={`/pedidos/${e.id}`} className="alvo font-medium hover:underline">Compra #{e.number}</Link>
                       ) : (
                         <span className={`font-medium ${e.voidedAt ? "line-through" : ""}`}>Pagamento em {paymentLabel[e.method!].toLowerCase()}</span>
                       )}
@@ -321,7 +321,7 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
               <tbody>
                 {orders.map((o) => (
                   <tr key={o.id}>
-                    <td className="num text-muted"><Link href={`/pedidos/${o.id}`} className="hover:text-accent">#{o.number}</Link></td>
+                    <td className="num text-muted"><Link href={`/pedidos/${o.id}`} className="alvo hover:text-accent">#{o.number}</Link></td>
                     <td>{fmtDateTime(o.createdAt)}</td>
                     {/* no celular a forma de pagamento sai: o resto cabe sem rolar */}
                     <td className="hidden sm:table-cell">{paymentLabel[o.paymentMethod]}</td>

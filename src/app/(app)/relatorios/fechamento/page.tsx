@@ -168,7 +168,7 @@ export default async function Fechamento({ searchParams }: PageProps<"/relatorio
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="mb-6 break-inside-avoid">
-      <h2 className="mb-2 text-[13px] font-semibold tracking-wide text-muted uppercase">{title}</h2>
+      <h2 className="h2 mb-2">{title}</h2>
       <div className="panel px-4 py-2">{children}</div>
     </section>
   );

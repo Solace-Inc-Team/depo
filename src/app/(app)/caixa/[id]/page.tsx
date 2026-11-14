@@ -228,7 +228,8 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
                     <label className="label" htmlFor="rep-note">Observação (opcional)</label>
                     <input id="rep-note" name="note" maxLength={160} className="input" />
                   </div>
-                  <button className="btn btn-primary">Registrar repasse</button>
+                  {/* o principal da tela é fechar o acerto; repasse e gasto são lançamentos do meio do caminho */}
+                  <button className="btn">Registrar repasse</button>
                 </ActionForm>
                 <ActionForm action={cashEntryAction} className="space-y-3" reset>
                   <input type="hidden" name="shiftId" value={s.id} />

@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import Link from "next/link";
+import { Package } from "lucide-react";
 import { listProducts, listSuppliers, recentMovements, stockOverview } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
 import { damagedAction, purchaseAction } from "@/app/actions";
@@ -116,11 +117,11 @@ export default async function Estoque() {
               <tr key={p.id}>
                 <td className="font-medium">
                   <div className="flex items-center gap-3">
-                    {/* sem casco que volta não há cheio e vazio para comparar; o espaço fica para alinhar os nomes */}
+                    {/* sem casco que volta não há cheio e vazio para comparar: no lugar do nível, uma caixa em linha, do mesmo tamanho */}
                     {p.returnable ? (
                       <NivelVasilhame nome={p.name} cheios={p.fullStore} vazios={p.emptyStore} baixo={p.low} ordem={i} />
                     ) : (
-                      <span className="w-[25px] shrink-0" />
+                      <Package size={20} strokeWidth={1.5} aria-hidden="true" className="mx-[2.5px] shrink-0 text-muted" />
                     )}
                     <div>
                       {p.name}

@@ -132,7 +132,8 @@ export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
                     <Link href={`/pedidos/${o.id}`} className="font-medium hover:underline">{o.customerName ?? "Balcão"}</Link>
                     {o.customerAddress && <p className="text-[13px] text-muted">{o.customerAddress}</p>}
                   </td>
-                  <td>{o.driverName ?? <span className="text-muted">-</span>}</td>
+                  {/* entregue sem entregador é venda no balcão; sem entregador ainda é pedido esperando */}
+                  <td>{o.driverName ?? <span className="text-muted">{o.status === "entregue" ? "Balcão" : "-"}</span>}</td>
                   <td className="whitespace-nowrap text-muted">{fmtDateTime(o.createdAt)}</td>
                   <td>{paymentLabel[o.paymentMethod]}</td>
                   <td><StatusBadge status={o.status} />{o.origin === "portal" && <SiteBadge />}</td>

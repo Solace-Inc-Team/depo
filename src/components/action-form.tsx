@@ -52,13 +52,24 @@ export function ActionForm({
   className,
   reset = false,
   confirm,
+  salvaAoMudar = false,
 }: {
   action: (fd: FormData) => Promise<ActionState>;
   children: ReactNode;
   className?: string;
   reset?: boolean;
   confirm?: string;
+  /** salva sozinho quando um campo muda (ao sair do campo, ou ao marcar a caixa), sem botão */
+  salvaAoMudar?: boolean;
 }) {
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    const f = formRef.current;
+    if (!salvaAoMudar || !f) return;
+    const salvar = () => f.requestSubmit();
+    f.addEventListener("change", salvar);
+    return () => f.removeEventListener("change", salvar);
+  }, [salvaAoMudar]);
   const [error, setError] = useState<string>();
   const [pending, start] = useTransition();
   const errorRef = useRef<HTMLParagraphElement>(null);
@@ -74,6 +85,7 @@ export function ActionForm({
 
   return (
     <form
+      ref={formRef}
       // se enviado antes do JS carregar, vai como POST: senha nunca aparece na URL
       method="post"
       // a validação dos campos é mostrada pelo próprio formulário (sem o balão do navegador); o servidor valida de novo
@@ -133,7 +145,7 @@ export function ActionForm({
       }}
     >
       {/* o fieldset recebe o layout (space-y, grid) para que o espaçamento chegue aos campos */}
-      <fieldset disabled={pending} className={`min-w-0 ${className ?? ""}`}>
+      <fieldset disabled={pending && !salvaAoMudar} className={`min-w-0 ${className ?? ""}`}>
         {children}
         {aviso.montado && (
           <p
@@ -152,33 +164,49 @@ export function ActionForm({
 }
 
 /** Mostra os avisos de sucesso das ações. Fica no layout raiz. */
-type Toast = { id: number; message: string; leaving?: boolean };
+type Toast = { id: number; message: string; leaving?: boolean; vez?: number };
 
 export function Toaster() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   useEffect(() => {
     let seq = 0;
-    const timers = new Set<ReturnType<typeof setTimeout>>();
-    const later = (ms: number, fn: () => void) => {
-      const t = setTimeout(() => {
-        timers.delete(t);
-        fn();
-      }, ms);
-      timers.add(t);
+    let atual: Toast[] = [];
+    const timers = new Map<number, ReturnType<typeof setTimeout>[]>();
+    const set = (fn: (l: Toast[]) => Toast[]) => setToasts((atual = fn(atual)));
+    // marca a saída, espera a animação e só então tira da lista
+    const marcar = (id: number) => set((l) => l.map((t) => (t.id === id ? { ...t, leaving: true } : t)));
+    const sair = (id: number, depois = 0) => {
+      timers.get(id)?.forEach(clearTimeout);
+      // sem espera, marca já: o próximo aviso que chegar no mesmo instante conta com esta saída
+      if (!depois) marcar(id);
+      timers.set(id, [
+        setTimeout(() => marcar(id), depois),
+        setTimeout(() => {
+          timers.delete(id);
+          set((l) => l.filter((t) => t.id !== id));
+        }, depois + 200),
+      ]);
     };
     const show = (e: Event) => {
-      const id = ++seq;
       const message = (e as CustomEvent<string>).detail;
-      // a mesma mensagem de novo (despachos seguidos) substitui a anterior em vez de empilhar
-      setToasts((list) => [...list.filter((t) => t.message !== message).slice(-2), { id, message }]);
-      // marca a saída, espera a animação e só então tira da lista
-      later(3500, () => setToasts((list) => list.map((t) => (t.id === id ? { ...t, leaving: true } : t))));
-      later(3700, () => setToasts((list) => list.filter((t) => t.id !== id)));
+      // a mesma mensagem de novo (despachos seguidos): o aviso que está na tela dá um pulinho e ganha mais tempo
+      const igual = atual.find((t) => t.message === message && !t.leaving);
+      if (igual) {
+        set((l) => l.map((t) => (t.id === igual.id ? { ...t, vez: (t.vez ?? 0) + 1 } : t)));
+        sair(igual.id, 3500);
+        return;
+      }
+      const id = ++seq;
+      set((l) => [...l, { id, message }]);
+      sair(id, 3500);
+      // no máximo três na tela: o mais antigo sai animado, não some de uma vez
+      const visiveis = atual.filter((t) => !t.leaving);
+      if (visiveis.length > 3) sair(visiveis[0].id);
     };
     window.addEventListener(TOAST_EVENT, show);
     return () => {
       window.removeEventListener(TOAST_EVENT, show);
-      timers.forEach(clearTimeout);
+      timers.forEach((ts) => ts.forEach(clearTimeout));
     };
   }, []);
   return (
@@ -190,7 +218,8 @@ export function Toaster() {
           className="toast flex max-w-sm items-center gap-2 rounded-lg border border-line bg-surface px-4 py-3 text-[13px] font-medium shadow-[0_8px_30px_rgb(0_0_0/0.12)]"
         >
           <CircleCheck size={16} strokeWidth={2} className="text-ok" aria-hidden="true" />
-          {current.message}
+          {/* a chave muda a cada repetição: o texto dá o mesmo pulinho dos números (.bump) */}
+          <span key={current.vez ?? 0} className={current.vez ? "bump" : undefined}>{current.message}</span>
         </p>
       ))}
     </div>

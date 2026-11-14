@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useOptimistic, useRef, useState, useTransition } from "react";
-import { Check, ChevronsUpDown, Settings2 } from "lucide-react";
+import { Check, ChevronsUpDown, Settings } from "lucide-react";
 import { escolherFilialAction } from "@/app/actions";
 import { useSaida } from "./saida";
 
@@ -145,7 +145,7 @@ export function SeletorFilial({ empresa, atual, filiais }: { empresa: string; at
             onClick={() => fechar(false)}
             className="flex min-h-10 items-center gap-2.5 rounded-md px-2.5 text-[13px] text-muted outline-none hover:bg-subtle hover:text-fg focus-visible:bg-subtle"
           >
-            <Settings2 aria-hidden="true" size={14} strokeWidth={1.75} className="mx-[3px] shrink-0" />
+            <Settings aria-hidden="true" size={14} strokeWidth={1.75} className="mx-[3px] shrink-0" />
             Gerenciar filiais
           </Link>
         </div>

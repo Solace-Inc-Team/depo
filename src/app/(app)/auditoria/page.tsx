@@ -96,7 +96,7 @@ export default async function Auditoria({ searchParams }: PageProps<"/auditoria"
                       <div className="min-w-0">
                         <p className="font-medium">
                           {href ? (
-                            <Link href={href} className="hover:text-accent hover:underline">{l.titulo}</Link>
+                            <Link href={href} className="alvo hover:text-accent hover:underline">{l.titulo}</Link>
                           ) : (
                             l.titulo
                           )}
