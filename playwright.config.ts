@@ -2,6 +2,8 @@ import { defineConfig } from "@playwright/test";
 
 export default defineConfig({
   testDir: "e2e",
+  // abre cada tela uma vez antes dos testes (o next dev compila e recarrega na primeira visita)
+  globalSetup: "./e2e/aquecer.ts",
   // os cenários contam uma história em cima do mesmo banco: um de cada vez, na ordem
   workers: 1,
   fullyParallel: false,
