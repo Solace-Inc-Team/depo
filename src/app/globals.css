@@ -666,6 +666,45 @@ details[open] > :not(summary) {
 }
 
 /* telas avulsas (login, portal, 404, termos): os blocos entram um depois do outro */
+/* login e cadastro: o mapa some no centro, onde fica o formulário; os pinos pulsam, os pontos andam */
+.fundo-rota {
+  /* a coluna do formulário fica limpa de cima a baixo; o mapa aparece dos lados */
+  --limpa: linear-gradient(to right, #000 calc(50% - 21rem), transparent calc(50% - 14rem), transparent calc(50% + 14rem), #000 calc(50% + 21rem));
+  -webkit-mask-image: var(--limpa);
+  mask-image: var(--limpa);
+  opacity: 0.9;
+}
+/* no celular não há lados: o mapa fica no alto e embaixo, e some onde está o formulário */
+@media (max-width: 47.99rem) {
+  .fundo-rota {
+    --limpa: linear-gradient(to bottom, #000 0, transparent 16%, transparent 80%, #000 100%);
+  }
+}
+.fundo-rota-pulso {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: rota-pulso 2.4s var(--ease-out) infinite;
+}
+.fundo-rota-ponto {
+  filter: drop-shadow(0 0 6px var(--accent));
+}
+@keyframes rota-pulso {
+  from {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fundo-rota-pulso,
+  .fundo-rota-ponto {
+    display: none;
+  }
+}
+
 /* chegada depois do cadastro: o círculo se fecha, o ✓ se desenha, o texto sobe; a saída esmaece sobre o Painel */
 .chegada {
   animation: var(--dur) var(--ease-out) both fade-in;

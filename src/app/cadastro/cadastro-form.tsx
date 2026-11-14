@@ -78,11 +78,14 @@ export function CadastroForm() {
           } else setErro({ geral: r.error });
         });
       }}
-      className="mt-8"
+      className="mt-7"
     >
-      {/* dois traços: onde está e quanto falta */}
-      <div className="mb-6 flex items-center gap-3 text-[13px] text-muted">
-        <span className="num">Passo {passo} de 2</span>
+      {/* o nome do passo e dois traços: onde está e quanto falta */}
+      <div className="mb-5 flex items-center gap-3 text-[13px] text-muted">
+        <span className="whitespace-nowrap">
+          <span className="font-medium text-fg">{passo === 1 ? "Você" : "Sua revenda"}</span>
+          <span className="num"> · {passo} de 2</span>
+        </span>
         <span className="flex flex-1 gap-1.5" aria-hidden="true">
           <span className="h-1 flex-1 rounded-full bg-accent" />
           <span className={`h-1 flex-1 rounded-full transition-colors duration-300 ${passo === 2 ? "bg-accent" : "bg-subtle"}`} />
@@ -96,7 +99,7 @@ export function CadastroForm() {
           inert={passo !== 1 || undefined}
           className={`inset-x-0 top-0 space-y-4 transition duration-200 ${passo === 1 ? "relative translate-x-0 opacity-100" : "pointer-events-none absolute -translate-x-4 opacity-0"}`}
         >
-          <legend className="mb-4 text-[15px] font-semibold">Você</legend>
+          <legend className="sr-only">Você</legend>
           <div>
             <label className="label" htmlFor="ownerName">Seu nome</label>
             <input id="ownerName" name="ownerName" autoComplete="name" required minLength={2} maxLength={80} autoFocus className="input h-11" />
@@ -152,7 +155,7 @@ export function CadastroForm() {
           inert={passo !== 2 || undefined}
           className={`inset-x-0 top-0 space-y-4 transition duration-200 ${passo === 2 ? "relative translate-x-0 opacity-100" : "pointer-events-none absolute translate-x-4 opacity-0"}`}
         >
-          <legend className="mb-4 text-[15px] font-semibold">Sua revenda</legend>
+          <legend className="sr-only">Sua revenda</legend>
           <div>
             <label className="label" htmlFor="company">Nome da revenda</label>
             <input id="company" name="company" autoComplete="organization" required minLength={2} maxLength={120} className="input h-11" />
@@ -170,7 +173,7 @@ export function CadastroForm() {
                 </label>
               ))}
             </div>
-            <p className="mt-1.5 text-[13px] text-muted">Os produtos já entram cadastrados. Você só confere o preço.</p>
+            <p className="mt-1.5 text-[13px] text-muted">Os produtos já entram cadastrados.</p>
           </div>
           {/* só robô preenche: fica fora da tela e fora do Tab */}
           <input name="site" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute -left-[9999px] h-px w-px opacity-0" />
