@@ -6,7 +6,7 @@ import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
 import { itemsSubtotal, orderTotal, partialDiscount } from "@/lib/cash";
 import { formatBRL } from "@/lib/money";
 import { todayISO } from "@/lib/period";
-import { audit, lockProducts, move } from "./stock";
+import { audit, disponivelNaLoja, lockProducts, move } from "./stock";
 import { fiadoBalance } from "./receivables";
 import { avisarCliente } from "./aviso";
 
@@ -30,6 +30,8 @@ export const newOrderSchema = z
     changeForCents: z.int().min(0).max(100_000_00, "Valor para troco muito alto.").nullable(),
     notes: z.string().max(500, "A observação pode ter até 500 letras."),
     driverId: z.uuid().nullable(),
+    // pedido do site: só aceita o que tem na loja agora (a atendente vê o estoque e decide por conta própria)
+    exigirEstoque: z.boolean().default(false),
   })
   .refine((o) => o.mode === "balcao" || o.customerId, { message: "Entrega precisa de cliente." })
   .refine((o) => o.paymentMethod !== "fiado" || o.customerId, { message: "Fiado precisa de cliente identificado." })
@@ -83,6 +85,16 @@ export async function createOrder(ctx: Ctx, raw: NewOrder) {
       const container = p.returnable && !returnsEmpty && !loan ? p.containerPriceCents : 0;
       return { ...i, unitPriceCents: p.priceCents + container, returnsEmpty, loan, name: p.name };
     });
+    if (input.exigirEstoque) {
+      // com os produtos travados acima, dois pedidos ao mesmo tempo não levam o mesmo último galão
+      const livre = await disponivelNaLoja(tx, ctx.tenantId, ctx.branchId, [...new Set(items.map((i) => i.productId))]);
+      for (const id of livre.keys()) {
+        const pedido = items.filter((i) => i.productId === id).reduce((s, i) => s + i.quantity, 0);
+        const tem = Math.max(0, livre.get(id)!);
+        const nome = items.find((i) => i.productId === id)!.name;
+        if (pedido > tem) throw new DomainError(tem ? `Só temos ${tem} de ${nome} agora.` : `${nome} acabou. Escolha outro produto.`);
+      }
+    }
 
     if (input.customerId) {
       const [c] = await tx

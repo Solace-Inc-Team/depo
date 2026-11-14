@@ -599,7 +599,7 @@ test("portal: só com portal ligado, reconhece o cliente pelo telefone e não us
   await m.registry.saveSettings(A.ctx, { portalEnabled: true });
   await assert.rejects(m.registry.saveSettings(A.ctx, { pixKey: "chave@x.com", pixName: "", pixCity: "" }), /nome do recebedor/);
   assert.equal((await m.portal.portalTenant(t.slug))?.id, A.t.id);
-  assert.ok((await m.portal.portalProducts(A.t.id)).every((p) => p.name !== B.product.name));
+  assert.ok((await m.portal.portalProducts(A.t.id, A.branch.id)).every((p) => p.name !== B.product.name));
 
   const input = {
     name: "Cliente do Site", phone: "(11) 97777-1234", address: "Rua do Site, 10", reference: "", notes: "",
@@ -617,6 +617,21 @@ test("portal: só com portal ligado, reconhece o cliente pelo telefone e não us
   // pedido recusado não deixa cliente novo para trás
   await assert.rejects(m.portal.placePortalOrder(A.t.id, A.branch.id, { ...input, phone: "21 99999-0000", items: [{ productId: B.product.id, quantity: 1, returnsEmpty: true }] }), /indisponível/);
   assert.equal((await db.select().from(customers).where(eq(customers.phone, "21 99999-0000"))).length, 0);
+
+  // pelo site só sai o que tem livre na loja agora (os pedidos abertos já seguram o deles)
+  const { products, stockMovements } = m.schema;
+  const [raro] = await db.insert(products).values({ tenantId: A.t.id, name: "Galão raro", priceCents: 1500 }).returning();
+  await db.insert(stockMovements).values({ tenantId: A.t.id, branchId: A.branch.id, productId: raro.id, state: "cheio", quantity: 2, reason: "inicial", userId: A.owner.id });
+  const doRaro = (quantity: number) => ({ ...input, items: [{ productId: raro.id, quantity, returnsEmpty: true }] });
+  assert.equal((await m.portal.portalProducts(A.t.id, A.branch.id)).find((p) => p.id === raro.id)?.disponivel, 2);
+  await assert.rejects(m.portal.placePortalOrder(A.t.id, A.branch.id, doRaro(3)), /Só temos 2 de Galão raro/);
+  await m.portal.placePortalOrder(A.t.id, A.branch.id, doRaro(2));
+  await assert.rejects(m.portal.placePortalOrder(A.t.id, A.branch.id, doRaro(1)), /Galão raro acabou/);
+  const noFim = await m.portal.portalProducts(A.t.id, A.branch.id);
+  assert.equal(noFim.find((p) => p.id === raro.id)?.disponivel, 0);
+  assert.equal(noFim.at(-1)?.disponivel, 0);
+  // a atendente continua podendo lançar (ela vê o estoque e decide)
+  await m.orders.createOrder(A.ctx, { mode: "entrega", customerId: A.customer.id, items: [{ productId: raro.id, quantity: 1, returnsEmpty: true }], paymentMethod: "dinheiro", deliveryFeeCents: 0, changeForCents: null, notes: "", driverId: null });
   await m.registry.saveSettings(A.ctx, { portalEnabled: false });
   assert.equal((await m.q.getSettings(A.t.id)).staffDiscountPct, 10);
 });

@@ -12,7 +12,7 @@ import { validarCampos } from "@/components/action-form";
 import type { PortalResult } from "@/app/actions";
 import { Aparece, useSaida } from "@/components/saida";
 
-type Product = { id: string; name: string; priceCents: number; returnable: boolean; containerPriceCents: number };
+type Product = { id: string; name: string; priceCents: number; returnable: boolean; containerPriceCents: number; disponivel: number };
 
 const payments = [
   ["pix", "Pix"],
@@ -48,7 +48,9 @@ export function PortalForm({
   const barra = useSaida(items.length > 0, 200);
   const unidades = items.reduce((s, i) => s + i.quantity, 0);
   const total = products.reduce((s, p) => s + (qty[p.id] ?? 0) * price(p), 0);
-  const step = (id: string, d: number) => setQty((q) => ({ ...q, [id]: Math.max(0, Math.min(20, (q[id] ?? 0) + d)) }));
+  // até 20 por item, e nunca mais do que a loja tem livre agora
+  const limite = (id: string) => Math.min(20, products.find((p) => p.id === id)?.disponivel ?? 0);
+  const step = (id: string, d: number) => setQty((q) => ({ ...q, [id]: Math.max(0, Math.min(limite(id), (q[id] ?? 0) + d)) }));
 
   if (result?.number)
     return (
@@ -91,19 +93,25 @@ export function PortalForm({
           <ul>
             {products.map((p) => {
               const n = qty[p.id] ?? 0;
+              const acabou = p.disponivel === 0;
+              const noMaximo = !acabou && n >= p.disponivel && p.disponivel < 20;
               return (
                 <li key={p.id} className="border-b border-line px-4 py-3 last:border-0">
-                  <div className="flex items-center gap-3">
+                  <div className={`flex items-center gap-3 ${acabou ? "opacity-55" : ""}`}>
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold">{p.name}</p>
-                      <p className="num text-sm text-muted">{formatBRL(p.priceCents)}</p>
+                      <p className="num text-sm text-muted">{acabou ? "Indisponível no momento" : formatBRL(p.priceCents)}</p>
                     </div>
                     <div className="flex items-center gap-1" role="group" aria-label={`Quantidade de ${p.name}`}>
-                      <button type="button" className="btn h-11 w-11 px-0 text-xl" onClick={() => step(p.id, -1)} aria-label="Diminuir">−</button>
+                      <button type="button" className="btn h-11 w-11 px-0 text-xl" onClick={() => step(p.id, -1)} disabled={acabou} aria-label="Diminuir">−</button>
                       <span key={n} className="bump num w-9 text-center text-xl font-semibold" aria-live="polite">{n}</span>
-                      <button type="button" className="btn h-11 w-11 px-0 text-xl" onClick={() => step(p.id, 1)} aria-label="Aumentar">+</button>
+                      <button type="button" className="btn h-11 w-11 px-0 text-xl" onClick={() => step(p.id, 1)} disabled={acabou || n >= limite(p.id)} aria-label="Aumentar">+</button>
                     </div>
                   </div>
+                  {/* chegou ao que tem na loja: o + para, e a pessoa sabe por quê */}
+                  <Aparece quando={noMaximo}>
+                    <p className="mt-1 text-[13px] text-muted">Só temos {p.disponivel} agora.</p>
+                  </Aparece>
                   <Aparece quando={n > 0 && p.returnable}>
                     <label className="mt-2 flex min-h-11 items-center gap-2 text-sm">
                       <input type="checkbox" checked={!!noBottle[p.id]} onChange={(e) => setNoBottle((b) => ({ ...b, [p.id]: e.target.checked }))} />

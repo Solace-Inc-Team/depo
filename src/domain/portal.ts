@@ -4,7 +4,7 @@ import { db, withTenant } from "@/db";
 import { branches, customers, orderItems, orders, products, tenants, users } from "@/db/schema";
 import { type Ctx, DomainError, isUuid } from "@/lib/ctx";
 import { createOrder } from "./orders";
-import { audit } from "./stock";
+import { audit, disponivelNaLoja } from "./stock";
 import { telefoneSchema } from "./telefone";
 import { salvarInscricao } from "./aviso";
 
@@ -27,14 +27,19 @@ export async function portalTenant(slug: string, filial?: string) {
   return { ...t, branchId: loja.id, branchName: loja.main ? null : loja.name };
 }
 
-export const portalProducts = (tenantId: string) =>
-  withTenant(tenantId, () =>
-    db
+/** Produtos à venda no portal, com quanto há livre na loja da filial; o que acabou vai para o fim da lista. */
+export const portalProducts = (tenantId: string, branchId: string) =>
+  withTenant(tenantId, async () => {
+    const lista = await db
       .select({ id: products.id, name: products.name, priceCents: products.priceCents, returnable: products.returnable, containerPriceCents: products.containerPriceCents })
       .from(products)
       .where(and(eq(products.tenantId, tenantId), eq(products.active, true)))
-      .orderBy(asc(products.name)),
-  );
+      .orderBy(asc(products.name));
+    const livre = await disponivelNaLoja(db, tenantId, branchId, lista.map((p) => p.id));
+    return lista
+      .map((p) => ({ ...p, disponivel: Math.max(0, livre.get(p.id) ?? 0) }))
+      .sort((a, b) => Number(b.disponivel > 0) - Number(a.disponivel > 0));
+  });
 
 export const portalOrderSchema = z.object({
   name: z.string().trim().min(2, "Informe seu nome.").max(120, "O nome pode ter até 120 letras."),
@@ -91,6 +96,7 @@ export async function placePortalOrder(tenantId: string, branchId: string, input
       // o que o cliente digitou vale para esta entrega; se o telefone já era de alguém, a loja confere antes de sair
       const order = await createOrder(ctx, {
         mode: "entrega",
+        exigirEstoque: true,
         customerId,
         items: input.items,
         paymentMethod: input.paymentMethod,

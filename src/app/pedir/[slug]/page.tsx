@@ -16,7 +16,7 @@ export default async function Pedir({ params, searchParams }: PageProps<"/pedir/
   const filial = (await searchParams).filial;
   const t = await portalTenant(slug, typeof filial === "string" ? filial : "");
   if (!t) notFound();
-  const products = await portalProducts(t.id);
+  const products = await portalProducts(t.id, t.branchId);
 
   return (
     <main className="stagger mx-auto min-h-screen max-w-lg px-4 py-8">

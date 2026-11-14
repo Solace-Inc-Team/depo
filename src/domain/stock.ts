@@ -1,7 +1,7 @@
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { tenantTransaction, type Tx } from "@/db";
 import { z } from "zod";
-import { products, stockMovements, auditLog, suppliers, expenses } from "@/db/schema";
+import { products, stockMovements, auditLog, suppliers, expenses, orders, orderItems } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
 import { telefoneSchema } from "./telefone";
 import { todayISO } from "@/lib/period";
@@ -35,6 +35,44 @@ export async function balanceOf(tx: Tx, ctx: Ctx, productId: string, state: Stat
       ),
     );
   return row.qty;
+}
+
+/**
+ * Cheios na loja que ainda não têm dono: o estoque da loja menos o que os pedidos abertos (ou esperando o
+ * Pix) já seguram. A mesma conta da tela de Estoque. Funciona dentro de uma transação (com os produtos
+ * travados, dois pedidos não levam o mesmo último galão) ou fora dela.
+ */
+export async function disponivelNaLoja(tx: Pick<Tx, "select">, tenantId: string, branchId: string, productIds: string[]) {
+  if (!productIds.length) return new Map<string, number>();
+  const naLoja = await tx
+    .select({ productId: stockMovements.productId, qty: sql<number>`coalesce(sum(${stockMovements.quantity}), 0)::int` })
+    .from(stockMovements)
+    .where(
+      and(
+        eq(stockMovements.tenantId, tenantId),
+        eq(stockMovements.branchId, branchId),
+        inArray(stockMovements.productId, productIds),
+        eq(stockMovements.state, "cheio"),
+        isNull(stockMovements.driverId),
+      ),
+    )
+    .groupBy(stockMovements.productId);
+  const seguros = await tx
+    .select({ productId: orderItems.productId, qty: sql<number>`coalesce(sum(${orderItems.quantity}), 0)::int` })
+    .from(orderItems)
+    .innerJoin(orders, eq(orders.id, orderItems.orderId))
+    .where(
+      and(
+        eq(orders.tenantId, tenantId),
+        eq(orders.branchId, branchId),
+        inArray(orders.status, ["aberto", "aguardando_pagamento"]),
+        inArray(orderItems.productId, productIds),
+      ),
+    )
+    .groupBy(orderItems.productId);
+  return new Map(
+    productIds.map((id) => [id, (naLoja.find((r) => r.productId === id)?.qty ?? 0) - (seguros.find((r) => r.productId === id)?.qty ?? 0)]),
+  );
 }
 
 type Move = {
