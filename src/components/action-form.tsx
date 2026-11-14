@@ -92,6 +92,8 @@ export function ActionForm({
   return (
     <form
       ref={formRef}
+      // mexeu no formulário depois do erro: o aviso sai (esmaecendo), em vez de ficar até o próximo envio
+      onInput={() => error && setError(undefined)}
       // se enviado antes do JS carregar, vai como POST: senha nunca aparece na URL
       method="post"
       // a validação dos campos é mostrada pelo próprio formulário (sem o balão do navegador); o servidor valida de novo

@@ -355,7 +355,8 @@ export function NewOrderForm({
               </Aparece>
             </div>
           </details>
-          <div className="mt-5 border-t border-line pt-4">
+          {/* no celular itens e total já estão na barra de baixo: o resumo inteiro (e a linha que o separava) fica no computador */}
+          <div className="mt-5 border-t border-line pt-4 max-lg:hidden">
             {/* a lista fica sempre; sem item, só a margem some (junto com a última linha) */}
             <ul className={`text-sm transition-[margin] duration-[var(--dur)] ${items.length ? "mb-3" : ""}`}>
                 {/* todos os produtos, recolhidos os que estão em zero: a linha entra e sai deslizando */}

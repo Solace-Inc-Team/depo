@@ -952,6 +952,11 @@ body[data-confirmando] .deliver-btn {
     box-shadow: none;
     background: #fff;
   }
+  /* no papel o cinza claro some em impressora barata: o texto secundário sai escuro */
+  :root,
+  :root[data-tema] {
+    --muted: #444;
+  }
 }
 
 /* página inicial: entrada do topo em sequência */
@@ -1589,6 +1594,10 @@ body[data-confirmando] .deliver-btn {
 .input[aria-invalid="true"] {
   border-color: var(--danger);
   box-shadow: 0 0 0 3px var(--danger-soft);
+}
+/* com o foco no campo que errou, o anel de foco não soma um azul ao vermelho */
+.input[aria-invalid="true"]:focus-visible {
+  outline-color: var(--danger);
 }
 .campo-treme {
   animation: treme 360ms ease-in-out;

@@ -135,6 +135,8 @@ export default async function Fechamento({ searchParams }: PageProps<"/relatorio
       </>
       )}
 
+      {/* dia parado: o resumo seria só uma fila de R$ 0,00 debaixo de "nenhuma venda" */}
+      {!(semMovimento && !fiadoIn && !spent && b.cancelled + b.refunded + b.occurrences + b.partials === 0) && (
       <Block title="Resumo">
         <Row label="Vendas entregues" cents={d.total} />
         <Row label="Despesas" cents={spent ? -spent : 0} />
@@ -156,6 +158,7 @@ export default async function Fechamento({ searchParams }: PageProps<"/relatorio
           </p>
         )}
       </Block>
+      )}
 
       <div className="mt-12 hidden grid-cols-2 gap-12 text-center text-[13px] print:grid">
         <p className="border-t border-fg pt-2">Conferido por</p>

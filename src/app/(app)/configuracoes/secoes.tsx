@@ -33,7 +33,7 @@ export async function secoesConfig(tenantId: string) {
 
   return {
     regras: (
-      <ActionForm action={saveSettingsAction} className="space-y-5">
+      <ActionForm action={saveSettingsAction} salvaAoMudar className="space-y-5">
         <input type="hidden" name="section" value="regras" />
         <div>
           <label className="label" htmlFor="staffDiscountPct">Desconto máximo da equipe (%)</label>
@@ -44,13 +44,13 @@ export async function secoesConfig(tenantId: string) {
           <label className="label" htmlFor="lateAfterMinutes">Pedido atrasado depois de (minutos)</label>
           <input id="lateAfterMinutes" name="lateAfterMinutes" type="number" min={10} max={1440} required defaultValue={s.lateAfterMinutes} className="input w-28" />
         </div>
-        <button className="btn btn-primary">Salvar</button>
       </ActionForm>
     ),
 
     pagamentos: (
       <div className="space-y-8">
-        <ActionForm action={saveSettingsAction} className="space-y-3">
+        {/* salva sozinho ao sair do campo, como Produtos: uma regra só para o que se ajusta uma vez */}
+        <ActionForm action={saveSettingsAction} salvaAoMudar className="space-y-3">
           <input type="hidden" name="section" value="pix" />
           <h3 className="font-semibold">Chave Pix</h3>
           <div>
@@ -67,7 +67,6 @@ export async function secoesConfig(tenantId: string) {
               <input id="pixCity" name="pixCity" maxLength={40} defaultValue={s.pixCity} className="input" />
             </div>
           </div>
-          <button className="btn btn-primary">Salvar</button>
         </ActionForm>
 
         <div className="border-t border-line pt-6">
@@ -94,7 +93,7 @@ export async function secoesConfig(tenantId: string) {
                   </div>
                   <div>
                     <label className="label" htmlFor="mp-senha">Sua senha</label>
-                    <input id="mp-senha" name="confirmPassword" type="password" autoComplete="current-password" required className="input sm:max-w-xs" />
+                    <input id="mp-senha" name="confirmPassword" type="password" autoComplete="current-password" required className="input" />
                   </div>
                   <button className="btn btn-primary w-full">Conectar</button>
                 </ActionForm>

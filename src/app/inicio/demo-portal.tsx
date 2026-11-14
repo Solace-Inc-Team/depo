@@ -6,12 +6,13 @@ import { pixPayload } from "@/lib/pix";
 import { brl, useEscuro } from "./palco";
 import "./demo-portal.css";
 
-// FIG. 04: o cliente abre o link da loja, põe um gás, escolhe Pix e pede; volta o QR na hora.
+// FIG. 04: o cliente abre o link da loja, põe um gás (o Pix já vem escolhido) e pede; volta o QR na hora.
 // Toca uma vez quando o card aparece e fica no QR.
 
 type S = { gas: number; pagamento: number; enviando: boolean; feito: boolean };
 
-const INICIO: S = { gas: 0, pagamento: 0, enviando: false, feito: false };
+// o portal abre com o Pix já escolhido (quando a loja tem Pix): a demo também
+const INICIO: S = { gas: 0, pagamento: 1, enviando: false, feito: false };
 const FIM: S = { gas: 1, pagamento: 1, enviando: false, feito: true };
 
 // um código Pix de verdade, montado como o sistema monta; a chave é aleatória
@@ -34,10 +35,7 @@ async function script(a: Act<S>) {
   await a.wait(900);
   await a.click({ at: "mais", x: 0.5, y: 0.5 });
   a.put({ gas: 1 });
-  await a.wait(900);
-  await a.click({ at: "pix", x: 0.5, y: 0.5 });
-  a.put({ pagamento: 1 });
-  await a.wait(900);
+  await a.wait(1100);
   await a.click({ at: "pedir", x: 0.62, y: 0.55 });
   a.put({ enviando: true });
   await a.wait(800);
@@ -85,7 +83,7 @@ export function DemoPortal({ escuro = false }: { escuro?: boolean }) {
               {/* o mesmo desenho da escolha no portal: marcador redondo e borda na cor da marca */}
               <div className="dp-opcoes">
                 {["Dinheiro", "Pix", "Cartão"].map((l, i) => (
-                  <span key={l} className="dp-opcao" data-on={s.pagamento === i || undefined} data-target={l === "Pix" ? "pix" : undefined}>
+                  <span key={l} className="dp-opcao" data-on={s.pagamento === i || undefined}>
                     <span className="dp-opcao__marca" aria-hidden="true" />
                     {l}
                   </span>
