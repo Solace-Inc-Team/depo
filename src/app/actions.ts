@@ -223,7 +223,7 @@ export async function confirmPixAction(fd: FormData) {
   return run(() => confirmPix(user, str(fd, "orderId")), ["/"], "Pix conferido.");
 }
 
-export type PortalResult = { error?: string; number?: number; totalCents?: number; pix?: string | null; acompanhar?: string };
+export type PortalResult = { error?: string; number?: number; totalCents?: number; pix?: string | null; pixAutomatico?: boolean; acompanhar?: string };
 
 /** Pedido do portal público: sem login, então com limite por IP contra abuso. */
 export async function portalOrderAction(slug: string, filial: string, fd: FormData): Promise<PortalResult> {
@@ -250,10 +250,12 @@ export async function portalOrderAction(slug: string, filial: string, fd: FormDa
       }),
     );
     revalidatePath("/", "layout");
+    const pix = order.paymentMethod === "pix" ? await pixDoPedido(t.id, order.id) : null;
     return {
       number: order.number,
       totalCents: order.totalCents,
-      pix: order.paymentMethod === "pix" ? ((await pixDoPedido(t.id, order.id))?.codigo ?? null) : null,
+      pix: pix?.codigo ?? null,
+      pixAutomatico: pix?.automatico ?? false,
       acompanhar: `/pedir/${slug}/acompanhar/${order.trackingId}`,
     };
   } catch (e) {

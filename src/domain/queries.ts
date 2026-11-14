@@ -96,6 +96,8 @@ const orderCols = {
   driverName: driver.name,
   driverId: orders.driverId,
   branchId: orders.branchId,
+  // Pix com cobrança do Mercado Pago: confirma sozinho (sem ela, a loja confere no extrato)
+  pixAutomatico: sql<boolean>`${orders.mpPaymentId} is not null`,
 };
 
 export const listOrders = scoped(function listOrders(
@@ -241,12 +243,13 @@ export const stockOverview = scoped(async function stockOverview(tenantId: strin
     .from(stockMovements)
     .where(and(eq(stockMovements.tenantId, tenantId), eq(stockMovements.branchId, branchId)))
     .groupBy(stockMovements.productId, stockMovements.state, stockMovements.driverId);
-  // pedidos lançados que ainda não saíram já "seguram" os cheios da loja
+  // pedidos lançados que ainda não saíram já "seguram" os cheios da loja; o do site esperando o Pix também
+  // (por no máximo 15 minutos), para ninguém vender o mesmo galão enquanto o cliente paga
   const held = await db
     .select({ productId: orderItems.productId, qty: sql<number>`sum(${orderItems.quantity})::int` })
     .from(orderItems)
     .innerJoin(orders, eq(orders.id, orderItems.orderId))
-    .where(and(eq(orders.tenantId, tenantId), eq(orders.branchId, branchId), eq(orders.status, "aberto")))
+    .where(and(eq(orders.tenantId, tenantId), eq(orders.branchId, branchId), inArray(orders.status, ["aberto", "aguardando_pagamento"])))
     .groupBy(orderItems.productId);
   return prods.map((p) => {
     const mine = rows.filter((r) => r.productId === p.id);
@@ -484,6 +487,7 @@ export const dashboard = scoped(async function dashboard(tenantId: string, f: { 
     late: now.late,
     returned: now.returned,
     pixToCheck: now.pixToCheck,
+    pixSite: now.pixSite,
     byMethod,
     cashInStreet: open.reduce((s, x) => s + x.expected, 0),
     openShifts: open,
@@ -565,6 +569,8 @@ export const exceptionsNow = scoped(async function exceptionsNow(tenantId: strin
       returned: sql<number>`(count(*) filter (where ${orders.status} = 'aberto' and ${orders.occurrence} is not null))::int`,
       pixToCheck: sql<number>`(count(*) filter (where ${orders.status} = 'entregue' and ${orders.paymentMethod} = 'pix' and ${orders.pixConfirmedAt} is null))::int`,
       waiting: sql<number>`(count(*) filter (where ${orders.status} = 'aberto'))::int`,
+      // pedido do site no Pix sem cobrança do Mercado Pago: só entra na fila quando a loja confere o extrato
+      pixSite: sql<number>`(count(*) filter (where ${orders.status} = 'aguardando_pagamento' and ${orders.mpPaymentId} is null))::int`,
       inRoute: sql<number>`(count(*) filter (where ${orders.status} = 'em_rota'))::int`,
     })
     .from(orders)

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { dashboard, listDrivers, primeirosPassos } from "@/domain/queries";
+import { cancelarPixVencidos } from "@/domain/pix";
 import { todayISO } from "@/lib/period";
 import { LiveNumber } from "@/components/live-number";
 import { SemanaBarras } from "@/components/semana-barras";
@@ -19,6 +20,8 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
   const hojeISO = todayISO();
   // dia futuro ou malformado volta para hoje; entregador só vale se for da empresa
   const dia = typeof sp.dia === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.dia) && sp.dia <= hojeISO ? sp.dia : hojeISO;
+  // pedido do site que passou do prazo sem pagar sai antes de contar a fila
+  await cancelarPixVencidos(user.tenantId);
   const entregadores = await listDrivers(user.tenantId, user.branchId);
   const entregador = entregadores.find((e) => e.id === sp.entregador);
   const d = await dashboard(user.tenantId, { day: dia, driverId: entregador?.id, branchId: user.branchId });
@@ -44,6 +47,13 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
     });
   if (d.returned > 0)
     alertas.push({ tom: "aviso", texto: `${d.returned} ${d.returned === 1 ? "pedido voltou" : "pedidos voltaram"} da rua sem entrega`, href: "/entregas", acao: "Resolver" });
+  if (d.pixSite > 0)
+    alertas.push({
+      tom: "grave",
+      texto: `${d.pixSite} ${d.pixSite === 1 ? "pedido do site espera" : "pedidos do site esperam"} o Pix ser conferido para sair`,
+      href: "/entregas",
+      acao: "Conferir",
+    });
   if (d.pixToCheck > 0)
     alertas.push({
       tom: "aviso",

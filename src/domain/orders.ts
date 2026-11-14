@@ -146,6 +146,8 @@ export async function createOrder(ctx: Ctx, raw: NewOrder) {
         notes: input.notes,
         createdBy: ctx.userId,
         ...(input.mode === "balcao" ? { status: "entregue" as const, deliveredAt: now } : {}),
+        // pedido do site pago no Pix só entra na fila de entrega depois que o Pix é confirmado
+        ...(input.mode === "entrega" && input.origin === "portal" && input.paymentMethod === "pix" ? { status: "aguardando_pagamento" as const } : {}),
       })
       .returning();
 
@@ -227,13 +229,16 @@ export async function reportOccurrence(ctx: Ctx, orderId: string, kind: string, 
   });
 }
 
+/** Pix confirmado: o pedido que esperava pagamento entra na fila; os outros ficam como estão. */
+export const liberaParaFila = sql`case when ${orders.status} = 'aguardando_pagamento' then 'aberto'::order_status else ${orders.status} end`;
+
 /** Quem confere o extrato marca o Pix como recebido. Antes disso o pedido aparece como "Pix a conferir". */
 export async function confirmPix(ctx: Ctx, orderId: string) {
   assertRole(ctx, "dono", "caixa");
   await tenantTransaction(ctx, async (tx) => {
     const [o] = await tx
       .update(orders)
-      .set({ pixConfirmedAt: new Date(), pixConfirmedBy: ctx.userId })
+      .set({ pixConfirmedAt: new Date(), pixConfirmedBy: ctx.userId, status: liberaParaFila })
       .where(
         and(
           eq(orders.id, orderId),
@@ -241,7 +246,7 @@ export async function confirmPix(ctx: Ctx, orderId: string) {
           ctx.role === "dono" ? undefined : eq(orders.branchId, ctx.branchId),
           eq(orders.paymentMethod, "pix"),
           isNull(orders.pixConfirmedAt),
-          inArray(orders.status, ["aberto", "em_rota", "entregue"]),
+          inArray(orders.status, ["aguardando_pagamento", "aberto", "em_rota", "entregue"]),
         ),
       )
       .returning({ id: orders.id });

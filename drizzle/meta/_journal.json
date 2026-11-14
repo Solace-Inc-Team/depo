@@ -127,6 +127,13 @@
       "when": 1794594331318,
       "tag": "0017_mercado_pago",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794686049887,
+      "tag": "0018_pix_antes_da_entrega",
+      "breakpoints": true
     }
   ]
 }

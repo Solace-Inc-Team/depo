@@ -95,6 +95,31 @@ test("portal: cliente pede pelo link e o pedido chega à fila com o selo do site
   await expect(naFila).toContainText("Rua das Flores, 12");
 });
 
+test("portal no Pix: o pedido só entra na fila depois que a loja confirma o pagamento", async ({ page }) => {
+  await page.context().clearCookies();
+  await page.goto("/pedir/fonte-azul");
+  await mais(page, "Galão de água 20L").click();
+  await page.getByLabel("Seu nome").fill("Cliente do Pix");
+  await page.getByLabel("Telefone com DDD").fill("(11) 95555-0202");
+  await page.getByLabel("Endereço").fill("Rua do Pix, 7 - Centro");
+  await page.getByRole("button", { name: "Pix" }).click();
+  await page.getByRole("button", { name: "Fazer pedido" }).click();
+  // a loja de demonstração não tem Mercado Pago: quem libera é a loja, ao conferir o extrato
+  await expect(page.getByText(/assim que a loja confirmar o pagamento/)).toBeVisible();
+
+  await entrar(page, "caixa@demo.com");
+  await page.goto("/entregas");
+  const esperando = page.getByRole("listitem").filter({ hasText: "Cliente do Pix" });
+  await expect(page.getByRole("heading", { name: /Esperando o Pix/ })).toBeVisible();
+  // fora da fila: não há como mandar para entrega antes de pagar
+  await expect(esperando.getByRole("button", { name: "Saiu para entrega" })).toHaveCount(0);
+  await esperando.getByRole("button", { name: "Recebi o Pix" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Recebi o Pix" }).click();
+  await expect(page.getByRole("heading", { name: /Esperando o Pix/ })).toHaveCount(0);
+  const naFila = page.getByRole("listitem").filter({ hasText: "Cliente do Pix" });
+  await expect(naFila.getByRole("button", { name: "Saiu para entrega" })).toBeVisible();
+});
+
 test("cada perfil só entra no que é seu", async ({ page }) => {
   await entrar(page, "joao@demo.com");
   await page.goto("/caixa");

@@ -46,7 +46,7 @@ export default async function Clientes({ searchParams }: PageProps<"/clientes">)
                   {c.address && <p className="truncate text-sm text-muted">{c.address}</p>}
                   {/* telefone inteiro: é o que mais se usa da lista, e no celular liga com um toque */}
                   {c.phone && (
-                    <a href={`tel:${c.phone.replace(/D/g, "")}`} className="alvo num relative text-sm text-muted hover:text-accent">
+                    <a href={`tel:${c.phone.replace(/\D/g, "")}`} className="alvo num relative text-sm text-muted hover:text-accent">
                       {c.phone}
                     </a>
                   )}

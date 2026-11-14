@@ -245,7 +245,7 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                     .map(([k, v]) => (
                       <div key={k} className="contents">
                         <dt className="text-muted">{k}</dt>
-                        <dd className="min-w-0 break-words">{k === "Telefone" ? <a href={`tel:${v!.replace(/D/g, "")}`} className="alvo num hover:text-accent">{v}</a> : v}</dd>
+                        <dd className="min-w-0 break-words">{k === "Telefone" ? <a href={`tel:${v!.replace(/\D/g, "")}`} className="alvo num hover:text-accent">{v}</a> : v}</dd>
                       </div>
                     ))}
                 </dl>

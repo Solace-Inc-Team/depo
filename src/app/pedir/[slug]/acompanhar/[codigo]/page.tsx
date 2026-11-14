@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { pedidoAcompanhado } from "@/domain/portal";
-import { conferirPixMp, pixDoPedido } from "@/domain/pix";
+import { PRAZO_PAGAR_MS, cancelarPixVencidos, conferirPixMp, pixDoPedido } from "@/domain/pix";
 import { PixBox } from "@/components/pix-box";
 import { fmtDateTime, fmtTime } from "@/components/ui";
 import { formatBRL } from "@/lib/money";
@@ -23,11 +23,19 @@ export default async function Acompanhar({ params }: PageProps<"/pedir/[slug]/ac
   // a página se atualiza sozinha a cada 20 s; com Mercado Pago, cada vez pergunta se o Pix caiu
   if (achado.pedido.paymentMethod === "pix" && !achado.pedido.pixConfirmedAt && (await conferirPixMp(achado.loja.id, achado.pedidoId)))
     achado = (await pedidoAcompanhado(slug, codigo))!;
+  // passou do prazo sem pagar: o pedido é cancelado aqui mesmo, e a página mostra o porquê
+  // (o prazo é conferido lá dentro)
+  if (achado.pedido.status === "aguardando_pagamento") {
+    await cancelarPixVencidos(achado.loja.id);
+    achado = (await pedidoAcompanhado(slug, codigo))!;
+  }
   const { loja, pedido: p, itens } = achado;
 
   const cancelado = p.status === "cancelado" || p.status === "estornado";
   const entregue = p.status === "entregue";
   const naRua = p.status === "em_rota";
+  const aPagar = p.status === "aguardando_pagamento";
+  const pagarAte = fmtTime(new Date(p.createdAt.getTime() + PRAZO_PAGAR_MS));
   const quem = p.entregador ? ` com ${p.entregador}` : "";
   const manchete = cancelado
     ? "Pedido cancelado"
@@ -35,7 +43,9 @@ export default async function Acompanhar({ params }: PageProps<"/pedir/[slug]/ac
       ? "Entregue"
       : naRua
         ? `Saiu para entrega${quem}`
-        : "Recebido, a loja está separando";
+        : aPagar
+          ? "Falta pagar o Pix"
+          : "Recebido, a loja está separando";
   // Pix que ainda não caiu: o cliente pode pagar daqui mesmo
   const pix = p.paymentMethod === "pix" && !p.pixConfirmedAt && !cancelado ? await pixDoPedido(loja.id, achado.pedidoId) : null;
 
@@ -59,7 +69,16 @@ export default async function Acompanhar({ params }: PageProps<"/pedir/[slug]/ac
           {manchete}
         </p>
         {cancelado ? (
-          <p className="mt-2 text-muted">Se tiver alguma dúvida, fale com a loja.</p>
+          <p className="mt-2 text-muted">
+            {p.cancelReason === "Pix não pago em 15 minutos"
+              ? "O Pix não foi pago em 15 minutos. Se ainda quiser, faça um pedido novo."
+              : "Se tiver alguma dúvida, fale com a loja."}
+          </p>
+        ) : aPagar ? (
+          // com Mercado Pago há prazo (a cobrança vence); na chave Pix comum quem libera é a loja ao conferir
+          <p className="mt-2 text-muted">
+            {pix?.automatico ? `Pague até ${pagarAte}. Assim que o Pix cair, a loja separa para entrega.` : "Assim que a loja confirmar o Pix, ela separa para entrega."}
+          </p>
         ) : (
           // a lista muda de chave quando a situação muda: a etapa nova chega com movimento, não aparece de repente
           <ol key={p.status} className="etapas mt-5">

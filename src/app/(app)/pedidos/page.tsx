@@ -3,6 +3,7 @@ import { ViewTransition } from "react";
 import { Plus, Search, ReceiptText } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { countOrdersByStatus, listOrders } from "@/domain/queries";
+import { cancelarPixVencidos } from "@/domain/pix";
 import { Money, PageHeader, SiteBadge, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
 
 export const metadata = { title: "Pedidos" };
@@ -12,6 +13,7 @@ const isNew = (d: Date) => Date.now() - d.getTime() < 60_000;
 
 const tabs = [
   ["", "Todos"],
+  ["aguardando_pagamento", "Esperando Pix"],
   ["aberto", "Aguardando"],
   ["em_rota", "Em rota"],
   ["entregue", "Entregues"],
@@ -24,6 +26,7 @@ export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
   const sp = await searchParams;
   const current = tabs.find(([v]) => v === sp.status)?.[0] ?? "";
   const q = typeof sp.q === "string" ? sp.q : "";
+  await cancelarPixVencidos(user.tenantId);
   const [orders, counts] = await Promise.all([
     listOrders(user.tenantId, { status: current || undefined, q, branchId: user.branchId }),
     countOrdersByStatus(user.tenantId, user.branchId),

@@ -41,7 +41,7 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
   if (!o || (user.role !== "dono" && o.branchId !== user.branchId)) notFound();
   // entregadores e turnos da filial do pedido, não da que o dono está vendo
   const [drivers, open, settings] = await Promise.all([listDrivers(user.tenantId, o.branchId), listShifts(user.tenantId, o.branchId, "aberto"), getSettings(user.tenantId)]);
-  const pixOpen = o.paymentMethod === "pix" && !o.pixConfirmedAt && ["aberto", "em_rota", "entregue"].includes(o.status);
+  const pixOpen = o.paymentMethod === "pix" && !o.pixConfirmedAt && ["aguardando_pagamento", "aberto", "em_rota", "entregue"].includes(o.status);
   const pix = pixOpen ? await pixDoPedido(user.tenantId, o.id) : null;
   const onShift = drivers.filter((d) => open.some((s) => s.driverId === d.id));
   const driverName = (id?: string) => drivers.find((d) => d.id === id)?.name ?? "outro entregador";
@@ -51,7 +51,7 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
     o.customerName && ["aberto", "em_rota"].includes(o.status)
       ? `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}/pedir/${settings.slug}/acompanhar/${o.trackingId}`
       : null;
-  const fone = o.customerPhone?.replace(/D/g, "") ?? "";
+  const fone = o.customerPhone?.replace(/\D/g, "") ?? "";
   const zap =
     acompanhar && fone.length >= 10
       ? `https://wa.me/${fone.length <= 11 ? "55" + fone : fone}?text=${encodeURIComponent(`Seu pedido #${o.number} na ${user.tenantName}: acompanhe aqui ${acompanhar}`)}`
@@ -195,6 +195,7 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
           {pixOpen && (
             <section className="panel p-4">
               <h2 className="h2 mb-1">{pix?.automatico ? "Pix aguardando pagamento" : "Pix a conferir"}</h2>
+              {o.status === "aguardando_pagamento" && <p className="mb-1 text-sm font-medium">Fora da fila de entrega até o Pix ser confirmado.</p>}
               <p className="mb-3 text-sm text-muted">
                 {pix?.automatico
                   ? "Cobrança no Mercado Pago: quando o cliente pagar, o pedido fica pago sozinho. Comprovante enviado pelo cliente não conta."
@@ -299,7 +300,7 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
             </section>
           )}
 
-          {(o.status === "aberto" || o.status === "em_rota") && (
+          {(o.status === "aguardando_pagamento" || o.status === "aberto" || o.status === "em_rota") && (
             <section className="panel p-4">
               <h2 className="h2 mb-1">Cancelar pedido</h2>
               {o.status === "em_rota" && <p className="mb-2 text-sm text-muted">Os produtos voltam do entregador para a loja.</p>}

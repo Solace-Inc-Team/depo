@@ -1012,11 +1012,68 @@ test("Mercado Pago: conecta com o token da loja, cobra o Pix do pedido, confirma
   assert.match(reserva!.codigo, /chave@loja-a\.com/);
   fora = false;
 
+  // pedido do site no Pix: fica fora da fila até pagar, mas já segura o estoque
+  const { orders } = m.schema;
+  const doSite = () =>
+    m.orders.createOrder(A.ctx, {
+      mode: "entrega", origin: "portal", customerId: A.customer.id, items: [{ productId: A.product.id, quantity: 1, returnsEmpty: true }],
+      paymentMethod: "pix", deliveryFeeCents: 0, changeForCents: null, notes: "", driverId: null,
+    });
+  const reservadoAntes = (await m.q.stockOverview(A.t.id, A.branch.id)).find((p) => p.id === A.product.id)!.reserved;
+  const s1 = await doSite();
+  assert.equal(s1.status, "aguardando_pagamento");
+  assert.equal((await m.q.stockOverview(A.t.id, A.branch.id)).find((p) => p.id === A.product.id)!.reserved, reservadoAntes + 1);
+  await assert.rejects(m.orders.dispatchOrder(A.ctx, s1.id, A.driver.id), /Só pedidos em aberto/);
+  // a cobrança vence junto com o prazo de pagar (15 minutos depois do pedido)
+  const c1 = await pix.pixDoPedido(A.t.id, s1.id);
+  assert.equal(c1?.automatico, true);
+  const [comCobranca] = await db.select().from(orders).where(eq(orders.id, s1.id));
+  assert.equal(comCobranca.mpExpiresAt!.getTime(), comCobranca.createdAt.getTime() + pix.PRAZO_PAGAR_MS);
+  // pagou: entra na fila sozinho
+  cobrancas.get(comCobranca.mpPaymentId!)!.pago = true;
+  assert.equal(await pix.conferirPixMp(A.t.id, s1.id), true);
+  assert.equal((await m.q.getOrder(A.t.id, s1.id))!.status, "aberto");
+
+  // não pagou em 15 minutos: cancelado sozinho; se o Pix caiu no último minuto, confirma em vez de cancelar
+  const s2 = await doSite();
+  const s3 = await doSite();
+  await pix.pixDoPedido(A.t.id, s2.id);
+  await pix.pixDoPedido(A.t.id, s3.id);
+  const vinteMinAtras = new Date(Date.now() - 20 * 60_000);
+  for (const s of [s2, s3]) await db.update(orders).set({ createdAt: vinteMinAtras }).where(eq(orders.id, s.id));
+  const [p3] = await db.select({ id: orders.mpPaymentId }).from(orders).where(eq(orders.id, s3.id));
+  cobrancas.get(p3.id!)!.pago = true;
+  await pix.cancelarPixVencidos(A.t.id);
+  const v2 = (await m.q.getOrder(A.t.id, s2.id))!;
+  assert.equal(v2.status, "cancelado");
+  assert.equal(v2.cancelReason, "Pix não pago em 15 minutos");
+  assert.equal((await m.q.getOrder(A.t.id, s3.id))!.status, "aberto");
+  // vencido não tem mais Pix para pagar
+  assert.equal(await pix.pixDoPedido(A.t.id, s2.id), null);
+  // outra empresa não cancela nada da A
+  const s4 = await doSite();
+  await pix.pixDoPedido(A.t.id, s4.id);
+  await db.update(orders).set({ createdAt: vinteMinAtras }).where(eq(orders.id, s4.id));
+  await pix.cancelarPixVencidos(B.t.id);
+  assert.equal((await m.q.getOrder(A.t.id, s4.id))!.status, "aguardando_pagamento");
+
   // desconectado: volta a conferência à mão e o token some do banco
   await pix.desconectarMercadoPago(A.ctx);
   const [semMp] = await db.select({ enc: tenants.mpTokenEnc }).from(tenants).where(eq(tenants.id, A.t.id));
   assert.equal(semMp.enc, null);
   assert.equal((await pix.pixDoPedido(A.t.id, o2.id))?.automatico, false);
+
+  // sem Mercado Pago (chave Pix comum): o pedido do site espera a loja conferir, sem prazo que cancele
+  const s5 = await doSite();
+  assert.equal((await pix.pixDoPedido(A.t.id, s5.id))?.automatico, false);
+  await db.update(orders).set({ createdAt: vinteMinAtras }).where(eq(orders.id, s5.id));
+  await pix.cancelarPixVencidos(A.t.id);
+  assert.equal((await m.q.getOrder(A.t.id, s5.id))!.status, "aguardando_pagamento");
+  await assert.rejects(m.orders.confirmPix({ ...A.ctx, role: "atendente" }, s5.id), /Sem permissão/);
+  await m.orders.confirmPix({ ...A.ctx, role: "caixa" }, s5.id);
+  const conferido = (await m.q.getOrder(A.t.id, s5.id))!;
+  assert.equal(conferido.status, "aberto");
+  assert.ok(conferido.pixConfirmedAt);
 });
 
 test("entregador sem celular: entra na equipe sem e-mail nem senha, e a loja lança a entrega dele", async () => {

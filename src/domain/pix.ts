@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, lt } from "drizzle-orm";
 import { db, tenantTransaction, withTenant } from "@/db";
 import { auditLog, orders, tenants } from "@/db/schema";
 import { type Ctx, DomainError, assertRole, isUuid } from "@/lib/ctx";
@@ -6,12 +6,17 @@ import { cifrar, decifrar } from "@/lib/segredo";
 import { ErroMp, cancelarPixMp, contaMp, criarPixMp, pagamentoMp } from "@/lib/mercadopago";
 import { pixPayload } from "@/lib/pix";
 import { audit } from "./stock";
+import { liberaParaFila } from "./orders";
 
 // Pix do pedido. Com a conta do Mercado Pago ligada, cada pedido no Pix vira uma cobrança própria, com o
 // valor certo, e o pedido fica pago sozinho quando o Mercado Pago confirma. Sem ela (ou se o Mercado Pago
 // falhar), vale o Pix na chave da empresa, conferido à mão no extrato, como sempre foi.
 
 const PRAZO_MS = 24 * 60 * 60 * 1000;
+/** Pedido do site no Pix: o cliente tem 15 minutos para pagar; depois a cobrança vence e o pedido é cancelado. */
+export const PRAZO_PAGAR_MS = 15 * 60 * 1000;
+// folga antes de cancelar: um Pix pago no último minuto ainda pode estar sendo processado
+const FOLGA_MS = 2 * 60 * 1000;
 
 /** Código Pix na chave da empresa (sem confirmação automática). */
 export function orderPix(t: { pixKey: string; pixName: string; pixCity: string }, order: { number: number; totalCents: number }) {
@@ -56,6 +61,7 @@ const lerPedido = (tenantId: string, orderId: string) =>
       .select({
         number: orders.number,
         status: orders.status,
+        createdAt: orders.createdAt,
         paymentMethod: orders.paymentMethod,
         totalCents: orders.totalCents,
         cashPartCents: orders.cashPartCents,
@@ -79,14 +85,17 @@ export async function pixDoPedido(tenantId: string, orderId: string): Promise<{ 
   const lido = await lerPedido(tenantId, orderId);
   if (!lido) return null;
   const { t, o } = lido;
-  if (o.paymentMethod !== "pix" || o.pixConfirmedAt || !["aberto", "em_rota", "entregue"].includes(o.status)) return null;
+  if (o.paymentMethod !== "pix" || o.pixConfirmedAt || !["aguardando_pagamento", "aberto", "em_rota", "entregue"].includes(o.status)) return null;
+  // pedido do site esperando o Pix: a cobrança vence no fim dos 15 minutos, e depois disso não há o que pagar
+  const limite = o.status === "aguardando_pagamento" ? o.createdAt.getTime() + PRAZO_PAGAR_MS : null;
+  if (limite && limite <= Date.now()) return null;
   const valor = o.totalCents - o.cashPartCents;
   const naChave = orderPix(t, { number: o.number, totalCents: valor });
   const semMp = naChave ? { codigo: naChave, automatico: false } : null;
   if (!t.mpTokenEnc) return semMp;
 
   // a cobrança que já existe serve enquanto o valor é o mesmo e falta tempo para vencer
-  if (o.mpPixCode && o.mpAmountCents === valor && o.mpExpiresAt && o.mpExpiresAt.getTime() > Date.now() + 10 * 60_000)
+  if (o.mpPixCode && o.mpAmountCents === valor && o.mpExpiresAt && o.mpExpiresAt.getTime() > Date.now() + (limite ? 60_000 : 10 * 60_000))
     return { codigo: o.mpPixCode, automatico: true };
 
   try {
@@ -94,7 +103,7 @@ export async function pixDoPedido(tenantId: string, orderId: string): Promise<{ 
     // o total mudou (entrega parcial): a cobrança antiga não pode mais ser paga
     if (o.mpPaymentId && o.mpAmountCents !== valor) await cancelarPixMp(token, o.mpPaymentId).catch(() => {});
     const app = process.env.APP_URL ?? "";
-    const expiraEm = new Date(Date.now() + PRAZO_MS);
+    const expiraEm = new Date(limite ?? Date.now() + PRAZO_MS);
     const novo = await criarPixMp(token, {
       valorCents: valor,
       descricao: `Pedido #${o.number}, ${t.name}`.slice(0, 120),
@@ -142,11 +151,45 @@ export async function conferirPixMp(tenantId: string, orderId: string): Promise<
   return tenantTransaction({ tenantId }, async (tx) => {
     const [ok] = await tx
       .update(orders)
-      .set({ pixConfirmedAt: new Date(), pixConfirmedBy: null })
+      .set({ pixConfirmedAt: new Date(), pixConfirmedBy: null, status: liberaParaFila })
       .where(and(eq(orders.id, orderId), eq(orders.mpPaymentId, o.mpPaymentId!), isNull(orders.pixConfirmedAt)))
       .returning({ id: orders.id });
     // sem pessoa: quem confirmou foi o Mercado Pago
     if (ok) await tx.insert(auditLog).values({ tenantId, userId: null, action: "pedido.pix_mercadopago", entity: "order", entityId: orderId, data: { pagamento: o.mpPaymentId, valor: p.valorCents } });
     return true;
   });
+}
+
+/**
+ * Pedidos do site que passaram do prazo sem o Pix cair: antes de cancelar, pergunta uma última vez ao Mercado
+ * Pago (o pagamento pode ter caído agora). Só vale para cobrança do Mercado Pago; na chave Pix comum quem
+ * confere é a loja, que pode ter recebido e ainda não olhado o extrato. Roda quando a loja ou o cliente abre
+ * a fila, o painel, os pedidos ou o acompanhamento: sem tarefa agendada, e nada fica preso por muito tempo.
+ */
+export async function cancelarPixVencidos(tenantId: string) {
+  const vencidos = await withTenant(tenantId, () =>
+    db
+      .select({ id: orders.id, number: orders.number })
+      .from(orders)
+      .where(
+        and(
+          eq(orders.tenantId, tenantId),
+          eq(orders.status, "aguardando_pagamento"),
+          isNotNull(orders.mpPaymentId),
+          lt(orders.createdAt, new Date(Date.now() - PRAZO_PAGAR_MS - FOLGA_MS)),
+        ),
+      ),
+  );
+  for (const v of vencidos) {
+    if (await conferirPixMp(tenantId, v.id)) continue;
+    await tenantTransaction({ tenantId }, async (tx) => {
+      const [ok] = await tx
+        .update(orders)
+        .set({ status: "cancelado", cancelReason: "Pix não pago em 15 minutos" })
+        .where(and(eq(orders.id, v.id), eq(orders.status, "aguardando_pagamento"), isNull(orders.pixConfirmedAt)))
+        .returning({ id: orders.id });
+      // sem pessoa: quem cancelou foi o prazo
+      if (ok) await tx.insert(auditLog).values({ tenantId, userId: null, action: "pedido.pix_vencido", entity: "order", entityId: v.id, data: { number: v.number } });
+    });
+  }
 }

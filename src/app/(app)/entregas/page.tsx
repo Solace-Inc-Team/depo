@@ -4,10 +4,12 @@ import { requireUser } from "@/lib/auth";
 import { withTenant } from "@/db";
 import { getSettings, listDrivers, listOrders, listShifts } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
-import { dispatchAction } from "@/app/actions";
-import { Empty, Money, PageHeader, SiteBadge, paymentLabel } from "@/components/ui";
+import { confirmPixAction, dispatchAction } from "@/app/actions";
+import { cancelarPixVencidos, PRAZO_PAGAR_MS } from "@/domain/pix";
+import { Empty, Money, PageHeader, SiteBadge, fmtTime, paymentLabel } from "@/components/ui";
 import { ResultadoRua } from "@/components/resultado-rua";
 import { Printer } from "lucide-react";
+import { formatBRL } from "@/lib/money";
 
 export const metadata = { title: "Entregas" };
 
@@ -24,8 +26,11 @@ const waited = (min: number) =>
 
 export default async function Entregas() {
   const user = await requireUser("dono", "atendente", "caixa");
-  const [waiting, inRoute, drivers, open, settings] = await withTenant(user.tenantId, () =>
+  // quem passou dos 15 minutos sem pagar sai antes de a fila ser montada
+  await cancelarPixVencidos(user.tenantId);
+  const [aPagar, waiting, inRoute, drivers, open, settings] = await withTenant(user.tenantId, () =>
     Promise.all([
+      listOrders(user.tenantId, { status: "aguardando_pagamento", branchId: user.branchId }),
       listOrders(user.tenantId, { status: "aberto", branchId: user.branchId }),
       listOrders(user.tenantId, { status: "em_rota", branchId: user.branchId }),
       listDrivers(user.tenantId, user.branchId),
@@ -49,6 +54,41 @@ export default async function Entregas() {
             : "Pedidos esperando para sair e o que está na rua com cada entregador."
         }
       />
+
+      {/* pedidos do site no Pix que ainda não foram pagos: ficam fora da fila até o Pix cair */}
+      {aPagar.length > 0 && (
+        <section className="panel mb-6">
+          <h2 className="h2 border-b border-line px-4 py-3">
+            Esperando o Pix <span className="font-normal text-muted">({aPagar.length})</span>
+          </h2>
+          <ul>
+            {[...aPagar].reverse().map((o) => (
+              <Card key={o.id} id={o.id}>
+                <li className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line px-4 py-3 last:border-0">
+                  <div className="min-w-0">
+                    <Link href={`/pedidos/${o.id}`} className="font-medium hover:text-accent">
+                      <span className="num text-muted">#{o.number}</span> {o.customerName ?? "Cliente"}
+                    </Link>
+                    <p className="text-sm text-muted">
+                      <Money cents={o.totalCents} /> no Pix
+                      {o.pixAutomatico
+                        ? `, confirma sozinho; cancela às ${fmtTime(new Date(o.createdAt.getTime() + PRAZO_PAGAR_MS))} se não pagar`
+                        : ", confira no extrato antes de liberar"}
+                    </p>
+                  </div>
+                  {/* sem Mercado Pago, quem confirma é a loja: viu no extrato, o pedido entra na fila */}
+                  {!o.pixAutomatico && user.role !== "atendente" && (
+                    <ActionForm action={confirmPixAction} confirm={`Confirmar que o Pix de ${formatBRL(o.totalCents)} do pedido #${o.number} caiu no extrato? O pedido entra na fila de entrega.`}>
+                      <input type="hidden" name="orderId" value={o.id} />
+                      <button className="btn btn-primary">Recebi o Pix</button>
+                    </ActionForm>
+                  )}
+                </li>
+              </Card>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="panel">

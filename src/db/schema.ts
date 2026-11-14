@@ -22,6 +22,8 @@ const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull(
 
 export const roleEnum = pgEnum("role", ["dono", "atendente", "caixa", "entregador"]);
 export const orderStatusEnum = pgEnum("order_status", [
+  // pedido do portal pago no Pix: fica fora da fila até o Pix ser confirmado
+  "aguardando_pagamento",
   "aberto",
   "em_rota",
   "entregue",

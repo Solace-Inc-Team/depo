@@ -129,6 +129,7 @@ export async function pedidoAcompanhado(slug: string, codigo: string) {
         totalCents: orders.totalCents,
         cashPartCents: orders.cashPartCents,
         pixConfirmedAt: orders.pixConfirmedAt,
+        cancelReason: orders.cancelReason,
         occurrence: orders.occurrence,
         occurrenceAt: orders.occurrenceAt,
         createdAt: orders.createdAt,

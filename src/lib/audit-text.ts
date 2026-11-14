@@ -231,6 +231,9 @@ export function descrever(action: string, dados: Dados, nomes: Record<string, st
       l.titulo = `Mercado Pago confirmou o Pix do pedido ${alvo}`;
       det(`Valor ${din(d.valor)}`);
       break;
+    case "pedido.pix_vencido":
+      l.titulo = `Pedido ${alvo} cancelado: Pix não pago em 15 minutos`;
+      break;
     case "empresa.filial_criar":
       l.titulo = `Criou a filial ${txt(d.name)}`;
       break;
