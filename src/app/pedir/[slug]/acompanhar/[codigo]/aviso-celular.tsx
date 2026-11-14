@@ -14,11 +14,25 @@ function bytes(base64: string) {
   return Uint8Array.from(b, (c) => c.charCodeAt(0));
 }
 
+// navegador com o serviço de push desligado (o Brave vem assim) não responde nem com erro: sem prazo, o
+// botão ficaria "ligando" para sempre
+const PRAZO_MS = 12_000;
+
 async function inscrever() {
-  const reg = await navigator.serviceWorker.register("/sw.js");
-  await navigator.serviceWorker.ready;
-  return (await reg.pushManager.getSubscription()) ?? reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: bytes(CHAVE) });
+  const tentativa = (async () => {
+    const reg = await navigator.serviceWorker.register("/sw.js");
+    await navigator.serviceWorker.ready;
+    return (await reg.pushManager.getSubscription()) ?? reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: bytes(CHAVE) });
+  })();
+  const prazo = new Promise<never>((_, falha) => setTimeout(() => falha(new Error("o serviço de push do navegador não respondeu")), PRAZO_MS));
+  return Promise.race([tentativa, prazo]);
 }
+
+// no Brave dá para dizer exatamente o que ligar; nos outros, o genérico
+const mensagemDeFalha = () =>
+  "brave" in navigator
+    ? "No Brave, ligue \"Usar os serviços do Google para mensagens push\" em Configurações, Privacidade e segurança, reinicie o navegador e tente de novo."
+    : "Este navegador não conseguiu ligar os avisos.";
 
 /**
  * "Avisar no celular": o cliente aceita e o celular avisa quando o Pix cai, quando sai para entrega e quando
@@ -61,8 +75,10 @@ export function AvisoNoCelular({ slug, codigo }: { slug: string; codigo: string 
         return setEstado("erro");
       }
       setEstado("ligado");
-    } catch {
-      setErro("Este navegador não conseguiu ligar os avisos.");
+    } catch (e) {
+      // o motivo fica no console (serviço de push desligado no navegador, por exemplo)
+      console.error("[aviso] não foi possível ligar:", e);
+      setErro(mensagemDeFalha());
       setEstado("erro");
     }
   }
@@ -82,7 +98,7 @@ export function AvisoNoCelular({ slug, codigo }: { slug: string; codigo: string 
         <>
           <button type="button" onClick={ligar} disabled={estado === "pedindo"} className="btn h-11 w-full gap-2">
             <Bell size={16} strokeWidth={1.75} aria-hidden="true" />
-            Avisar quando sair para entrega
+            {estado === "pedindo" ? "Ligando os avisos…" : "Avisar quando sair para entrega"}
           </button>
           {estado === "erro" && <p className="mt-2 text-[13px] text-danger">{erro}</p>}
         </>
