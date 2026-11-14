@@ -17,6 +17,7 @@ import type { ActionState } from "@/components/action-form";
 import { createOrder, dispatchOrder, deliverOrder, cancelOrder, refundOrder, newOrderSchema, reportOccurrence, reassignOrder, confirmPix } from "@/domain/orders";
 import { inscreverAviso, placePortalOrder, portalOrderSchema, portalTenant } from "@/domain/portal";
 import { conectarMercadoPago, desconectarMercadoPago, pixDoPedido } from "@/domain/pix";
+import { cancelarConta, criarConta, pagarConta } from "@/domain/contas";
 import { devolverVasilhame, registrarComodato } from "@/domain/comodato";
 import { createExpense, expenseSchema, voidExpense } from "@/domain/expenses";
 import { openShift, closeShift, addCashEntry, cashEntrySchema, voidCashEntry, resolveDifference } from "@/domain/shifts";
@@ -373,6 +374,7 @@ export async function purchaseAction(fd: FormData) {
         supplierId: optId(fd, "supplierId"),
         costCents: money(fd, "cost", false),
         costMethod: z.enum(["dinheiro", "pix", "cartao", "boleto"]).catch("boleto").parse(str(fd, "costMethod")),
+        dueOn: str(fd, "dueOn") || null,
       }),
     ["/"],
     "Entrada registrada.",
@@ -620,6 +622,32 @@ export async function createExpenseAction(fd: FormData) {
     ["/"],
     future ? `Despesa lançada com data futura (${paidOn.split("-").reverse().join("/")}). Confira se a data está certa.` : "Despesa lançada.",
   );
+}
+
+export async function criarContaAction(fd: FormData) {
+  const user = await requireUser("dono", "caixa");
+  return run(
+    () =>
+      criarConta(user, {
+        description: str(fd, "description"),
+        category: str(fd, "category") as never,
+        supplierId: optId(fd, "supplierId"),
+        amountCents: money(fd, "amount") ?? 0,
+        dueOn: str(fd, "dueOn"),
+      }),
+    ["/"],
+    "Conta lançada. Vai aparecer no Painel quando estiver para vencer.",
+  );
+}
+
+export async function pagarContaAction(fd: FormData) {
+  const user = await requireUser("dono", "caixa");
+  return run(() => pagarConta(user, str(fd, "contaId"), { method: str(fd, "method") as never, paidOn: str(fd, "paidOn") }), ["/"], "Conta paga. Entrou nas despesas.");
+}
+
+export async function cancelarContaAction(fd: FormData) {
+  const user = await requireUser("dono");
+  return run(() => cancelarConta(user, str(fd, "contaId"), str(fd, "reason")), ["/"], "Conta cancelada.");
 }
 
 export async function voidExpenseAction(fd: FormData) {

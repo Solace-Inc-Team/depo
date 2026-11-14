@@ -3,6 +3,7 @@ import { ChevronRight } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { dashboard, listDrivers, primeirosPassos } from "@/domain/queries";
 import { cancelarPixVencidos } from "@/domain/pix";
+import { contasVencendo } from "@/domain/contas";
 import { todayISO } from "@/lib/period";
 import { LiveNumber } from "@/components/live-number";
 import { SemanaBarras } from "@/components/semana-barras";
@@ -27,6 +28,8 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
   const d = await dashboard(user.tenantId, { day: dia, driverId: entregador?.id, branchId: user.branchId });
   // os primeiros passos são tarefas do dono; os outros perfis não têm acesso a metade das telas
   const passos = user.role === "dono" ? await primeirosPassos(user.tenantId) : null;
+  // contas a pagar são de quem cuida do dinheiro: dono e caixa
+  const contas = user.role === "dono" || user.role === "caixa" ? await contasVencendo(user.tenantId, user.branchId) : null;
   const ehHoje = dia === hojeISO;
   const filtrado = !ehHoje || !!entregador;
   const hoje = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Sao_Paulo" }).format(
@@ -47,6 +50,10 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
     });
   if (d.returned > 0)
     alertas.push({ tom: "aviso", texto: `${d.returned} ${d.returned === 1 ? "pedido voltou" : "pedidos voltaram"} da rua sem entrega`, href: "/entregas", acao: "Resolver" });
+  if (contas?.vencidas)
+    alertas.push({ tom: "grave", texto: `${contas.vencidas} ${contas.vencidas === 1 ? "conta a pagar venceu" : "contas a pagar venceram"}`, href: "/despesas", acao: "Ver contas" });
+  if (contas?.vencendo)
+    alertas.push({ tom: "aviso", texto: `${contas.vencendo} ${contas.vencendo === 1 ? "conta vence" : "contas vencem"} hoje ou amanhã`, href: "/despesas", acao: "Ver contas" });
   if (d.pixSite > 0)
     alertas.push({
       tom: "grave",

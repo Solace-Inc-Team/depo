@@ -11,7 +11,7 @@ export const metadata = { title: "Auditoria" };
 const destino = (entity: string, id: string | null) =>
   !id
     ? null
-    : ({ order: `/pedidos/${id}`, shift: `/caixa/${id}`, customer: `/clientes/${id}`, product: "/produtos", supplier: "/fornecedores", expense: "/despesas", user: "/equipe" } as Record<string, string>)[entity] ?? null;
+    : ({ order: `/pedidos/${id}`, shift: `/caixa/${id}`, customer: `/clientes/${id}`, product: "/produtos", supplier: "/fornecedores", expense: "/despesas", conta: "/despesas", user: "/equipe" } as Record<string, string>)[entity] ?? null;
 
 const dia = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Sao_Paulo" });
 const hora = new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });

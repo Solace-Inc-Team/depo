@@ -106,6 +106,8 @@ export async function deleteTenant(admin: SessionUser, tenantId: string, confirm
     await del("pagamentos_fiado", sql`delete from customer_payments where tenant_id = ${t.id}`);
     await del("lancamentos_de_caixa", sql`delete from cash_entries where tenant_id = ${t.id}`);
     await del("comodato", sql`delete from container_loans where tenant_id = ${t.id}`);
+    // a conta a pagar aponta para a despesa do pagamento e para o fornecedor: sai antes dos dois
+    await del("contas_a_pagar", sql`delete from contas_pagar where tenant_id = ${t.id}`);
     await del("despesas", sql`delete from expenses where tenant_id = ${t.id}`);
     await del("movimentacoes_estoque", sql`delete from stock_movements where tenant_id = ${t.id}`);
     await del("itens_pedido", sql`delete from order_items where tenant_id = ${t.id}`);

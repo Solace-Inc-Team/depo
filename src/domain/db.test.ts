@@ -342,11 +342,15 @@ test("exclusão de empresa: travas, apaga tudo dela e mais nada", async () => {
   const C = await makeTenant("C");
   await db.insert(sessions).values({ id: "sessao-c", userId: C.owner.id, expiresAt: new Date(Date.now() + 3600e3) });
   await db.insert(loginAttempts).values({ key: `login:${C.owner.email}:10.0.0.1` });
+  // conta paga: aponta para a despesa do pagamento (a exclusão tem de apagar na ordem certa)
+  const contasC = await import("@/domain/contas");
+  const contaC = await contasC.criarConta(C.ctx, { description: "Boleto C", category: "fornecedor", amountCents: 5000, dueOn: "2026-12-01" });
+  await contasC.pagarConta(C.ctx, contaC.id, { method: "pix", paidOn: "2026-11-10" });
 
   const admin = { ...A.ctx, platformAdmin: true, name: "", email: "admin@teste", tenantName: "", totpEnabled: false, termsVersion: null, branchName: "", branches: [] };
   const countOf = async (table: string, t: string) =>
     Number((await m.db.pgClient.unsafe(`select count(*)::int n from ${table} where tenant_id = $1`, [t]))[0].n);
-  const tables = ["audit_log", "customer_payments", "cash_entries", "customer_addresses", "expenses", "stock_movements", "order_items", "orders", "shifts", "customers", "products", "suppliers", "users"];
+  const tables = ["contas_pagar", "audit_log", "customer_payments", "cash_entries", "customer_addresses", "expenses", "stock_movements", "order_items", "orders", "shifts", "customers", "products", "suppliers", "users"];
   const before = { A: await countOf("orders", A.t.id), B: await countOf("orders", B.t.id) };
 
   await assert.rejects(m.platform.deleteTenant(admin, C.t.id, "C"), /Suspenda a empresa/);
@@ -1144,6 +1148,65 @@ test("aviso no celular: o cliente se inscreve pelo link do pedido e recebe saiu 
   await assert.rejects(m.portal.inscreverAviso(A.t.slug, o.trackingId, insc("tarde")), /já terminou/);
   delete process.env.NEXT_PUBLIC_VAPID_PUBLICA;
   delete process.env.VAPID_PRIVADA;
+});
+
+test("contas a pagar: nasce com vencimento, paga vira despesa, cancelar a despesa reabre, boleto da compra vira conta", async () => {
+  const { db } = m.db;
+  const { contasPagar, expenses } = m.schema;
+  const { eq } = await import("drizzle-orm");
+  const contas = await import("@/domain/contas");
+  const { todayISO } = await import("@/lib/period");
+  const hoje = todayISO();
+  const ontem = new Date(Date.parse(`${hoje}T12:00:00Z`) - 864e5).toISOString().slice(0, 10);
+  const daqui10 = new Date(Date.parse(`${hoje}T12:00:00Z`) + 10 * 864e5).toISOString().slice(0, 10);
+  const nova = { description: "Boleto do gás", category: "fornecedor" as const, amountCents: 120000, dueOn: hoje };
+  const antes = await contas.contasVencendo(A.t.id, A.branch.id);
+
+  await assert.rejects(contas.criarConta({ ...A.ctx, role: "atendente" }, nova), /Sem permissão/);
+  await assert.rejects(contas.criarConta(A.ctx, { ...nova, dueOn: "" }), /vencimento/);
+  await assert.rejects(contas.criarConta(A.ctx, { ...nova, supplierId: crypto.randomUUID() }), /Fornecedor não encontrado/);
+  const c1 = await contas.criarConta({ ...A.ctx, role: "caixa" }, nova);
+  const c2 = await contas.criarConta(A.ctx, { ...nova, description: "Aluguel", category: "aluguel", dueOn: ontem });
+  const c3 = await contas.criarConta(A.ctx, { ...nova, description: "Luz", category: "aluguel", dueOn: daqui10 });
+  // na lista, da que vence primeiro para a última; o Painel conta vencida e a que vence hoje/amanhã
+  const abertas = await contas.contasEmAberto(A.t.id, A.branch.id);
+  assert.deepEqual(abertas.filter((c) => [c1.id, c2.id, c3.id].includes(c.id)).map((c) => c.description), ["Aluguel", "Boleto do gás", "Luz"]);
+  const agora = await contas.contasVencendo(A.t.id, A.branch.id);
+  assert.equal(agora.vencidas, antes.vencidas + 1);
+  assert.equal(agora.vencendo, antes.vencendo + 1);
+  // outra empresa não vê nem paga
+  assert.ok((await contas.contasEmAberto(B.t.id, B.branch.id)).every((c) => c.id !== c1.id));
+  await assert.rejects(contas.pagarConta(B.ctx, c1.id, { method: "pix", paidOn: hoje }), /não encontrada/);
+
+  // pagou: vira despesa com a forma e a data do pagamento, e sai de "A pagar"
+  await assert.rejects(contas.pagarConta(A.ctx, c1.id, { method: "pix", paidOn: daqui10 }), /futuro/);
+  await contas.pagarConta(A.ctx, c1.id, { method: "pix", paidOn: hoje });
+  await assert.rejects(contas.pagarConta(A.ctx, c1.id, { method: "pix", paidOn: hoje }), /já foi paga/);
+  const [paga] = await db.select().from(contasPagar).where(eq(contasPagar.id, c1.id));
+  const [despesa] = await db.select().from(expenses).where(eq(expenses.id, paga.expenseId!));
+  assert.equal(despesa.amountCents, 120000);
+  assert.equal(despesa.method, "pix");
+  assert.equal(despesa.category, "fornecedor");
+  assert.ok((await contas.contasEmAberto(A.t.id, A.branch.id)).every((c) => c.id !== c1.id));
+  // a despesa do pagamento foi cancelada: a conta volta para "A pagar"
+  await m.exp.voidExpense(A.ctx, despesa.id, "paguei errado");
+  assert.ok((await contas.contasEmAberto(A.t.id, A.branch.id)).some((c) => c.id === c1.id));
+
+  // cancelar: só o dono, só em aberto
+  await assert.rejects(contas.cancelarConta({ ...A.ctx, role: "caixa" }, c3.id, "lançada duas vezes"), /Sem permissão/);
+  await contas.cancelarConta(A.ctx, c3.id, "lançada duas vezes");
+  assert.ok((await contas.contasEmAberto(A.t.id, A.branch.id)).every((c) => c.id !== c3.id));
+  await assert.rejects(contas.cancelarConta(A.ctx, c3.id, "de novo"), /em aberto/);
+
+  // entrada de compra no boleto vira conta a pagar (com vencimento); no Pix, despesa de hoje
+  const compra = { productId: A.product.id, full: 5, emptiesReturned: 0, note: "", costCents: 50000 };
+  await assert.rejects(m.stock.receivePurchase(A.ctx, { ...compra, costMethod: "boleto" }), /vencimento do boleto/);
+  await m.stock.receivePurchase(A.ctx, { ...compra, costMethod: "boleto", dueOn: daqui10 });
+  assert.ok((await contas.contasEmAberto(A.t.id, A.branch.id)).some((c) => c.description.startsWith("Compra: 5 x") && c.dueOn === daqui10));
+  const despesasAntes = (await db.select().from(expenses).where(eq(expenses.tenantId, A.t.id))).length;
+  await m.stock.receivePurchase(A.ctx, { ...compra, costMethod: "pix" });
+  assert.equal((await db.select().from(expenses).where(eq(expenses.tenantId, A.t.id))).length, despesasAntes + 1);
+  await contas.cancelarConta(A.ctx, c2.id, "fim do teste");
 });
 
 test("entregador sem celular: entra na equipe sem e-mail nem senha, e a loja lança a entrega dele", async () => {

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { products, stockMovements, auditLog, suppliers, expenses, orders, orderItems } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
 import { telefoneSchema } from "./telefone";
+import { contaSchema, criarContaTx } from "./contas";
 import { todayISO } from "@/lib/period";
 
 type State = "cheio" | "vazio" | "avariado";
@@ -109,6 +110,8 @@ export async function receivePurchase(
     /** valor pago na compra; quando informado, entra nas despesas */
     costCents?: number | null;
     costMethod?: "dinheiro" | "pix" | "cartao" | "boleto";
+    /** vencimento do boleto: a compra ainda não foi paga e vira conta a pagar */
+    dueOn?: string | null;
   },
 ) {
   assertRole(ctx, "dono", "atendente", "caixa");
@@ -129,14 +132,19 @@ export async function receivePurchase(
     const base = { productId: p.id, driverId: null, reason, supplierId: supplier?.id };
     await move(tx, ctx, { ...base, state: "cheio", quantity: input.full }, p.name);
     if (p.returnable && input.emptiesReturned > 0) await move(tx, ctx, { ...base, state: "vazio", quantity: -input.emptiesReturned }, p.name);
-    if (input.costCents) {
+    const descricao = `Compra: ${input.full} x ${p.name}${supplier ? ` (${supplier.name})` : ""}`.slice(0, 160);
+    if (input.costCents && (input.costMethod ?? "boleto") === "boleto") {
+      // boleto não é dinheiro que saiu hoje: é conta para o vencimento
+      if (!input.dueOn) throw new DomainError("Informe o vencimento do boleto.");
+      await criarContaTx(tx, ctx, contaSchema.parse({ description: descricao, category: "fornecedor", supplierId: supplier?.id ?? null, amountCents: input.costCents, dueOn: input.dueOn }));
+    } else if (input.costCents) {
       await tx.insert(expenses).values({
         tenantId: ctx.tenantId,
         branchId: ctx.branchId,
         category: "fornecedor",
-        description: `Compra: ${input.full} x ${p.name}${supplier ? ` (${supplier.name})` : ""}`.slice(0, 160),
+        description: descricao,
         amountCents: input.costCents,
-        method: input.costMethod ?? "boleto",
+        method: input.costMethod ?? "pix",
         paidOn: todayISO(),
         createdBy: ctx.userId,
       });

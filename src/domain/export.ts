@@ -133,6 +133,13 @@ function tables(t: string): Record<string, { header: string[]; query: SQL }> {
         from expenses e join branches b on b.id = e.branch_id join users u on u.id = e.created_by
         where e.tenant_id = ${t} order by e.paid_on`,
     },
+    "contas_a_pagar.csv": {
+      header: ["Vencimento", "Filial", "Categoria", "Descrição", "Fornecedor", "Valor (R$)", "Paga em", "Lançada por", "Cancelada em", "Motivo do cancelamento"],
+      query: sql`
+        select ${day("c.due_on")}, b.name, c.category, c.description, s.name, ${money("c.amount_cents")}, ${when("c.paid_at")}, u.name, ${when("c.voided_at")}, c.void_reason
+        from contas_pagar c join branches b on b.id = c.branch_id join users u on u.id = c.created_by left join suppliers s on s.id = c.supplier_id
+        where c.tenant_id = ${t} order by c.due_on`,
+    },
     "historico_de_alteracoes.csv": {
       header: ["Data", "Usuário", "Ação", "Registro", "ID do registro", "Detalhes"],
       query: sql`

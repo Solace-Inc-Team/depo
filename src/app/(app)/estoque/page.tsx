@@ -5,6 +5,7 @@ import { listProducts, listSuppliers, recentMovements, stockOverview } from "@/d
 import { ActionForm } from "@/components/action-form";
 import { damagedAction, purchaseAction } from "@/app/actions";
 import { JanelaAcao } from "@/components/janela-acao";
+import { PagamentoCompra } from "./pagamento-compra";
 import { PageHeader, fmtDateTime } from "@/components/ui";
 import { NivelVasilhame } from "@/components/nivel-vasilhame";
 import { comodatoPorProduto } from "@/domain/comodato";
@@ -80,20 +81,7 @@ export default async function Estoque() {
               <label className="label" htmlFor="p-note">Nota fiscal ou observação</label>
               <input id="p-note" name="note" maxLength={120} className="input" />
             </div>
-            <div>
-              <label className="label" htmlFor="p-cost">Valor pago (opcional)</label>
-              <input id="p-cost" name="cost" inputMode="decimal" data-mascara="dinheiro" maxLength={12} className="input" placeholder="0,00" />
-            </div>
-            <div>
-              <label className="label" htmlFor="p-method">Pago com</label>
-              <select id="p-method" name="costMethod" className="input" defaultValue="boleto">
-                <option value="boleto">Boleto</option>
-                <option value="pix">Pix</option>
-                <option value="dinheiro">Dinheiro</option>
-                <option value="cartao">Cartão</option>
-              </select>
-            </div>
-            <p className="text-[13px] text-muted sm:col-span-2">Com valor, entra nas despesas de hoje.</p>
+            <PagamentoCompra />
             <button className="btn btn-primary mt-1 sm:col-span-2">Registrar entrada</button>
           </ActionForm>
         </JanelaAcao>

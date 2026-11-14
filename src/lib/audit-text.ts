@@ -13,6 +13,7 @@ export const areas = {
   produto: "Produtos e preços",
   fiado: "Fiado",
   despesa: "Despesas",
+  conta: "Contas a pagar",
   cliente: "Clientes",
   usuario: "Equipe e acessos",
   empresa: "Empresa e configurações",
@@ -230,6 +231,18 @@ export function descrever(action: string, dados: Dados, nomes: Record<string, st
     case "pedido.pix_mercadopago":
       l.titulo = `Mercado Pago confirmou o Pix do pedido ${alvo}`;
       det(`Valor ${din(d.valor)}`);
+      break;
+    case "conta.criar":
+      l.titulo = `Lançou a conta a pagar "${txt(d.description)}"`;
+      det(`${din(d.amountCents)}, vence ${String(d.dueOn ?? "").split("-").reverse().join("/")}`);
+      break;
+    case "conta.pagar":
+      l.titulo = `Pagou a conta "${txt(d.description)}"`;
+      det(`${din(d.amountCents)} em ${String(d.paidOn ?? "").split("-").reverse().join("/")}`);
+      break;
+    case "conta.cancelar":
+      l.titulo = `Cancelou a conta "${txt(d.description)}"`;
+      det(txt(d.reason) && `Motivo: ${txt(d.reason)}`);
       break;
     case "pedido.pix_vencido":
       l.titulo = `Pedido ${alvo} cancelado: Pix não pago em 15 minutos`;

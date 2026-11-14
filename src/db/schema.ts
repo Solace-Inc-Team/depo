@@ -476,6 +476,32 @@ export const suppliers = pgTable(
   (t) => [index("suppliers_tenant_idx").on(t.tenantId)],
 );
 
+// conta a pagar (boleto de fornecedor, aluguel): nasce com o vencimento e só vira despesa quando é paga
+export const contasPagar = pgTable(
+  "contas_pagar",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    branchId: branchId(),
+    description: text("description").notNull(),
+    category: text("category").notNull(),
+    supplierId: uuid("supplier_id").references(() => suppliers.id),
+    amountCents: integer("amount_cents").notNull(),
+    dueOn: date("due_on", { mode: "string" }).notNull(),
+    // paga: a despesa que nasceu do pagamento (se ela for cancelada, a conta volta a ficar em aberto)
+    paidAt: timestamp("paid_at", { withTimezone: true }),
+    expenseId: uuid("expense_id").references(() => expenses.id),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: createdAt(),
+    voidedAt: timestamp("voided_at", { withTimezone: true }),
+    voidedBy: uuid("voided_by").references(() => users.id),
+    voidReason: text("void_reason"),
+  },
+  (t) => [index("contas_pagar_tenant_due_idx").on(t.tenantId, t.dueOn)],
+);
+
 export const auditLog = pgTable(
   "audit_log",
   {

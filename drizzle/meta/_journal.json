@@ -141,6 +141,13 @@
       "when": 1794687545706,
       "tag": "0019_avisos_pedido",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1794689345228,
+      "tag": "0020_contas_pagar",
+      "breakpoints": true
     }
   ]
 }

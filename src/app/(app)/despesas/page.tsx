@@ -5,7 +5,10 @@ import { Receipt } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { parsePeriod, todayISO } from "@/lib/period";
 import { expenseCategories, listExpenses, type ExpenseCategory } from "@/domain/expenses";
-import { createExpenseAction, voidExpenseAction } from "@/app/actions";
+import { cancelarContaAction, createExpenseAction, criarContaAction, pagarContaAction, voidExpenseAction } from "@/app/actions";
+import { contasEmAberto } from "@/domain/contas";
+import { listSuppliers } from "@/domain/queries";
+import { JanelaAcao } from "@/components/janela-acao";
 import { ActionForm } from "@/components/action-form";
 import { PopoverForm } from "@/components/popover-form";
 import { formatBRL } from "@/lib/money";
@@ -15,13 +18,30 @@ export const metadata = { title: "Despesas" };
 
 const methodLabel = { dinheiro: "Dinheiro", pix: "Pix", cartao: "Cartão", boleto: "Boleto" } as const;
 const fmtDay = (d: string) => d.split("-").reverse().join("/");
+// quantos dias do vencimento até hoje (negativo: já venceu)
+const diasAte = (dia: string, hoje: string) => Math.round((Date.parse(`${dia}T12:00:00Z`) - Date.parse(`${hoje}T12:00:00Z`)) / 864e5);
+function vencimento(dia: string, hoje: string): [string, string] {
+  const d = diasAte(dia, hoje);
+  if (d < 0) return [d === -1 ? "venceu ontem" : `venceu há ${-d} dias`, "font-medium text-danger"];
+  if (d === 0) return ["vence hoje", "font-medium text-warn-fg"];
+  if (d === 1) return ["vence amanhã", "text-warn-fg"];
+  return [`vence ${fmtDay(dia).slice(0, 5)}`, "text-muted"];
+}
 
 export default async function Despesas({ searchParams }: PageProps<"/despesas">) {
   const user = await requireUser("dono", "atendente", "caixa");
   const sp = await searchParams;
   // o mesmo período padrão dos relatórios: o número de despesas bate entre as duas telas
   const { fromStr, toStr } = parsePeriod(sp);
-  const list = await listExpenses(user.tenantId, fromStr, toStr, filialDoRelatorio(user, sp));
+  // contas a pagar: quem cuida do dinheiro (dono e caixa) vê e paga; a atendente só lança despesa
+  const cuidaDasContas = user.role === "dono" || user.role === "caixa";
+  const [list, aPagar, fornecedores] = await Promise.all([
+    listExpenses(user.tenantId, fromStr, toStr, filialDoRelatorio(user, sp)),
+    cuidaDasContas ? contasEmAberto(user.tenantId, user.branchId) : Promise.resolve([]),
+    cuidaDasContas ? listSuppliers(user.tenantId, true) : Promise.resolve([]),
+  ]);
+  const hoje = todayISO();
+  const totalAPagar = aPagar.reduce((s, c) => s + c.amountCents, 0);
   // a devolução de pedido estornado aparece na lista, mas fora do total: a venda estornada já saiu das vendas
   const valid = list.filter((e) => !e.voidedAt && e.category !== "estorno");
   const devolvido = list.filter((e) => !e.voidedAt && e.category === "estorno").reduce((s, e) => s + e.amountCents, 0);
@@ -32,7 +52,88 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
 
   return (
     <>
-      <PageHeader title="Despesas" />
+      <PageHeader title="Despesas">
+        {cuidaDasContas && (
+          <JanelaAcao label="Nova conta a pagar" titulo="Nova conta a pagar">
+            <ActionForm action={criarContaAction} className="grid gap-3 sm:grid-cols-2" reset>
+              <div className="sm:col-span-2">
+                <label className="label" htmlFor="ct-desc">Descrição</label>
+                <input id="ct-desc" name="description" required minLength={2} maxLength={160} className="input" placeholder="Ex.: boleto da carga de gás" />
+              </div>
+              <div>
+                <label className="label" htmlFor="ct-valor">Valor</label>
+                <input id="ct-valor" name="amount" required inputMode="decimal" data-mascara="dinheiro" maxLength={12} className="input num" placeholder="0,00" />
+              </div>
+              <div>
+                <label className="label" htmlFor="ct-venc">Vencimento</label>
+                <input id="ct-venc" name="dueOn" type="date" required min={hoje} defaultValue={hoje} className="input" />
+              </div>
+              <div>
+                <label className="label" htmlFor="ct-cat">Categoria</label>
+                <select id="ct-cat" name="category" className="input" defaultValue="fornecedor">
+                  {Object.entries(expenseCategories)
+                    .filter(([k]) => k !== "estorno")
+                    .map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label" htmlFor="ct-forn">Fornecedor (opcional)</label>
+                <select id="ct-forn" name="supplierId" className="input" defaultValue="">
+                  <option value="">Nenhum</option>
+                  {fornecedores.map((f) => <option key={f.id} value={f.id}>{f.name}</option>)}
+                </select>
+              </div>
+              <button className="btn btn-primary mt-1 sm:col-span-2">Lançar conta</button>
+            </ActionForm>
+          </JanelaAcao>
+        )}
+      </PageHeader>
+
+      {/* o que ainda vai sair: da conta que vence primeiro para a última; pagar vira despesa */}
+      {aPagar.length > 0 && (
+        <section className="panel mb-6">
+          <h2 className="h2 flex items-baseline justify-between gap-3 border-b border-line px-4 py-3">
+            A pagar
+            <span className="text-[13px] font-normal text-muted"><Money cents={totalAPagar} /> em {aPagar.length} {aPagar.length === 1 ? "conta" : "contas"}</span>
+          </h2>
+          <ul>
+            {aPagar.map((c) => {
+              const [quando, tom] = vencimento(c.dueOn, hoje);
+              return (
+                <li key={c.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line px-4 py-3 last:border-0">
+                  <div className="min-w-0">
+                    <p className="font-medium">{c.description}</p>
+                    <p className="text-[13px]">
+                      <span className={tom}>{quando}</span>
+                      {c.fornecedor && <span className="text-muted">, {c.fornecedor}</span>}
+                    </p>
+                  </div>
+                  {/* no celular valor e ações descem sempre para a linha de baixo: todas as contas ficam iguais */}
+                  <div className="flex items-center gap-4 max-sm:w-full">
+                    <Money cents={c.amountCents} className="font-semibold max-sm:mr-auto" />
+                    <PopoverForm label="Pagar" titulo={`${c.description}, ${formatBRL(c.amountCents)}`} action={pagarContaAction} submit="Marcar como paga">
+                      <input type="hidden" name="contaId" value={c.id} />
+                      <label className="label mb-0" htmlFor={`pg-m-${c.id}`}>Pago com</label>
+                      <select id={`pg-m-${c.id}`} name="method" className="input" defaultValue="boleto">
+                        {Object.entries(methodLabel).map(([k, l]) => <option key={k} value={k}>{l}</option>)}
+                      </select>
+                      <label className="label mb-0" htmlFor={`pg-d-${c.id}`}>Pago em</label>
+                      <input id={`pg-d-${c.id}`} name="paidOn" type="date" required max={hoje} defaultValue={hoje} className="input" />
+                    </PopoverForm>
+                    {user.role === "dono" && (
+                      <PopoverForm label="Cancelar" titulo={c.description} action={cancelarContaAction} submit="Cancelar conta" danger>
+                        <input type="hidden" name="contaId" value={c.id} />
+                        <label className="label mb-0" htmlFor={`cc-${c.id}`}>Motivo</label>
+                        <input id={`cc-${c.id}`} name="reason" required minLength={3} maxLength={160} className="input" />
+                      </PopoverForm>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       <form className="mb-6 flex flex-wrap items-end gap-3">
         <div>

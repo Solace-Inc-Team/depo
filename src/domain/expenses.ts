@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { and, desc, eq, gte, isNull, lte, ne, sql } from "drizzle-orm";
 import { db, scoped, tenantTransaction } from "@/db";
-import { cashEntries, expenses, users } from "@/db/schema";
+import { cashEntries, contasPagar, expenses, users } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
 import { audit } from "./stock";
 
@@ -55,6 +55,8 @@ export async function voidExpense(ctx: Ctx, expenseId: string, reason: string) {
       .update(expenses)
       .set({ voidedAt: new Date(), voidedBy: ctx.userId, voidReason: reason.trim() })
       .where(eq(expenses.id, e.id));
+    // a despesa era o pagamento de uma conta: a conta volta para "A pagar"
+    await tx.update(contasPagar).set({ paidAt: null, expenseId: null }).where(and(eq(contasPagar.tenantId, ctx.tenantId), eq(contasPagar.expenseId, e.id)));
     await audit(tx, ctx, "despesa.cancelar", "expense", e.id, { reason });
   });
 }
