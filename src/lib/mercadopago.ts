@@ -27,8 +27,19 @@ async function chamar<T>(token: string, caminho: string, init: RequestInit = {})
   } catch {
     throw new ErroMp("O Mercado Pago não respondeu.");
   }
-  if (res.status === 401 || res.status === 403) throw new ErroMp("O Mercado Pago recusou o token.", true);
-  if (!res.ok) throw new ErroMp(`O Mercado Pago respondeu ${res.status}.`);
+  if (!res.ok) {
+    // o motivo vem no corpo; sem ele, "token recusado" escondia casos como "Unauthorized use of live
+    // credentials" (conta de teste criando cobrança), em que o token vale e o problema é outro
+    const motivo = await res
+      .json()
+      .then((j: { message?: string }) => j?.message ?? "")
+      .catch(() => "");
+    if (res.status === 401 || res.status === 403) {
+      const tokenRuim = !motivo || /token/i.test(motivo);
+      throw new ErroMp(tokenRuim ? "O Mercado Pago recusou o token." : `O Mercado Pago recusou: ${motivo}.`, tokenRuim);
+    }
+    throw new ErroMp(`O Mercado Pago respondeu ${res.status}${motivo ? `: ${motivo}` : ""}.`);
+  }
   return (await res.json()) as T;
 }
 
