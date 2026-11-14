@@ -4,6 +4,7 @@ import { getUser } from "@/lib/auth";
 import { cadastrarAction } from "@/app/actions";
 import { ActionForm } from "@/components/action-form";
 import { MarcaDaSessao } from "@/components/logo";
+import { DIAS_GRATIS } from "@/app/inicio/contato";
 
 export const metadata = { title: "Criar conta" };
 
@@ -19,7 +20,7 @@ export default async function Cadastro() {
             <MarcaDaSessao size={28} />
           </div>
           <h1 className="mt-8 text-center text-[1.75rem] leading-tight font-semibold tracking-[-0.03em]">Criar conta</h1>
-          <p className="mt-1.5 text-center text-muted">Comece a usar com a sua revenda hoje.</p>
+          <p className="mt-1.5 text-center text-muted">Os primeiros {DIAS_GRATIS} dias são grátis.</p>
           <ActionForm action={cadastrarAction} className="mt-8 space-y-4">
             <div>
               <label className="label" htmlFor="company">Nome da revenda</label>

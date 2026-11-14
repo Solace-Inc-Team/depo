@@ -5,6 +5,9 @@
 export const WHATSAPP = "";
 
 /** Preço por mês como deve aparecer (ex.: "R$ 149"). Vazio mostra "sob consulta". */
-export const PRECO = "";
+export const PRECO = "R$ 129";
+
+/** Dias de uso grátis depois do cadastro. */
+export const DIAS_GRATIS = 14;
 
 export const linkWhatsApp = (texto: string) => `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(texto)}`;

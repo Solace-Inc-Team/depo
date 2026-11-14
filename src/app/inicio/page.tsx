@@ -10,7 +10,7 @@ import { DemoAcerto } from "./demo-acerto";
 import { DemoEntrega } from "./demo-entrega";
 import { DemoPortal } from "./demo-portal";
 import { MiniEstorno, MiniExportar, MiniSoSua } from "./detalhes";
-import { PRECO, WHATSAPP, linkWhatsApp } from "./contato";
+import { DIAS_GRATIS, PRECO, WHATSAPP, linkWhatsApp } from "./contato";
 import { LuzCursor } from "./luz-cursor";
 
 // A vitrine: sempre escura, com uma ideia visual só (a tela do produto e luz). Ritmo de escala variada:
@@ -250,7 +250,7 @@ export default function Inicio() {
             </h2>
             <p className="mt-3 text-muted">
               {PRECO
-                ? "Com tudo o que está nesta página, para a equipe inteira."
+                ? `Com tudo o que está nesta página, para a equipe inteira. Os primeiros ${DIAS_GRATIS} dias são grátis.`
                 : "Conte quantos entregadores e quantos pedidos por dia a sua revenda tem, e a gente responde com o valor."}
             </p>
             <ul className="mt-6 space-y-2.5 border-t border-line pt-6 text-[15px]">
@@ -267,7 +267,7 @@ export default function Inicio() {
                 </li>
               ))}
             </ul>
-            {temZap && <BotaoContato className="mt-8" />}
+            <BotaoContato className="mt-8" />
           </div>
 
           <div id="perguntas" className="scroll-mt-24">
