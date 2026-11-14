@@ -5,7 +5,7 @@ import { PRAZO_PAGAR_MS, cancelarPixVencidos, conferirPixMp, pixDoPedido } from 
 import { PixBox } from "@/components/pix-box";
 import { fmtDateTime, fmtTime } from "@/components/ui";
 import { formatBRL } from "@/lib/money";
-import { AtualizaSozinho } from "./atualiza";
+import { AtualizaSozinho } from "@/components/atualiza-sozinho";
 import { AvisoNoCelular } from "./aviso-celular";
 
 // Página que o cliente abre pelo link do pedido: a situação em destaque, o caminho até a porta

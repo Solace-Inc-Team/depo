@@ -1,3 +1,5 @@
+import { PLANO } from "@/lib/plano";
+
 // Contato e preço da página inicial. Enquanto estiverem vazios, a página não mostra botão de WhatsApp
 // nem valor: fica o "Criar conta" e o preço sob consulta.
 
@@ -5,9 +7,9 @@
 export const WHATSAPP = "";
 
 /** Preço por mês como deve aparecer (ex.: "R$ 149"). Vazio mostra "sob consulta". */
-export const PRECO = "R$ 129";
+export const PRECO = `R$ ${PLANO.mensalCents / 100}`;
 
 /** Dias de uso grátis depois do cadastro. */
-export const DIAS_GRATIS = 14;
+export const DIAS_GRATIS = PLANO.diasGratis;
 
 export const linkWhatsApp = (texto: string) => `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(texto)}`;

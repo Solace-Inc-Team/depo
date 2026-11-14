@@ -7,6 +7,8 @@ import { DomainError } from "@/lib/ctx";
 import { hashPassword } from "@/lib/password";
 import type { SessionUser } from "@/lib/auth";
 import { audit } from "./stock";
+import { PLANO, somarDias } from "@/lib/plano";
+import { todayISO } from "@/lib/period";
 
 // Tudo aqui é da equipe da Solace e atravessa empresas, por isso não recebe Ctx de tenant.
 function assertAdmin(admin: SessionUser) {
@@ -52,7 +54,9 @@ async function novaEmpresa(input: z.infer<typeof newTenantSchema>, criadoPor: st
   return db.transaction(async (tx) => {
     const [taken] = await tx.select({ id: users.id }).from(users).where(eq(users.email, input.email));
     if (taken) throw new DomainError("Já existe um usuário com este e-mail.");
-    const [t] = await tx.insert(tenants).values({ name: input.company, slug: slugFor(input.company) }).returning();
+    // quem se cadastra sozinho começa no teste grátis; quem a Solace cria fica sem cobrança automática
+    const pagoAte = termsVersion ? somarDias(todayISO(), PLANO.diasGratis) : null;
+    const [t] = await tx.insert(tenants).values({ name: input.company, slug: slugFor(input.company), pagoAte }).returning();
     await tx.insert(branches).values({ tenantId: t.id, name: "Principal", slug: "principal", main: true });
     const [owner] = await tx
       .insert(users)
@@ -148,6 +152,7 @@ export async function deleteTenant(admin: SessionUser, tenantId: string, confirm
            or key in (select p || id::text from users cross join (values ('totp:'), ('senha:')) as k(p) where tenant_id = ${t.id})`,
     );
     await del("usuarios", sql`delete from users where tenant_id = ${t.id}`);
+    await del("mensalidades", sql`delete from assinatura_pagamentos where tenant_id = ${t.id}`);
     await del("filiais", sql`delete from branches where tenant_id = ${t.id}`);
     await tx.delete(tenants).where(eq(tenants.id, t.id));
     await tx.insert(tenantDeletions).values({ tenantId: t.id, tenantName: t.name, deletedBy: admin.email, counts });
@@ -170,6 +175,7 @@ export async function listTenants(admin: SessionUser) {
       active: tenants.active,
       createdAt: tenants.createdAt,
       suspendedAt: tenants.suspendedAt,
+      pagoAte: tenants.pagoAte,
       // nomes qualificados à mão: dentro da subquery o drizzle solta só "id", que viraria users.id
       owner: sql<string | null>`(select u.email from users u where u.tenant_id = tenants.id and u.role = 'dono' order by u.created_at limit 1)`,
       people: sql<number>`(select count(*)::int from users u where u.tenant_id = tenants.id and u.active)`,

@@ -234,6 +234,10 @@ export function descrever(action: string, dados: Dados, nomes: Record<string, st
     case "empresa.mp_desconectar":
       l.titulo = "Desconectou o Mercado Pago";
       break;
+    case "assinatura.pago":
+      l.titulo = "Mensalidade do Depósito paga";
+      det(`Valor ${din(d.valor)}`);
+      break;
     case "pedido.pix_mercadopago":
       l.titulo = `Mercado Pago confirmou o Pix do pedido ${alvo}`;
       det(`Valor ${din(d.valor)}`);

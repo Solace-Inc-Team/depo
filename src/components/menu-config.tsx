@@ -9,6 +9,7 @@ export const SECOES = [
   { id: "pagamentos", label: "Pagamentos" },
   { id: "site", label: "Pedidos pelo site" },
   { id: "filiais", label: "Filiais" },
+  { id: "assinatura", label: "Assinatura" },
 ] as const;
 type Secao = (typeof SECOES)[number]["id"];
 

@@ -165,3 +165,38 @@ test("cadastro: o dono cria a conta pela página inicial e cai no painel com os 
   await expect(page.getByRole("heading", { name: "Primeiros passos" })).toBeVisible();
   await expect(page.getByText("Gás do Teste").first()).toBeVisible();
 });
+
+test("assinatura: perto de vencer o dono vê o aviso; vencida, o sistema pausa e só abre a tela de pagar", async ({ page }) => {
+  const { default: postgres } = await import("postgres");
+  const sql = postgres((process.env.TEST_PG_URL ?? "postgres://app:app@localhost:5433/postgres").replace(/\/[^/]*$/, "/gestao_e2e"), { max: 1 });
+  const email = `ana-${Date.now()}@cadastro.test`;
+  await page.context().clearCookies();
+  await page.goto("/cadastro");
+  await page.waitForLoadState("networkidle");
+  await page.getByLabel("Nome da revenda").fill("Água da Ana");
+  await page.getByLabel("Seu nome").fill("Ana");
+  await page.getByLabel("E-mail").fill(email);
+  await page.getByLabel("Senha").fill("senha-boa-1");
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Criar conta" }).click();
+  await expect(page.getByRole("heading", { name: "Primeiros passos" })).toBeVisible();
+  // 14 dias de teste: longe de vencer, sem aviso
+  await expect(page.getByText("Pagar com Pix")).toHaveCount(0);
+
+  const mudar = (dias: number) => sql`update tenants set pago_ate = (now() at time zone 'America/Sao_Paulo')::date + ${dias}::int where id = (select tenant_id from users where email = ${email})`;
+  await mudar(2);
+  await page.reload();
+  await expect(page.getByRole("link", { name: /Seu acesso vale até .* Pagar com Pix/ })).toBeVisible();
+  await page.screenshot({ path: "../qa/evidencias/assinatura-aviso.png" });
+  await page.getByRole("link", { name: /Pagar com Pix/ }).click();
+  await expect(page.getByRole("heading", { name: "Teste grátis" })).toBeVisible();
+  await page.screenshot({ path: "../qa/evidencias/assinatura-teste.png" });
+
+  await mudar(-4);
+  await page.goto("/pedidos");
+  await expect(page).toHaveURL(/\/assinatura/);
+  await expect(page.getByRole("heading", { name: "O acesso está pausado" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Voltar ao sistema" })).toHaveCount(0);
+  await page.screenshot({ path: "../qa/evidencias/assinatura-pausado.png" });
+  await sql.end();
+});

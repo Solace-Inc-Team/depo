@@ -12,6 +12,8 @@ import { SeletorFilial } from "@/components/seletor-filial";
 import { MenuConfig } from "@/components/menu-config";
 import { secoesConfig } from "./configuracoes/secoes";
 import { Suspense } from "react";
+import { dataBR, situacaoAssinatura } from "@/lib/plano";
+import { todayISO } from "@/lib/period";
 
 const initials = (name: string) =>
   name
@@ -24,6 +26,18 @@ const initials = (name: string) =>
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const user = await requireUser("dono", "atendente", "caixa");
   if (user.platformAdmin) redirect("/admin");
+  // perto de vencer, o dono vê um aviso em todas as telas; a equipe não
+  const sit = user.role === "dono" ? situacaoAssinatura(user.pagoAte, todayISO()) : null;
+  const aviso =
+    sit && sit.dias <= 5
+      ? sit.dias < 0
+        ? `A mensalidade venceu. O sistema pausa em ${dataBR(sit.pausaEm, true)}.`
+        : sit.dias === 0
+          ? "Seu acesso vence hoje."
+          : sit.dias === 1
+            ? "Seu acesso vence amanhã."
+            : `Seu acesso vale até ${dataBR(sit.pagoAte, true)}.`
+      : null;
 
   const groups: NavGroup[] = [
     {
@@ -83,7 +97,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             {/* configurações do dono (o que se ajusta uma vez): numa engrenagem, fora do menu do dia a dia */}
             {user.role === "dono" && (
               <Suspense>
-                <MenuConfig secoes={await secoesConfig(user.tenantId)} className="size-11 lg:size-8" />
+                <MenuConfig secoes={await secoesConfig(user.tenantId, user.pagoAte)} className="size-11 lg:size-8" />
               </Suspense>
             )}
             <TemaBotao className="size-11 lg:size-8" />
@@ -130,6 +144,15 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         </div>
       </aside>
       <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-10 lg:py-10">
+        {aviso && (
+          <Link
+            href="/assinatura"
+            className={`mb-6 flex items-center justify-between gap-4 rounded-lg border px-4 py-3 text-[14px] hover:bg-subtle ${sit!.dias < 0 ? "border-warn-fg/40 text-warn-fg" : "border-line"}`}
+          >
+            {aviso}
+            <span className="shrink-0 font-medium">Pagar com Pix</span>
+          </Link>
+        )}
         <PageTransition>{children}</PageTransition>
       </main>
     </div>

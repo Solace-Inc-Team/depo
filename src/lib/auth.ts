@@ -8,6 +8,8 @@ import { db } from "@/db";
 import { branches, sessions, users, tenants } from "@/db/schema";
 import type { Ctx, Role } from "./ctx";
 import { TERMS_VERSION } from "./legal";
+import { situacaoAssinatura } from "./plano";
+import { todayISO } from "./period";
 
 const COOKIE = "sessao";
 /** filial que o dono escolheu ver; a equipe ignora, fica sempre na sua */
@@ -44,6 +46,8 @@ export type SessionUser = Ctx & {
   platformAdmin: boolean;
   totpEnabled: boolean;
   termsVersion: string | null;
+  /** assinatura: acesso pago até este dia; null = sem cobrança */
+  pagoAte: string | null;
   branchName: string;
   /** filiais ativas da empresa, a principal primeiro; com uma só, nada de filial aparece na tela */
   branches: { id: string; name: string }[];
@@ -63,6 +67,7 @@ export const getUser = cache(async (): Promise<SessionUser | null> => {
       platformAdmin: users.platformAdmin,
       totpEnabled: users.totpEnabled,
       termsVersion: users.termsVersion,
+      pagoAte: tenants.pagoAte,
       ownBranch: users.branchId,
     })
     .from(sessions)
@@ -114,6 +119,8 @@ export async function requireUser(...roles: Role[]): Promise<SessionUser> {
   const user = await getUser();
   if (!user) redirect("/login");
   if (pendingTerms(user)) redirect("/aceite");
+  // venceu e passou da tolerância: o sistema pausa até pagar (os dados ficam)
+  if (!user.platformAdmin && situacaoAssinatura(user.pagoAte, todayISO())?.bloqueado) redirect("/assinatura");
   if (roles.length && !roles.includes(user.role)) redirect(user.role === "entregador" ? "/entregador" : "/");
   return user;
 }

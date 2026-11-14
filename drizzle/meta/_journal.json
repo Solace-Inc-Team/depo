@@ -148,6 +148,13 @@
       "when": 1794689345228,
       "tag": "0020_contas_pagar",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1794692662139,
+      "tag": "0021_assinatura",
+      "breakpoints": true
     }
   ]
 }

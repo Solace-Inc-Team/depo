@@ -257,7 +257,7 @@ test("redefinir senha: só dentro da empresa, derruba sessões e desliga 2FA do 
   assert.equal(d.totpEnabled, false);
 
   await db.update(users).set({ totpEnabled: true, totpSecret: "ABC" }).where(eq(users.id, A.owner.id));
-  const admin = { ...B.ctx, platformAdmin: true, name: "", email: "", tenantName: "", totpEnabled: false, termsVersion: null, branchName: "", branches: [] };
+  const admin = { ...B.ctx, platformAdmin: true, name: "", email: "", tenantName: "", totpEnabled: false, termsVersion: null, pagoAte: null, branchName: "", branches: [] };
   await assert.rejects(m.platform.resetOwnerAccess({ ...admin, platformAdmin: false }, A.t.id, "senha-nova-2"), /Sem permissão/);
   assert.equal(await m.platform.resetOwnerAccess(admin, A.t.id, "senha-nova-2"), A.owner.email);
   const [o] = await db.select().from(users).where(eq(users.id, A.owner.id));
@@ -305,7 +305,7 @@ test("monitoramento: agrupa o mesmo erro, avisa uma vez por hora e de novo após
   await m.monitoring.recordError(boom(), req, send, new Date(t0.getTime() + 61 * 60_000));
   assert.equal(sent.length, 2);
 
-  const admin = { ...A.ctx, platformAdmin: true, name: "", email: "", tenantName: "", totpEnabled: false, termsVersion: null, branchName: "", branches: [] };
+  const admin = { ...A.ctx, platformAdmin: true, name: "", email: "", tenantName: "", totpEnabled: false, termsVersion: null, pagoAte: null, branchName: "", branches: [] };
   const [ev] = await m.monitoring.listErrors(admin);
   assert.equal(ev.count, 3);
   assert.equal(ev.path, "/pedidos/:id");
@@ -347,7 +347,7 @@ test("exclusão de empresa: travas, apaga tudo dela e mais nada", async () => {
   const contaC = await contasC.criarConta(C.ctx, { description: "Boleto C", category: "fornecedor", amountCents: 5000, dueOn: "2026-12-01" });
   await contasC.pagarConta(C.ctx, contaC.id, { method: "pix", paidOn: "2026-11-10" });
 
-  const admin = { ...A.ctx, platformAdmin: true, name: "", email: "admin@teste", tenantName: "", totpEnabled: false, termsVersion: null, branchName: "", branches: [] };
+  const admin = { ...A.ctx, platformAdmin: true, name: "", email: "admin@teste", tenantName: "", totpEnabled: false, termsVersion: null, pagoAte: null, branchName: "", branches: [] };
   const countOf = async (table: string, t: string) =>
     Number((await m.db.pgClient.unsafe(`select count(*)::int n from ${table} where tenant_id = $1`, [t]))[0].n);
   const tables = ["contas_pagar", "audit_log", "customer_payments", "cash_entries", "customer_addresses", "expenses", "stock_movements", "order_items", "orders", "shifts", "customers", "products", "suppliers", "users"];
@@ -1260,4 +1260,65 @@ test("cadastro pelo próprio dono: empresa, principal e dono com termos aceitos;
   assert.deepEqual(filiais.map((b) => [b.name, b.main]), [["Principal", true]]);
   // começa vazia: nada da empresa A aparece
   assert.equal((await m.q.stockOverview(tenant.id, filiais[0].id)).length, 0);
+});
+
+test("mensalidade: teste grátis no cadastro, Pix na conta da Solace, pago soma um mês uma vez só", async () => {
+  const { db } = m.db;
+  const { tenants, branches } = m.schema;
+  const { eq } = await import("drizzle-orm");
+  const mp = await import("@/lib/mercadopago");
+  const ass = await import("@/domain/assinatura");
+  const { somarDias, PLANO } = await import("@/lib/plano");
+  const { todayISO } = await import("@/lib/period");
+  const hoje = todayISO();
+
+  const { tenant, ownerId } = await m.platform.cadastrarEmpresa(
+    m.platform.cadastroSchema.parse({ company: "Gás Pago", ownerName: "Davi", email: `davi-${Date.now()}@cadastro.test`, password: "senha-boa-1" }),
+    "v1",
+  );
+  const pagoAte = async () => (await db.select({ p: tenants.pagoAte }).from(tenants).where(eq(tenants.id, tenant.id)))[0].p;
+  assert.equal(await pagoAte(), somarDias(hoje, PLANO.diasGratis));
+  const [filial] = await db.select().from(branches).where(eq(branches.tenantId, tenant.id));
+  const dono = { tenantId: tenant.id, userId: ownerId, role: "dono" as const, branchId: filial.id };
+
+  delete process.env.MP_TOKEN_SOLACE;
+  await assert.rejects(ass.pixAssinatura(dono), /não está ligada/);
+  process.env.MP_TOKEN_SOLACE = "APP_USR-solace";
+  const cobrancas = new Map<string, { ref: string; valor: number; pago: boolean }>();
+  mp.usarRede(async (url, init) => {
+    if (new Headers(init?.headers).get("Authorization") !== "Bearer APP_USR-solace") return new Response("{}", { status: 401 });
+    const json = (o: unknown) => new Response(JSON.stringify(o), { status: 200 });
+    const caminho = String(url).replace("https://api.mercadopago.com", "");
+    if (caminho === "/v1/payments" && init?.method === "POST") {
+      const b = JSON.parse(String(init.body));
+      const id = String(7000 + cobrancas.size);
+      cobrancas.set(id, { ref: b.external_reference, valor: Math.round(b.transaction_amount * 100), pago: false });
+      return json({ id: Number(id), status: "pending", point_of_interaction: { transaction_data: { qr_code: `000201SOLACE${id}` } } });
+    }
+    const c = cobrancas.get(caminho.split("/").pop()!);
+    return c ? json({ status: c.pago ? "approved" : "pending", external_reference: c.ref, transaction_amount: c.valor / 100 }) : new Response("{}", { status: 404 });
+  });
+
+  await assert.rejects(ass.pixAssinatura({ ...dono, role: "caixa" }), /Sem permissão/);
+  const pix = await ass.pixAssinatura(dono);
+  assert.equal(pix.codigo, "000201SOLACE7000");
+  assert.equal(pix.valorCents, PLANO.mensalCents);
+  assert.equal((await ass.pixAssinatura(dono)).id, pix.id);
+  assert.equal(cobrancas.size, 1);
+  // a cobrança não aparece para outra empresa
+  assert.equal(await ass.pixEmAberto(A.t.id), null);
+
+  assert.equal(await ass.conferirAssinatura(tenant.id), false);
+  cobrancas.get("7000")!.pago = true;
+  // o aviso com o pagamento certo confirma; repetir não soma de novo
+  const aviso = await import("@/app/api/mercadopago/route");
+  await aviso.POST(new Request(`http://x/api/mercadopago?assinatura=${pix.id}`, { method: "POST", body: JSON.stringify({ data: { id: "7000" } }) }));
+  const esperado = new Date(Date.parse(`${somarDias(hoje, PLANO.diasGratis)}T00:00:00Z`));
+  esperado.setUTCMonth(esperado.getUTCMonth() + 1);
+  assert.equal(await pagoAte(), esperado.toISOString().slice(0, 10));
+  assert.equal(await ass.conferirAssinatura(tenant.id), false);
+  assert.equal(await pagoAte(), esperado.toISOString().slice(0, 10));
+  assert.equal((await ass.pagamentosFeitos(tenant.id)).length, 1);
+  assert.equal(await ass.pixEmAberto(tenant.id), null);
+  delete process.env.MP_TOKEN_SOLACE;
 });

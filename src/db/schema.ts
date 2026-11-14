@@ -56,6 +56,8 @@ export const tenants = pgTable("tenants", {
   // portal de pedidos: endereço público /pedir/<slug>
   slug: text("slug").notNull().unique(),
   portalEnabled: boolean("portal_enabled").notNull().default(false),
+  // assinatura: o acesso vale até este dia (teste grátis ou mês pago). Vazio = sem cobrança (empresas da Solace e as criadas por ela)
+  pagoAte: date("pago_ate", { mode: "string" }),
   createdAt: createdAt(),
 });
 
@@ -500,6 +502,22 @@ export const contasPagar = pgTable(
     voidReason: text("void_reason"),
   },
   (t) => [index("contas_pagar_tenant_due_idx").on(t.tenantId, t.dueOn)],
+);
+
+// Pix da mensalidade, cobrado na conta da Solace. Pago = mais um mês no pago_ate da empresa.
+export const assinaturaPagamentos = pgTable(
+  "assinatura_pagamentos",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    mpPaymentId: text("mp_payment_id").notNull(),
+    codigo: text("codigo").notNull(),
+    valorCents: integer("valor_cents").notNull(),
+    expiraEm: timestamp("expira_em", { withTimezone: true }).notNull(),
+    pagoEm: timestamp("pago_em", { withTimezone: true }),
+    createdAt: createdAt(),
+  },
+  (t) => [index("assinatura_pagamentos_tenant_idx").on(t.tenantId, t.createdAt)],
 );
 
 export const auditLog = pgTable(

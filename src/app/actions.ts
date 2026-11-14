@@ -23,6 +23,7 @@ import { createExpense, expenseSchema, voidExpense } from "@/domain/expenses";
 import { openShift, closeShift, addCashEntry, cashEntrySchema, voidCashEntry, resolveDifference } from "@/domain/shifts";
 import { receivePurchase, markDamaged, runInventory, saveSupplier, supplierSchema, transferirEstoque } from "@/domain/stock";
 import { receivePayment, paymentSchema, voidPayment } from "@/domain/receivables";
+import { pixAssinatura } from "@/domain/assinatura";
 import { cadastrarEmpresa, cadastroSchema, createTenant, deleteTenant, newTenantSchema, resetOwnerAccess, setTenantActive } from "@/domain/platform";
 import { resolveError, sendTestAlert } from "@/domain/monitoring";
 import { addAddress, addressSchema, removeAddress, saveSettings, settingsSchema, anonymizeCustomer, saveCustomer, customerSchema, saveProduct, productSchema, createUser, userSchema, setUserActive, resetUserPassword, acceptTerms } from "@/domain/registry";
@@ -112,6 +113,13 @@ export async function login(fd: FormData): Promise<ActionState> {
   }
   await createSession(u.user.id);
   redirect(homeFor(u.user));
+}
+
+/** Pix da mensalidade. Sem requireUser: com o acesso pausado, é justamente aqui que o dono precisa chegar. */
+export async function pixAssinaturaAction(): Promise<ActionState> {
+  const user = await getUser();
+  if (!user) redirect("/login");
+  return run(() => pixAssinatura(user), ["/assinatura"]);
 }
 
 /** Cadastro público: o dono cria a empresa e já entra logado. */

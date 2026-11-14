@@ -6,6 +6,9 @@ import { ActionForm } from "@/components/action-form";
 import { CaixaQueSalva } from "@/components/caixa-que-salva";
 import { CopyButton } from "@/components/copy-button";
 import { JanelaAcao } from "@/components/janela-acao";
+import Link from "next/link";
+import { PLANO, dataBR } from "@/lib/plano";
+import { formatBRL } from "@/lib/money";
 import {
   ativarFilialAction,
   conectarMercadoPagoAction,
@@ -16,7 +19,7 @@ import {
 
 // As quatro seções da janela de Configurações (o que se ajusta uma vez). Renderizadas no servidor e entregues
 // prontas à janela, que só mostra a escolhida: trocar de seção não carrega nada.
-export async function secoesConfig(tenantId: string) {
+export async function secoesConfig(tenantId: string, pagoAte: string | null) {
   const [s, filiais] = await Promise.all([getSettings(tenantId), listFiliais(tenantId)]);
   const h = await headers();
   const portalUrl = `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}/pedir/${s.slug}`;
@@ -32,6 +35,15 @@ export async function secoesConfig(tenantId: string) {
     : [];
 
   return {
+    assinatura: pagoAte ? (
+      <div className="space-y-4">
+        <p>Acesso até <span className="font-semibold">{dataBR(pagoAte)}</span>.</p>
+        <p className="text-[13px] text-muted">{formatBRL(PLANO.mensalCents)} por mês, pago com Pix.</p>
+        <Link href="/assinatura" className="btn btn-primary">Ver assinatura</Link>
+      </div>
+    ) : (
+      <p className="text-muted">Sua empresa não tem cobrança mensal.</p>
+    ),
     regras: (
       <ActionForm action={saveSettingsAction} salvaAoMudar className="space-y-5">
         <input type="hidden" name="section" value="regras" />
