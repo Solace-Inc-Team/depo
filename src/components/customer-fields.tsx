@@ -9,7 +9,7 @@ export function CustomerFields({ c = {} }: { c?: C }) {
       </div>
       <div>
         <label className="label" htmlFor="c-phone">Telefone</label>
-        <input id="c-phone" name="phone" inputMode="tel" defaultValue={c.phone} className="input" />
+        <input id="c-phone" name="phone" inputMode="tel" data-mascara="telefone" autoComplete="tel" placeholder="(11) 91111-1111" defaultValue={c.phone} className="input" />
       </div>
       <div>
         <label className="label" htmlFor="c-ref">Referência</label>

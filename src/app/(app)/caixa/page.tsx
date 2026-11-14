@@ -34,7 +34,7 @@ export default async function Caixa() {
               </div>
               <div>
                 <label className="label" htmlFor="openingCash">Troco inicial</label>
-                <input id="openingCash" name="openingCash" inputMode="decimal" maxLength={12} className="input" placeholder="50,00" />
+                <input id="openingCash" name="openingCash" inputMode="decimal" data-mascara="dinheiro" maxLength={12} className="input" placeholder="50,00" />
               </div>
               <button className="btn btn-primary w-full">Abrir turno</button>
             </ActionForm>

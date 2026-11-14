@@ -23,7 +23,7 @@ export function CloseShiftForm({ shiftId, expectedCents }: { shiftId: string; ex
         <input
           id="counted"
           name="counted"
-          inputMode="decimal"
+          inputMode="decimal" data-mascara="dinheiro"
           required
           value={counted}
           onChange={(e) => setCounted(e.target.value)}

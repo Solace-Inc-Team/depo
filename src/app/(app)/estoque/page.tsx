@@ -82,7 +82,7 @@ export default async function Estoque() {
             </div>
             <div>
               <label className="label" htmlFor="p-cost">Valor pago (opcional)</label>
-              <input id="p-cost" name="cost" inputMode="decimal" maxLength={12} className="input" placeholder="0,00" />
+              <input id="p-cost" name="cost" inputMode="decimal" data-mascara="dinheiro" maxLength={12} className="input" placeholder="0,00" />
             </div>
             <div>
               <label className="label" htmlFor="p-method">Pago com</label>

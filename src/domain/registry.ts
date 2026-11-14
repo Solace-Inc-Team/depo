@@ -3,6 +3,7 @@ import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { tenantTransaction } from "@/db";
 import { auditLog, customerAddresses, customers, orders, products, sessions, tenants, users } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
+import { telefoneSchema } from "./telefone";
 import { hashPassword } from "@/lib/password";
 import { audit } from "./stock";
 import { filialAtiva } from "./filiais";
@@ -11,7 +12,7 @@ import { randomUUID } from "node:crypto";
 
 export const customerSchema = z.object({
   name: z.string().trim().min(2, "Nome muito curto.").max(120, "O nome pode ter até 120 letras."),
-  phone: z.string().trim().max(30, "Telefone muito longo."),
+  phone: telefoneSchema,
   address: z.string().trim().max(200, "O endereço pode ter até 200 letras."),
   reference: z.string().trim().max(200, "A referência pode ter até 200 letras."),
   notes: z.string().trim().max(500, "A observação pode ter até 500 letras."),

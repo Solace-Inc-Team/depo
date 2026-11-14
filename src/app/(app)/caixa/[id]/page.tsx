@@ -224,7 +224,7 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
                   <input type="hidden" name="category" value="" />
                   <div>
                     <label className="label" htmlFor="rep-amount">Valor recebido</label>
-                    <input id="rep-amount" name="amount" inputMode="decimal" required maxLength={12} className="input num" placeholder="0,00" />
+                    <input id="rep-amount" name="amount" inputMode="decimal" data-mascara="dinheiro" required maxLength={12} className="input num" placeholder="0,00" />
                   </div>
                   <div>
                     <label className="label" htmlFor="rep-note">Observação (opcional)</label>
@@ -242,7 +242,7 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
                   <div className="grid gap-3">
                     <div>
                       <label className="label" htmlFor="out-amount">Valor</label>
-                      <input id="out-amount" name="amount" inputMode="decimal" required maxLength={12} className="input num" placeholder="0,00" />
+                      <input id="out-amount" name="amount" inputMode="decimal" data-mascara="dinheiro" required maxLength={12} className="input num" placeholder="0,00" />
                     </div>
                     <div>
                       <label className="label" htmlFor="out-cat">Tipo</label>

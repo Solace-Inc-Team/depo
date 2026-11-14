@@ -19,7 +19,7 @@ function Fields({ s = {} }: { s?: S }) {
       </div>
       <div className="w-44">
         <label className="label" htmlFor={`sp-${k}`}>Telefone</label>
-        <input id={`sp-${k}`} name="phone" inputMode="tel" maxLength={30} defaultValue={s.phone} className="input" />
+        <input id={`sp-${k}`} name="phone" inputMode="tel" data-mascara="telefone" defaultValue={s.phone} className="input" />
       </div>
       <div className="min-w-48 flex-[2]">
         <label className="label" htmlFor={`so-${k}`}>Observações</label>

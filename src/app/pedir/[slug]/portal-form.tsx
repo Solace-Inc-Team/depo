@@ -124,7 +124,7 @@ export function PortalForm({
           </div>
           <div>
             <label className="label" htmlFor="phone">Telefone com DDD</label>
-            <input id="phone" name="phone" required maxLength={30} inputMode="tel" autoComplete="tel" className="input" placeholder="(11) 98888-7777" />
+            <input id="phone" name="phone" required inputMode="tel" data-mascara="telefone" autoComplete="tel" className="input" placeholder="(11) 98888-7777" />
           </div>
           <div>
             <label className="label" htmlFor="address">Endereço</label>
@@ -163,7 +163,7 @@ export function PortalForm({
           </div>
           <Aparece quando={payment === "dinheiro"}>
               <label className="label" htmlFor="changeFor">Precisa de troco para quanto? (opcional)</label>
-              <input id="changeFor" name="changeFor" inputMode="decimal" maxLength={12} className="input" />
+              <input id="changeFor" name="changeFor" inputMode="decimal" data-mascara="dinheiro" maxLength={12} className="input" />
           </Aparece>
           <Aparece quando={payment === "pix"}>
             <p className="text-sm text-muted">Depois de enviar, aparece o QR e o código Pix com o valor do pedido.</p>

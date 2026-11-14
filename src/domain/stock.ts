@@ -3,6 +3,7 @@ import { tenantTransaction, type Tx } from "@/db";
 import { z } from "zod";
 import { products, stockMovements, auditLog, suppliers, expenses } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
+import { telefoneSchema } from "./telefone";
 import { todayISO } from "@/lib/period";
 
 type State = "cheio" | "vazio" | "avariado";
@@ -147,7 +148,7 @@ export async function runInventory(ctx: Ctx, counts: { productId: string; state:
 
 export const supplierSchema = z.object({
   name: z.string().trim().min(2, "Nome muito curto.").max(120, "O nome pode ter até 120 letras."),
-  phone: z.string().trim().max(30, "Telefone muito longo."),
+  phone: telefoneSchema,
   notes: z.string().trim().max(300, "A observação pode ter até 300 letras."),
   active: z.boolean(),
 });

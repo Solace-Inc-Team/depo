@@ -164,7 +164,7 @@ export function NewOrderForm({
               </div>
               <div>
                 <label className="label" htmlFor="nc-phone">Telefone</label>
-                <input id="nc-phone" name="newCustomerPhone" inputMode="tel" maxLength={30} className="input" />
+                <input id="nc-phone" name="newCustomerPhone" inputMode="tel" data-mascara="telefone" placeholder="(11) 91111-1111" className="input" />
               </div>
               <div>
                 <label className="label" htmlFor="nc-ref">Referência</label>
@@ -292,7 +292,7 @@ export function NewOrderForm({
               </div>
               <div>
                 <label className="label" htmlFor="fee">Taxa de entrega</label>
-                <input id="fee" name="deliveryFee" maxLength={12} value={fee} onChange={(e) => setFee(e.target.value)} inputMode="decimal" className="input" placeholder="0,00" />
+                <input id="fee" name="deliveryFee" maxLength={12} value={fee} onChange={(e) => setFee(e.target.value)} inputMode="decimal" data-mascara="dinheiro" className="input" placeholder="0,00" />
               </div>
               <div>
                 <label className="label" htmlFor="driver">Entregador</label>
@@ -327,11 +327,11 @@ export function NewOrderForm({
           </div>
           <Aparece quando={payment === "dinheiro"} className="pt-3">
               <label className="label" htmlFor="change">Troco para (opcional)</label>
-              <input id="change" name="changeFor" maxLength={12} inputMode="decimal" className="input" />
+              <input id="change" name="changeFor" maxLength={12} inputMode="decimal" data-mascara="dinheiro" className="input" />
           </Aparece>
           <Aparece quando={payment === "pix" || payment === "cartao"} className="pt-3">
               <label className="label" htmlFor="cashPart">Parte em dinheiro (opcional)</label>
-              <input id="cashPart" name="cashPart" inputMode="decimal" maxLength={12} className="input" placeholder="0,00" />
+              <input id="cashPart" name="cashPart" inputMode="decimal" data-mascara="dinheiro" maxLength={12} className="input" placeholder="0,00" />
           </Aparece>
           <Aparece quando={payment === "fiado"} className="pt-3">
             <p className="text-sm text-muted">Fiado exige cliente identificado.</p>
@@ -341,7 +341,7 @@ export function NewOrderForm({
             <div className="mt-2 space-y-2">
               <div>
                 <label className="label" htmlFor="discount">Desconto em R$</label>
-                <input id="discount" name="discount" value={discount} onChange={(e) => setDiscount(e.target.value)} inputMode="decimal" maxLength={12} className="input" placeholder="0,00" />
+                <input id="discount" name="discount" value={discount} onChange={(e) => setDiscount(e.target.value)} inputMode="decimal" data-mascara="dinheiro" maxLength={12} className="input" placeholder="0,00" />
               </div>
               <div>
                 <label className="label" htmlFor="discountReason">Motivo</label>

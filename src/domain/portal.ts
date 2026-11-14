@@ -5,6 +5,7 @@ import { branches, customers, orderItems, orders, products, tenants, users } fro
 import { type Ctx, DomainError, isUuid } from "@/lib/ctx";
 import { createOrder } from "./orders";
 import { audit } from "./stock";
+import { telefoneSchema } from "./telefone";
 
 /**
  * Empresa do portal público. Só aparece se estiver ativa e com o portal ligado pelo dono.
@@ -36,11 +37,8 @@ export const portalProducts = (tenantId: string) =>
 
 export const portalOrderSchema = z.object({
   name: z.string().trim().min(2, "Informe seu nome.").max(120, "O nome pode ter até 120 letras."),
-  phone: z
-    .string()
-    .trim()
-    .max(30, "Telefone muito longo.")
-    .refine((p) => p.replace(/\D/g, "").length >= 10, "Informe o telefone com DDD."),
+  // no portal o telefone é obrigatório; a regra e o formato são os mesmos do cadastro
+  phone: telefoneSchema.refine((p) => p !== "", "Informe o telefone com DDD."),
   address: z.string().trim().min(5, "Informe o endereço de entrega.").max(200, "O endereço pode ter até 200 letras."),
   reference: z.string().trim().max(200, "A referência pode ter até 200 letras."),
   items: z

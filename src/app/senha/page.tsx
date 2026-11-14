@@ -94,7 +94,7 @@ export default async function Senha() {
               <ActionForm action={confirmTotpAction} className="mt-4 flex flex-wrap items-end gap-3">
                 <div className="w-36">
                   <label className="label" htmlFor="code">Código</label>
-                  <input id="code" name="code" inputMode="numeric" autoComplete="one-time-code" maxLength={7} required className="input num tracking-[0.2em]" />
+                  <input id="code" name="code" inputMode="numeric" data-mascara="numero" autoComplete="one-time-code" maxLength={7} required className="input num tracking-[0.2em]" />
                 </div>
                 <button className="btn btn-primary">Ativar</button>
               </ActionForm>

@@ -23,7 +23,7 @@ export default async function Codigo() {
             <input
               id="code"
               name="code"
-              inputMode="numeric"
+              inputMode="numeric" data-mascara="numero"
               autoComplete="one-time-code"
               pattern="[0-9 ]{6,7}"
               maxLength={7}

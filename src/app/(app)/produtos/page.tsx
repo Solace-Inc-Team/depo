@@ -21,11 +21,11 @@ function Fields({ p = {}, rotulos = true }: { p?: P; rotulos?: boolean }) {
       </div>
       <div className="w-32">
         <label className={rotulo} htmlFor={`p-${k}`}>Preço</label>
-        <input id={`p-${k}`} name="price" required inputMode="decimal" defaultValue={p.priceCents !== undefined ? centsToInput(p.priceCents) : ""} className="input" />
+        <input id={`p-${k}`} name="price" required inputMode="decimal" data-mascara="dinheiro" defaultValue={p.priceCents !== undefined ? centsToInput(p.priceCents) : ""} className="input" />
       </div>
       <div className="w-32">
         <label className={rotulo} htmlFor={`c-${k}`}>Preço do vasilhame</label>
-        <input id={`c-${k}`} name="containerPrice" inputMode="decimal" maxLength={12} defaultValue={p.containerPriceCents ? centsToInput(p.containerPriceCents) : ""} className="input" placeholder="0,00" />
+        <input id={`c-${k}`} name="containerPrice" inputMode="decimal" data-mascara="dinheiro" maxLength={12} defaultValue={p.containerPriceCents ? centsToInput(p.containerPriceCents) : ""} className="input" placeholder="0,00" />
       </div>
       <div className="w-28">
         <label className={rotulo} htmlFor={`m-${k}`}>Estoque mínimo</label>

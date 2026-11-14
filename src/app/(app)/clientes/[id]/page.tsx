@@ -58,7 +58,7 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                   <input type="hidden" name="customerId" value={c.id} />
                   <div>
                     <label className="label" htmlFor="amount">Valor recebido</label>
-                    <input id="amount" name="amount" inputMode="decimal" required defaultValue={centsToInput(st.owed)} className="input num" />
+                    <input id="amount" name="amount" inputMode="decimal" data-mascara="dinheiro" required defaultValue={centsToInput(st.owed)} className="input num" />
                   </div>
                   <div>
                     <label className="label" htmlFor="method">Forma</label>
@@ -154,7 +154,7 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                       {comodato.caucaoCents > 0 && (
                         <div>
                           <label className="label" htmlFor="dev-caucao">Caução devolvida (opcional)</label>
-                          <input id="dev-caucao" name="refund" inputMode="decimal" className="input num" placeholder="0,00" />
+                          <input id="dev-caucao" name="refund" inputMode="decimal" data-mascara="dinheiro" className="input num" placeholder="0,00" />
                         </div>
                       )}
                       <div className={comodato.caucaoCents > 0 ? "" : "sm:col-span-2"}>
@@ -187,7 +187,7 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                       </div>
                       <div>
                         <label className="label" htmlFor="reg-caucao">Caução recebida (opcional)</label>
-                        <input id="reg-caucao" name="deposit" inputMode="decimal" className="input num" placeholder="0,00" />
+                        <input id="reg-caucao" name="deposit" inputMode="decimal" data-mascara="dinheiro" className="input num" placeholder="0,00" />
                       </div>
                       <div>
                         <label className="label" htmlFor="reg-forma">Caução paga em</label>

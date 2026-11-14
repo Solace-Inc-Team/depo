@@ -139,7 +139,7 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="label" htmlFor="amount">Valor</label>
-                <input id="amount" name="amount" inputMode="decimal" required className="input num" placeholder="0,00" />
+                <input id="amount" name="amount" inputMode="decimal" data-mascara="dinheiro" required className="input num" placeholder="0,00" />
               </div>
               <div>
                 <label className="label" htmlFor="paidOn">Data</label>
