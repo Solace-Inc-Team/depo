@@ -11,6 +11,8 @@ import { cobrancaLigada, conferirAssinatura, pagamentosFeitos, pixEmAberto } fro
 import { formatBRL } from "@/lib/money";
 import { PLANO, dataBR, situacaoAssinatura } from "@/lib/plano";
 import { todayISO } from "@/lib/period";
+import { INCLUSO } from "@/app/inicio/contato";
+import { Check } from "lucide-react";
 
 export const metadata = { title: "Assinatura" };
 
@@ -49,6 +51,18 @@ export default async function Assinatura() {
         <MarcaDaSessao size={28} />
         <h1 className="mt-8 text-[1.75rem] leading-tight font-semibold tracking-[-0.03em]">{titulo}</h1>
         <p className="mt-2 text-muted">{situacao}</p>
+
+        {/* quem ainda não assinou vê o que está comprando */}
+        {dono && emTeste && (
+          <ul className="mt-6 space-y-2 border-t border-line pt-6 text-[14px]">
+            {INCLUSO.map((x) => (
+              <li key={x} className="flex items-center gap-3">
+                <Check size={15} strokeWidth={2.25} className="shrink-0 text-accent" aria-hidden="true" />
+                {x}
+              </li>
+            ))}
+          </ul>
+        )}
 
         {dono &&
           (aberto ? (

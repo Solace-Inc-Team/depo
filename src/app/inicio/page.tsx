@@ -10,7 +10,7 @@ import { DemoAcerto } from "./demo-acerto";
 import { DemoEntrega } from "./demo-entrega";
 import { DemoPortal } from "./demo-portal";
 import { MiniEstorno, MiniExportar, MiniSoSua } from "./detalhes";
-import { DIAS_GRATIS, PRECO, WHATSAPP, linkWhatsApp } from "./contato";
+import { DIAS_GRATIS, INCLUSO, PRECO, WHATSAPP, linkWhatsApp } from "./contato";
 import { LuzCursor } from "./luz-cursor";
 
 // A vitrine: sempre escura, com uma ideia visual só (a tela do produto e luz). Ritmo de escala variada:
@@ -254,13 +254,7 @@ export default function Inicio() {
                 : "Conte quantos entregadores e quantos pedidos por dia a sua revenda tem, e a gente responde com o valor."}
             </p>
             <ul className="mt-6 space-y-2.5 border-t border-line pt-6 text-[15px]">
-              {[
-                "Dono, caixa, atendente e entregador",
-                "Link de pedido para os clientes, com Pix",
-                "Estoque de cheios, vazios e avariados",
-                "Acerto de caixa por entregador",
-                "Relatórios e exportação em planilha",
-              ].map((x) => (
+              {INCLUSO.map((x) => (
                 <li key={x} className="flex items-center gap-3">
                   <Check size={15} strokeWidth={2.25} className="shrink-0 text-accent" aria-hidden="true" />
                   {x}

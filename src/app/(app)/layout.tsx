@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { TemaBotao } from "@/components/tema-botao";
-import { CircleHelp, KeyRound, LogOut } from "lucide-react";
+import { CircleHelp, CreditCard, KeyRound, LogOut } from "lucide-react";
+import { emTesteGratis } from "@/domain/assinatura";
 import { requireUser } from "@/lib/auth";
 import { logout } from "@/app/actions";
 import { MarcaDaSessao } from "@/components/logo";
@@ -26,17 +27,26 @@ const initials = (name: string) =>
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const user = await requireUser("dono", "atendente", "caixa");
   if (user.platformAdmin) redirect("/admin");
-  // perto de vencer, o dono vê um aviso em todas as telas; a equipe não
+  // selo do plano, à vista no menu: no teste grátis sempre; depois de assinar, só perto de vencer. A equipe não vê
   const sit = user.role === "dono" ? situacaoAssinatura(user.pagoAte, todayISO()) : null;
-  const aviso =
-    sit && sit.dias <= 5
-      ? sit.dias < 0
-        ? `A mensalidade venceu. O sistema pausa em ${dataBR(sit.pausaEm, true)}.`
-        : sit.dias === 0
-          ? "Seu acesso vence hoje."
-          : sit.dias === 1
-            ? "Seu acesso vence amanhã."
-            : `Seu acesso vale até ${dataBR(sit.pagoAte, true)}.`
+  const teste = sit ? await emTesteGratis(user.tenantId) : false;
+  const selo =
+    sit && (teste || sit.dias <= 5)
+      ? {
+          titulo: teste ? "Teste grátis" : "Assinatura",
+          linha:
+            sit.dias < 0
+              ? `${teste ? "Acabou" : "Venceu"}. Pausa em ${dataBR(sit.pausaEm, true)}`
+              : sit.dias === 0
+                ? `${teste ? "Acaba" : "Vence"} hoje`
+                : sit.dias === 1
+                  ? `${teste ? "Acaba" : "Vence"} amanhã`
+                  : teste
+                    ? `Faltam ${sit.dias} dias`
+                    : `Vence em ${sit.dias} dias`,
+          acao: teste ? "Assinar" : "Pagar",
+          alerta: sit.dias <= 1,
+        }
       : null;
 
   const groups: NavGroup[] = [
@@ -118,6 +128,19 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             {user.branches.length > 1 && <span className="block truncate text-fg">{user.branchName}</span>}
           </p>
         )}
+        {selo && (
+          <Link
+            href="/assinatura"
+            className={`mx-2.5 mb-3 flex items-center gap-3 rounded-lg border px-3 py-2.5 hover:bg-subtle lg:mb-4 ${selo.alerta ? "border-warn-fg/40" : "border-line"}`}
+          >
+            <CreditCard size={16} strokeWidth={1.75} aria-hidden="true" className={`shrink-0 ${selo.alerta ? "text-warn-fg" : "text-accent"}`} />
+            <span className="min-w-0 flex-1 leading-tight">
+              <span className="block text-[13px] font-medium">{selo.titulo}</span>
+              <span className={`block text-[12px] ${selo.alerta ? "text-warn-fg" : "text-muted"}`}>{selo.linha}</span>
+            </span>
+            <span className="shrink-0 text-[13px] font-medium text-accent">{selo.acao}</span>
+          </Link>
+        )}
         <NavLinks groups={groups} />
         <div className="mt-auto hidden shrink-0 items-center gap-2.5 border-t border-line px-4 py-3 lg:flex">
           <span className="grid size-8 shrink-0 place-items-center rounded-full bg-subtle text-xs font-semibold">
@@ -144,15 +167,6 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         </div>
       </aside>
       <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-10 lg:py-10">
-        {aviso && (
-          <Link
-            href="/assinatura"
-            className={`mb-6 flex items-center justify-between gap-4 rounded-lg border px-4 py-3 text-[14px] hover:bg-subtle ${sit!.dias < 0 ? "border-warn-fg/40 text-warn-fg" : "border-line"}`}
-          >
-            {aviso}
-            <span className="shrink-0 font-medium">Pagar com Pix</span>
-          </Link>
-        )}
         <PageTransition>{children}</PageTransition>
       </main>
     </div>

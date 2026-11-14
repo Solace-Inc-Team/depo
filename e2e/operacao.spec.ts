@@ -166,7 +166,7 @@ test("cadastro: o dono cria a conta pela página inicial e cai no painel com os 
   await expect(page.getByText("Gás do Teste").first()).toBeVisible();
 });
 
-test("assinatura: perto de vencer o dono vê o aviso; vencida, o sistema pausa e só abre a tela de pagar", async ({ page }) => {
+test("assinatura: o selo do plano fica à vista desde o cadastro; vencida, o sistema pausa e só abre a tela de pagar", async ({ page }) => {
   const { default: postgres } = await import("postgres");
   const sql = postgres((process.env.TEST_PG_URL ?? "postgres://app:app@localhost:5433/postgres").replace(/\/[^/]*$/, "/gestao_e2e"), { max: 1 });
   const email = `ana-${Date.now()}@cadastro.test`;
@@ -180,16 +180,22 @@ test("assinatura: perto de vencer o dono vê o aviso; vencida, o sistema pausa e
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Criar conta" }).click();
   await expect(page.getByRole("heading", { name: "Primeiros passos" })).toBeVisible();
-  // 14 dias de teste: longe de vencer, sem aviso
-  await expect(page.getByText("Pagar com Pix")).toHaveCount(0);
+  // logo depois de criar a conta: o selo no menu e o aviso nos primeiros passos
+  const selo = page.getByRole("link", { name: /Teste grátis.*Assinar/ });
+  await expect(selo).toContainText("Faltam 14 dias");
+  await expect(page.getByText(/Teste grátis até .* Depois, R\$.129,00 por mês/)).toBeVisible();
+  await page.screenshot({ path: "../qa/evidencias/selo-plano.png" });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: "../qa/evidencias/selo-plano-celular.png" });
+  await page.setViewportSize({ width: 1280, height: 720 });
 
   const mudar = (dias: number) => sql`update tenants set pago_ate = (now() at time zone 'America/Sao_Paulo')::date + ${dias}::int where id = (select tenant_id from users where email = ${email})`;
-  await mudar(2);
+  await mudar(1);
   await page.reload();
-  await expect(page.getByRole("link", { name: /Seu acesso vale até .* Pagar com Pix/ })).toBeVisible();
-  await page.screenshot({ path: "../qa/evidencias/assinatura-aviso.png" });
-  await page.getByRole("link", { name: /Pagar com Pix/ }).click();
+  await expect(selo).toContainText("Acaba amanhã");
+  await selo.click();
   await expect(page.getByRole("heading", { name: "Teste grátis" })).toBeVisible();
+  await expect(page.getByText("Acerto de caixa por entregador")).toBeVisible();
   await page.screenshot({ path: "../qa/evidencias/assinatura-teste.png" });
 
   await mudar(-4);

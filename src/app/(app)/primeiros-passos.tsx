@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { Check } from "lucide-react";
+import { PLANO, dataBR } from "@/lib/plano";
+import { formatBRL } from "@/lib/money";
 
 // O que uma empresa nova precisa fazer, na ordem em que faz sentido. Cada passo se completa
 // sozinho quando a coisa existe no sistema; o bloco some quando todos estão feitos.
@@ -15,15 +17,23 @@ const passos: { chave: keyof Feito; titulo: string; texto: string; href: string;
   { chave: "pedido", titulo: "Lance o primeiro pedido", texto: "Do telefone ao acerto: daqui em diante é o dia a dia.", href: "/pedidos/novo", acao: "Novo pedido" },
 ];
 
-export function PrimeirosPassos({ feito }: { feito: Feito }) {
+export function PrimeirosPassos({ feito, testeAte }: { feito: Feito; testeAte?: string | null }) {
   const prontos = passos.filter((p) => feito[p.chave]).length;
   if (prontos === passos.length) return null;
   const proximo = passos.find((p) => !feito[p.chave])!;
   return (
     <section aria-labelledby="primeiros-passos" className="panel mb-6 overflow-hidden">
       <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
-        <h2 id="primeiros-passos" className="h2">Primeiros passos</h2>
-        <span className="num text-sm text-muted">
+        <div className="min-w-0">
+          <h2 id="primeiros-passos" className="h2">Primeiros passos</h2>
+          {testeAte && (
+            <p className="mt-0.5 text-[13px] text-muted">
+              Teste grátis até {dataBR(testeAte)}. Depois, {formatBRL(PLANO.mensalCents)} por mês.{" "}
+              <Link href="/assinatura" className="alvo font-medium text-fg hover:underline">Ver o plano</Link>
+            </p>
+          )}
+        </div>
+        <span className="num shrink-0 text-sm whitespace-nowrap text-muted">
           {prontos} de {passos.length}
         </span>
       </div>

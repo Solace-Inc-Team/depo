@@ -9,6 +9,15 @@ export const WHATSAPP = "";
 /** Preço por mês como deve aparecer (ex.: "R$ 149"). Vazio mostra "sob consulta". */
 export const PRECO = `R$ ${PLANO.mensalCents / 100}`;
 
+/** O que a mensalidade inclui. */
+export const INCLUSO = [
+  "Dono, caixa, atendente e entregador",
+  "Link de pedido para os clientes, com Pix",
+  "Estoque de cheios, vazios e avariados",
+  "Acerto de caixa por entregador",
+  "Relatórios e exportação em planilha",
+];
+
 /** Dias de uso grátis depois do cadastro. */
 export const DIAS_GRATIS = PLANO.diasGratis;
 

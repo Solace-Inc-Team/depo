@@ -11,6 +11,7 @@ import { comparar } from "@/lib/comparativo";
 import { DivisaoPagamento } from "@/components/divisao-pagamento";
 import { FiltroPainel } from "./filtro-painel";
 import { PrimeirosPassos } from "./primeiros-passos";
+import { emTesteGratis } from "@/domain/assinatura";
 import { Money, StatusBadge, Empty, fmtTime, paymentLabel } from "@/components/ui";
 
 export const metadata = { title: "Painel" };
@@ -28,6 +29,8 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
   const d = await dashboard(user.tenantId, { day: dia, driverId: entregador?.id, branchId: user.branchId });
   // os primeiros passos são tarefas do dono; os outros perfis não têm acesso a metade das telas
   const passos = user.role === "dono" ? await primeirosPassos(user.tenantId) : null;
+  // conta nova no teste grátis: os primeiros passos já dizem até quando e quanto custa depois
+  const testeAte = passos && user.pagoAte && (await emTesteGratis(user.tenantId)) ? user.pagoAte : null;
   // contas a pagar são de quem cuida do dinheiro: dono e caixa
   const contas = user.role === "dono" || user.role === "caixa" ? await contasVencendo(user.tenantId, user.branchId) : null;
   const ehHoje = dia === hojeISO;
@@ -98,7 +101,7 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
         </FiltroPainel>
       </div>
 
-      {passos && <PrimeirosPassos feito={passos} />}
+      {passos && <PrimeirosPassos feito={passos} testeAte={testeAte} />}
 
       {/* no celular o que pede atenção vem antes dos números: é o que tem de ser feito agora */}
       <div className="flex flex-col">

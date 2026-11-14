@@ -46,6 +46,18 @@ export function pagamentosFeitos(tenantId: string) {
   );
 }
 
+/** Ainda no teste grátis: nenhuma mensalidade paga. */
+export async function emTesteGratis(tenantId: string) {
+  const [pago] = await withTenant(tenantId, () =>
+    db
+      .select({ id: assinaturaPagamentos.id })
+      .from(assinaturaPagamentos)
+      .where(and(eq(assinaturaPagamentos.tenantId, tenantId), isNotNull(assinaturaPagamentos.pagoEm)))
+      .limit(1),
+  );
+  return !pago;
+}
+
 /** Gera (ou reaproveita) o Pix da mensalidade. Só o dono paga. */
 export async function pixAssinatura(ctx: Ctx) {
   assertRole(ctx, "dono");
