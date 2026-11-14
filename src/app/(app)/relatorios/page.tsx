@@ -55,7 +55,7 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
       <section className="panel mb-6 overflow-x-auto">
         <h2 className="h2 border-b border-line px-4 py-3">Vendas entregues por dia</h2>
         {days.length ? (
-          <table className="table min-w-[44rem]">
+          <table className="table tabela-pilha rotulada sm:min-w-[44rem]">
             <thead>
               <tr>
                 <th>Dia</th><th className="text-right">Pedidos</th><th className="text-right">Dinheiro</th><th className="text-right">Pix</th>
@@ -66,22 +66,22 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
               {days.map((d) => (
                 <tr key={d.day}>
                   <td className="num">{fmtDay(d.day)}</td>
-                  <td className="num text-right">{d.count}</td>
-                  <td className="text-right"><Money cents={d.cash} /></td>
-                  <td className="text-right"><Money cents={d.pix} /></td>
-                  <td className="text-right"><Money cents={d.card} /></td>
-                  <td className="text-right"><Money cents={d.credit} /></td>
-                  <td className="text-right font-semibold"><Money cents={d.total} /></td>
+                  <td data-rotulo="Pedidos" className="num text-right">{d.count}</td>
+                  <td data-rotulo="Dinheiro" className="text-right"><Money cents={d.cash} /></td>
+                  <td data-rotulo="Pix" className="text-right"><Money cents={d.pix} /></td>
+                  <td data-rotulo="Cartão" className="text-right"><Money cents={d.card} /></td>
+                  <td data-rotulo="Fiado" className="text-right"><Money cents={d.credit} /></td>
+                  <td data-rotulo="Total" className="text-right font-semibold"><Money cents={d.total} /></td>
                 </tr>
               ))}
               <tr className="bg-subtle font-semibold">
                 <td>Período</td>
-                <td className="num text-right">{sum("count")}</td>
-                <td className="text-right"><Money cents={sum("cash")} /></td>
-                <td className="text-right"><Money cents={sum("pix")} /></td>
-                <td className="text-right"><Money cents={sum("card")} /></td>
-                <td className="text-right"><Money cents={sum("credit")} /></td>
-                <td className="text-right"><Money cents={sum("total")} /></td>
+                <td data-rotulo="Pedidos" className="num text-right">{sum("count")}</td>
+                <td data-rotulo="Dinheiro" className="text-right"><Money cents={sum("cash")} /></td>
+                <td data-rotulo="Pix" className="text-right"><Money cents={sum("pix")} /></td>
+                <td data-rotulo="Cartão" className="text-right"><Money cents={sum("card")} /></td>
+                <td data-rotulo="Fiado" className="text-right"><Money cents={sum("credit")} /></td>
+                <td data-rotulo="Total" className="text-right"><Money cents={sum("total")} /></td>
               </tr>
             </tbody>
           </table>
@@ -98,7 +98,7 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
         </div>
         <div className="border-t border-line p-5 sm:border-t-0 sm:border-r">
           <p className="text-[13px] text-muted">
-            <Link href={`/despesas?de=${fromStr}&ate=${toStr}`} className="hover:text-fg hover:underline">Despesas</Link>
+            <Link href={`/despesas?de=${fromStr}&ate=${toStr}`} className="alvo hover:text-fg hover:underline">Despesas</Link>
           </p>
           <Money cents={spent} className="mt-1 block text-2xl font-semibold tracking-[-0.03em]" />
         </div>
@@ -127,7 +127,7 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
         <section className="panel overflow-x-auto">
           <h2 className="h2 border-b border-line px-4 py-3">Por entregador</h2>
           {breakdown.byDriver.length ? (
-            <table className="table min-w-[32rem]">
+            <table className="table tabela-pilha rotulada sm:min-w-[32rem]">
               <thead>
                 <tr>
                   <th>Quem entregou</th><th className="text-right">Pedidos</th><th className="text-right">Itens</th><th className="text-right">Dinheiro</th>
@@ -138,13 +138,13 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
                 {breakdown.byDriver.map((r) => (
                   <tr key={r.name}>
                     <td>{r.name}</td>
-                    <td className="num text-right">{r.count}</td>
-                    <td className="num text-right">{r.units}</td>
-                    <td className="text-right"><Money cents={r.cash} /></td>
-                    <td className="text-right"><Money cents={r.pix} /></td>
-                    <td className="text-right"><Money cents={r.card} /></td>
-                    <td className="text-right"><Money cents={r.credit} /></td>
-                    <td className="text-right font-semibold"><Money cents={r.total} /></td>
+                    <td data-rotulo="Pedidos" className="num text-right">{r.count}</td>
+                    <td data-rotulo="Itens" className="num text-right">{r.units}</td>
+                    <td data-rotulo="Dinheiro" className="text-right"><Money cents={r.cash} /></td>
+                    <td data-rotulo="Pix" className="text-right"><Money cents={r.pix} /></td>
+                    <td data-rotulo="Cartão" className="text-right"><Money cents={r.card} /></td>
+                    <td data-rotulo="Fiado" className="text-right"><Money cents={r.credit} /></td>
+                    <td data-rotulo="Total" className="text-right font-semibold"><Money cents={r.total} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -156,15 +156,15 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
         <section className="panel overflow-x-auto">
           <h2 className="h2 border-b border-line px-4 py-3">Por produto</h2>
           {breakdown.byProduct.length ? (
-            <table className="table min-w-[32rem]">
+            <table className="table tabela-pilha rotulada sm:min-w-[32rem]">
               <thead><tr><th>Produto</th><th className="text-right">Qtd.</th><th className="text-right">Sem troca de vasilhame</th><th className="text-right">Total</th></tr></thead>
               <tbody>
                 {breakdown.byProduct.map((r) => (
                   <tr key={r.name}>
                     <td>{r.name}</td>
-                    <td className="num text-right">{r.qty}</td>
-                    <td className="num text-right text-muted">{r.noReturn || "-"}</td>
-                    <td className="text-right font-semibold"><Money cents={r.total} /></td>
+                    <td data-rotulo="Qtd." className="num text-right">{r.qty}</td>
+                    <td data-rotulo="Sem troca de vasilhame" className="num text-right text-muted">{r.noReturn || "-"}</td>
+                    <td data-rotulo="Total" className="text-right font-semibold"><Money cents={r.total} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -205,16 +205,16 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
           {closed.length > 0 && <p>Saldo das diferenças: <Difference cents={diffTotal} /></p>}
         </div>
         {closed.length ? (
-          <table className="table min-w-[40rem]">
+          <table className="table tabela-pilha rotulada sm:min-w-[40rem]">
             <thead><tr><th>Entregador</th><th>Fechado em</th><th className="text-right">Esperado</th><th className="text-right">Contado</th><th className="text-right">Resultado</th></tr></thead>
             <tbody>
               {closed.map(({ shift: s, driverName }) => (
                 <tr key={s.id}>
-                  <td><Link href={`/caixa/${s.id}`} className="hover:text-accent">{driverName}</Link></td>
-                  <td>{fmtDateTime(s.closedAt)}</td>
-                  <td className="text-right"><Money cents={s.expectedCashCents ?? 0} /></td>
-                  <td className="text-right"><Money cents={s.countedCashCents ?? 0} /></td>
-                  <td className="text-right"><Difference cents={s.differenceCents ?? 0} /></td>
+                  <td><Link href={`/caixa/${s.id}`} className="alvo hover:text-accent">{driverName}</Link></td>
+                  <td data-rotulo="Fechado em">{fmtDateTime(s.closedAt)}</td>
+                  <td data-rotulo="Esperado" className="text-right"><Money cents={s.expectedCashCents ?? 0} /></td>
+                  <td data-rotulo="Contado" className="text-right"><Money cents={s.countedCashCents ?? 0} /></td>
+                  <td data-rotulo="Resultado" className="text-right"><Difference cents={s.differenceCents ?? 0} /></td>
                 </tr>
               ))}
             </tbody>

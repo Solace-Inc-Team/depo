@@ -406,9 +406,11 @@ export async function saveSupplierAction(fd: FormData) {
 export async function saveCustomerAction(fd: FormData) {
   const user = await requireUser("dono", "atendente", "caixa");
   const id = optId(fd, "id") ?? undefined;
-  return run(
-    async () =>
-      saveCustomer(
+  // cadastro pela lista de clientes: quem cadastra quase sempre lança o pedido em seguida, então abre a ficha
+  let novo: string | undefined;
+  const r = await run(
+    async () => {
+      const c = await saveCustomer(
         user,
         customerSchema.parse({
           name: str(fd, "name"),
@@ -418,10 +420,14 @@ export async function saveCustomerAction(fd: FormData) {
           notes: str(fd, "notes"),
         }),
         id,
-      ),
+      );
+      novo = c.id;
+    },
     ["/"],
     id ? "Cliente atualizado." : "Cliente cadastrado.",
   );
+  if (!r?.error && !id && novo && fd.get("depois") === "ficha") redirect(`/clientes/${novo}`);
+  return r;
 }
 
 export async function anonymizeCustomerAction(fd: FormData) {

@@ -123,8 +123,8 @@ export async function secoesConfig(tenantId: string) {
             <div className="mt-3 flex flex-wrap items-center gap-3">
               <CopyButton text={l.url} label="Copiar link" />
               {/* o QR é branco para o celular ler; fica guardado até alguém pedir, para não ofuscar o escuro */}
-              <details className="basis-full">
-                <summary className="tap w-fit cursor-pointer list-none text-[13px] text-muted hover:text-fg">QR code para imprimir</summary>
+              <details>
+                <summary className="btn w-fit cursor-pointer list-none">Mostrar QR code</summary>
                 <div className="mt-2 w-fit rounded-md bg-white p-1.5" dangerouslySetInnerHTML={{ __html: l.qr }} />
               </details>
             </div>

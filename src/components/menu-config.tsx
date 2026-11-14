@@ -93,7 +93,9 @@ export function MenuConfig({ secoes, className = "" }: { secoes: Record<Secao, R
     const s = secao.current;
     if (!c || !s) return;
     const medir = () => {
-      const conteudo = s.parentElement!;
+      // a seção que já saiu da tela ainda pode avisar o ResizeObserver: aí não há o que medir
+      const conteudo = s.parentElement;
+      if (!s.isConnected || !conteudo) return;
       const p = getComputedStyle(conteudo);
       c.style.setProperty("--altura", `${s.offsetHeight + parseFloat(p.paddingTop) + parseFloat(p.paddingBottom)}px`);
     };

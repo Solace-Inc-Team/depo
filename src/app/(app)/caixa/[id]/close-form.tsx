@@ -33,7 +33,6 @@ export function CloseShiftForm({ shiftId, expectedCents }: { shiftId: string; ex
       </div>
       <p aria-live="polite" className="flex min-h-9 items-center text-lg">
         {/* o espaço do resultado fica reservado para nada pular; vazio, ele lembra com quanto comparar */}
-        {diff === null && <span className="text-[15px] text-muted">Tem que bater com {formatBRL(expectedCents)}.</span>}
         {diff !== null && (
           // a cor acompanha: verde quando bate, amarelo se sobra, vermelho se falta
           <span

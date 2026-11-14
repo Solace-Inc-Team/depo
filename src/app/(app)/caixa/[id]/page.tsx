@@ -4,6 +4,7 @@ import { isUuid } from "@/lib/ctx";
 import { requireUser } from "@/lib/auth";
 import { getShift } from "@/domain/queries";
 import { CheckDrawn, Difference, Money, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
+import { JanelaAcao } from "@/components/janela-acao";
 import { ActionForm } from "@/components/action-form";
 import { PopoverForm } from "@/components/popover-form";
 import { cashEntryAction, resolveDifferenceAction, voidCashEntryAction } from "@/app/actions";
@@ -74,7 +75,7 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
               <p className="text-muted">Resultado</p>
               <span className="flex items-center gap-3">
                 {s.differenceCents === 0 && <CheckDrawn className="size-10 text-ok" />}
-                <Difference cents={s.differenceCents ?? 0} className="text-5xl" />
+                <Difference cents={s.differenceCents ?? 0} className="text-4xl" />
               </span>
             </div>
           </div>
@@ -214,12 +215,13 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
               </ul>
             )}
             {isOpen && canSettle && (
-              <div className="grid gap-6 p-4 sm:grid-cols-2">
+              // repasse e gasto são lançamentos do meio do caminho: botões que abrem janela; o principal é fechar o acerto
+              <div className="flex flex-wrap gap-2 p-4">
+                <JanelaAcao label="Receber repasse" titulo="Receber repasse">
                 <ActionForm action={cashEntryAction} className="space-y-3" reset>
                   <input type="hidden" name="shiftId" value={s.id} />
                   <input type="hidden" name="kind" value="repasse" />
                   <input type="hidden" name="category" value="" />
-                  <h3 className="font-semibold">Receber repasse</h3>
                   <div>
                     <label className="label" htmlFor="rep-amount">Valor recebido</label>
                     <input id="rep-amount" name="amount" inputMode="decimal" required maxLength={12} className="input num" placeholder="0,00" />
@@ -228,13 +230,13 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
                     <label className="label" htmlFor="rep-note">Observação (opcional)</label>
                     <input id="rep-note" name="note" maxLength={160} className="input" />
                   </div>
-                  {/* o principal da tela é fechar o acerto; repasse e gasto são lançamentos do meio do caminho */}
-                  <button className="btn">Registrar repasse</button>
+                  <button className="btn btn-primary w-full">Registrar repasse</button>
                 </ActionForm>
+                </JanelaAcao>
+                <JanelaAcao label="Gasto autorizado" titulo="Gasto autorizado">
                 <ActionForm action={cashEntryAction} className="space-y-3" reset>
                   <input type="hidden" name="shiftId" value={s.id} />
                   <input type="hidden" name="kind" value="saida" />
-                  <h3 className="font-semibold">Gasto autorizado</h3>
                   <p className="text-[13px] text-muted">Entra nas despesas.</p>
                   {/* em meia coluna, valor e tipo lado a lado cortavam "Combustível": um embaixo do outro */}
                   <div className="grid gap-3">
@@ -255,8 +257,9 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
                     <label className="label" htmlFor="out-note">O que foi pago</label>
                     <input id="out-note" name="note" required minLength={2} maxLength={160} className="input" placeholder="Ex.: gasolina da moto" />
                   </div>
-                  <button className="btn">Registrar gasto</button>
+                  <button className="btn btn-primary w-full">Registrar gasto</button>
                 </ActionForm>
+                </JanelaAcao>
               </div>
             )}
           </section>
@@ -316,11 +319,11 @@ function Term({ label, cents, strong }: { label: string; cents: number; strong?:
   return (
     <div>
       <p className="text-muted">{label}</p>
-      <Money cents={cents} className={`text-4xl font-semibold tracking-[-0.035em] sm:text-5xl ${strong ? "text-accent" : ""}`} />
+      <Money cents={cents} className={`font-semibold tracking-[-0.03em] ${strong ? "text-3xl text-accent sm:text-4xl" : "text-2xl sm:text-3xl"}`} />
     </div>
   );
 }
 
 function Op({ children }: { children: string }) {
-  return <span aria-hidden="true" className="hidden pb-1 text-4xl text-muted sm:block">{children}</span>;
+  return <span aria-hidden="true" className="hidden pb-1 text-2xl text-muted sm:block">{children}</span>;
 }

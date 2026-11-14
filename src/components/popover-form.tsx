@@ -58,7 +58,8 @@ export function PopoverForm({
         document.addEventListener("pointerdown", fora);
         window.addEventListener("scroll", posicionar, true);
         window.addEventListener("resize", posicionar);
-        form.querySelector<HTMLElement>("input:not([type=hidden]),select,textarea")?.focus();
+        // depois do clique o foco ainda vai para o summary: o campo pega o foco no quadro seguinte
+        requestAnimationFrame(() => form.querySelector<HTMLElement>("input:not([type=hidden]),select,textarea")?.focus());
       } else {
         document.removeEventListener("pointerdown", fora);
         window.removeEventListener("scroll", posicionar, true);

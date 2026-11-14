@@ -1,19 +1,14 @@
 import type { ReactNode } from "react";
-import { ChevronDown } from "lucide-react";
+import { JanelaAcao } from "./janela-acao";
 
 /**
- * Botão que abre um formulário logo abaixo: para ações que não são o caminho normal
- * (entrega parcial, estorno, apagar dados). O formulário só aparece quando alguém pede.
- * É um <details> nativo, então funciona sem JavaScript e com teclado.
+ * Ação fora do caminho normal (entrega parcial, estorno, apagar dados): um botão que abre o formulário numa
+ * janela, como as outras ações. Antes era um <details> do tamanho de um campo com seta, que parecia lista de escolha.
  */
 export function Revelar({ label, perigo = false, children }: { label: string; perigo?: boolean; children: ReactNode }) {
   return (
-    <details>
-      <summary className={`desvio btn w-full ${perigo ? "text-danger" : ""}`}>
-        {label}
-        <ChevronDown size={15} strokeWidth={1.75} aria-hidden="true" className="desvio-seta" />
-      </summary>
-      <div className="mt-2">{children}</div>
-    </details>
+    <JanelaAcao label={label} titulo={label} perigo={perigo}>
+      {children}
+    </JanelaAcao>
   );
 }

@@ -73,11 +73,12 @@ export default async function Entregas() {
                       {o.customerAddress || "Sem endereço"}. <Money cents={o.totalCents} />, {paymentLabel[o.paymentMethod].toLowerCase()}
                     </p>
                     {o.occurrence && <p className="mt-1 text-sm font-medium text-warn-fg">Voltou da rua: {o.occurrence}</p>}
+                    {/* flex-wrap: o aviso de "escolha o entregador" desce para a linha de baixo em vez de espremer a lista */}
                     {onShift.length > 0 && (
-                      <ActionForm action={dispatchAction} className="mt-2 flex gap-2">
+                      <ActionForm action={dispatchAction} className="mt-2 flex flex-wrap gap-2">
                         <input type="hidden" name="orderId" value={o.id} />
-                        <label className="sr-only" htmlFor={`d-${o.id}`}>Entregador do pedido {o.number}</label>
-                        <select id={`d-${o.id}`} name="driverId" className="input flex-1" required defaultValue={onShift.length === 1 ? onShift[0].id : ""}>
+                        <label className="sr-only" htmlFor={`d-${o.id}`}>Entregador</label>
+                        <select id={`d-${o.id}`} name="driverId" className="input min-w-40 flex-1" required defaultValue={onShift.length === 1 ? onShift[0].id : ""}>
                           <option value="" disabled>Entregador</option>
                           {onShift.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
                         </select>

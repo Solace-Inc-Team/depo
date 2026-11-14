@@ -12,11 +12,13 @@ export function JanelaAcao({
   label,
   titulo,
   primario = false,
+  perigo = false,
   children,
 }: {
   label: string;
   titulo: string;
   primario?: boolean;
+  perigo?: boolean;
   children: ReactNode;
 }) {
   const janela = useRef<HTMLDialogElement>(null);
@@ -33,7 +35,19 @@ export function JanelaAcao({
   };
   return (
     <>
-      <button type="button" aria-haspopup="dialog" onClick={() => janela.current?.showModal()} className={`btn ${primario ? "btn-primary" : ""}`}>
+      <button
+        type="button"
+        aria-haspopup="dialog"
+        onClick={() => {
+          const d = janela.current;
+          if (!d) return;
+          d.showModal();
+          // quem abre para lançar já pode digitar: o cursor vai para o primeiro campo
+          const campo = d.querySelector<HTMLElement>("input:not([type=hidden]):not([type=checkbox]),select,textarea");
+          (campo ?? d.querySelector<HTMLElement>(".janela-cartao"))?.focus();
+        }}
+        className={`btn ${primario ? "btn-primary" : ""} ${perigo ? "text-danger" : ""}`}
+      >
         {label}
       </button>
       <dialog
@@ -46,13 +60,19 @@ export function JanelaAcao({
         }}
         className="janela"
         aria-label={titulo}
+        // no React o evento sobe pela árvore de componentes: sem parar aqui, o Esc fecharia também a janela
+        // de fora (Conectar Mercado Pago dentro das Configurações)
         onCancel={(e) => {
           e.preventDefault();
+          e.stopPropagation();
           fechar();
         }}
-        onClick={(e) => e.target === e.currentTarget && fechar()}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (e.target === e.currentTarget) fechar();
+        }}
       >
-        <div className="janela-cartao outline-none" tabIndex={-1} autoFocus>
+        <div className="janela-cartao outline-none" tabIndex={-1}>
           <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="font-semibold">{titulo}</h2>
             <button type="button" onClick={fechar} aria-label="Fechar" className="-my-2 -mr-2 grid size-11 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg sm:size-8">

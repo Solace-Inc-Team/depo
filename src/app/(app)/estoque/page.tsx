@@ -99,7 +99,7 @@ export default async function Estoque() {
         </JanelaAcao>
       </PageHeader>
       <section className="panel overflow-x-auto">
-        <table className="table min-w-[46rem]">
+        <table className="table tabela-pilha rotulada sm:min-w-[46rem]">
           <thead>
             <tr>
               <th>Produto</th>
@@ -129,18 +129,18 @@ export default async function Estoque() {
                     </div>
                   </div>
                 </td>
-                <td className={`num text-right text-xl font-semibold ${p.low ? "text-danger" : ""}`}>
+                <td data-rotulo="Cheios na loja" className={`num text-right text-xl font-semibold ${p.low ? "text-danger" : ""}`}>
                   {p.fullStore}
                   {p.low && <span className="block text-sm font-medium">abaixo do mínimo ({p.minStock})</span>}
                   {p.reserved > 0 && <span className="block text-sm font-normal text-muted">{p.reserved} em pedidos aguardando</span>}
                 </td>
-                <td className="num text-right text-xl">{p.returnable ? p.emptyStore : "-"}</td>
-                <td className="num text-right text-xl">{p.fullTransit}</td>
-                <td className="num text-right text-xl">{p.returnable ? p.emptyTransit : "-"}</td>
+                <td data-rotulo="Vazios na loja" className="num text-right text-xl">{p.returnable ? p.emptyStore : "-"}</td>
+                <td data-rotulo="Cheios em rota" className="num text-right text-xl">{p.fullTransit}</td>
+                <td data-rotulo="Vazios em rota" className="num text-right text-xl">{p.returnable ? p.emptyTransit : "-"}</td>
                 {/* traço só quando não se aplica (produto que não volta); zero é zero */}
-                <td className={`num text-right text-xl ${p.damaged ? "text-warn-fg" : "text-muted"}`}>{p.damaged}</td>
-                <td className="num text-right text-xl text-muted">{p.returnable ? (comodato.get(p.id) ?? 0) : "-"}</td>
-                <td className="num text-right text-xl text-muted">
+                <td data-rotulo="Avariados" className={`num text-right text-xl ${p.damaged ? "text-warn-fg" : "text-muted"}`}>{p.damaged}</td>
+                <td data-rotulo="Em comodato" className="num text-right text-xl text-muted">{p.returnable ? (comodato.get(p.id) ?? 0) : "-"}</td>
+                <td data-rotulo="Total de vasilhames" className="num text-right text-xl text-muted">
                   {p.returnable ? p.fullStore + p.emptyStore + p.fullTransit + p.emptyTransit + p.damaged + (comodato.get(p.id) ?? 0) : "-"}
                 </td>
               </tr>

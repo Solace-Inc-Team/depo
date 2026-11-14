@@ -16,7 +16,7 @@ export function DeliveryExceptions({ order, items, forDriver = false }: { order:
         <PartialDeliveryForm order={order} items={items} forDriver={forDriver} />
       </Revelar>
       <Revelar label="Não consegui entregar">
-        <ActionForm action={occurrenceAction} className="space-y-3 rounded-lg bg-subtle p-3">
+        <ActionForm action={occurrenceAction} className="space-y-3">
           <input type="hidden" name="orderId" value={orderId} />
           <div>
             <label className="label" htmlFor={`okind-${orderId}`}>O que aconteceu</label>

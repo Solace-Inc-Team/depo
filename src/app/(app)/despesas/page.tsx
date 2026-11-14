@@ -79,7 +79,7 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
 
           <section className="panel overflow-x-auto">
             {list.length ? (
-              <table className="table min-w-[36rem]">
+              <table className="table tabela-pilha rotulada despesas sm:min-w-[36rem]">
                 <thead>
                   <tr>
                     <th>Data</th>
@@ -92,7 +92,7 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
                 <tbody>
                   {list.map((e) => (
                     <tr key={e.id} className={e.voidedAt ? "text-muted" : ""}>
-                      <td className="num whitespace-nowrap text-muted">{fmtDay(e.paidOn)}</td>
+                      <td data-rotulo="Data" className="num whitespace-nowrap text-muted">{fmtDay(e.paidOn)}</td>
                       <td>
                         <p className={`font-medium ${e.voidedAt ? "line-through" : ""}`}>
                           {e.orderId ? <Link href={`/pedidos/${e.orderId}`} className="alvo hover:underline">{e.description}</Link> : e.description}
@@ -102,8 +102,8 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
                           {e.voidedAt && `. Cancelada: ${e.voidReason}`}
                         </p>
                       </td>
-                      <td>{methodLabel[e.method]}</td>
-                      <td className={`text-right font-medium ${e.voidedAt ? "line-through" : ""}`}><Money cents={e.amountCents} /></td>
+                      <td data-rotulo="Forma">{methodLabel[e.method]}</td>
+                      <td data-rotulo="Valor" className={`text-right font-medium ${e.voidedAt ? "line-through" : ""}`}><Money cents={e.amountCents} /></td>
                       {user.role === "dono" && (
                         <td className="text-right">
                           {!e.voidedAt && !e.orderId && (

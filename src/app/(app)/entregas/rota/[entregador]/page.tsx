@@ -4,7 +4,7 @@ import QRCode from "qrcode";
 import { requireUser } from "@/lib/auth";
 import { isUuid } from "@/lib/ctx";
 import { withTenant } from "@/db";
-import { getOrder, listDrivers, listOrders, openShiftFor } from "@/domain/queries";
+import { getOrder, getShift, listDrivers, listOrders, openShiftFor } from "@/domain/queries";
 import { pixDoPedido } from "@/domain/pix";
 import { PrintButton } from "@/components/print-button";
 import { Empty, fmtDateTime, paymentLabel } from "@/components/ui";
@@ -27,6 +27,8 @@ export default async function FolhaDaRota({ params }: PageProps<"/entregas/rota/
   );
   const d = drivers.find((x) => x.id === entregador);
   if (!d) notFound();
+  // o que ele já deve do turno (troco e entregas anteriores): a folha soma com esta rota e bate com o acerto
+  const acerto = turno ? await getShift(user.tenantId, turno.id) : null;
   const pedidos = (await Promise.all(rota.reverse().map((o) => getOrder(user.tenantId, o.id)))).filter((o) => !!o);
   const pix = new Map(
     await Promise.all(
@@ -120,10 +122,10 @@ export default async function FolhaDaRota({ params }: PageProps<"/entregas/rota/
             <p>
               Dinheiro a receber nesta rota: <b className="num">{formatBRL(dinheiro)}</b>
             </p>
-            {turno && turno.openingCashCents > 0 && (
+            {acerto && acerto.expected > 0 && (
               <p className="mt-1 text-[15px]">
-                Volte com <b className="num">{formatBRL(turno.openingCashCents + dinheiro)}</b>{" "}
-                <span className="text-[13px] text-muted">(troco {formatBRL(turno.openingCashCents)} + entregas)</span>
+                Volte com <b className="num">{formatBRL(acerto.expected + dinheiro)}</b>{" "}
+                <span className="text-[13px] text-muted">(já está com {formatBRL(acerto.expected)} + {formatBRL(dinheiro)} desta rota)</span>
               </p>
             )}
           </div>

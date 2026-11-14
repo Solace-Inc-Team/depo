@@ -12,13 +12,16 @@ export type PartialOrder = { id: string; deliveryFeeCents: number; discountCents
 
 /** Entrega parcial com a conta refeita na tela, para o entregador saber quanto cobrar antes de confirmar. */
 export function PartialDeliveryForm({ order, items, forDriver }: { order: PartialOrder; items: Item[]; forDriver: boolean }) {
-  const [got, setGot] = useState<Record<string, string>>({});
+  // começa no que foi pedido: o entregador só diminui o que não chegou ao cliente
+  const [got, setGot] = useState<Record<string, string>>(() => Object.fromEntries(items.map((i) => [i.id, String(i.quantity)])));
   const qty = (i: Item) => {
     const v = got[i.id];
     const n = v === undefined || v === "" ? NaN : Number(v);
     return Number.isInteger(n) && n >= 0 && n <= i.quantity ? n : null;
   };
   const filled = items.every((i) => qty(i) !== null);
+  // parcial é ter entregue menos do que o pedido em pelo menos um item; tudo cheio é entrega normal
+  const parcial = filled && items.some((i) => (qty(i) ?? i.quantity) < i.quantity);
   const subtotal = items.reduce((s, i) => s + (qty(i) ?? 0) * i.unitPriceCents, 0);
   const ordered = items.reduce((s, i) => s + i.quantity * i.unitPriceCents, 0);
   // mesma regra do servidor: desconto proporcional ao que foi entregue
@@ -26,7 +29,7 @@ export function PartialDeliveryForm({ order, items, forDriver }: { order: Partia
   const change = order.changeForCents && order.changeForCents > total ? order.changeForCents - total : 0;
 
   return (
-    <ActionForm action={partialDeliveryAction} className="mt-2 space-y-3 rounded-lg bg-subtle p-3">
+    <ActionForm action={partialDeliveryAction} className="space-y-3">
       <input type="hidden" name="orderId" value={order.id} />
       <p className="text-[13px] text-muted">
         Quanto o cliente recebeu de cada item? {forDriver ? "O resto volta com você para a loja." : "O resto fica com o entregador até o acerto."}
@@ -36,7 +39,7 @@ export function PartialDeliveryForm({ order, items, forDriver }: { order: Partia
           <label htmlFor={`qty-${i.id}`} className="min-w-0 flex-1">
             {i.name} <span className="text-muted">(pedido: {i.quantity})</span>
           </label>
-          {/* o mesmo − e + do resto do sistema, até o que foi pedido; começa vazio para ninguém confirmar sem escolher */}
+          {/* o mesmo − e + do resto do sistema, de zero até o que foi pedido */}
           <div className="flex items-center gap-1" role="group" aria-label={`Quanto o cliente recebeu de ${i.name}`}>
             <button type="button" className="btn h-11 w-11 px-0 text-xl" aria-label="Diminuir" onClick={() => setGot((g) => ({ ...g, [i.id]: String(Math.max(0, (qty(i) ?? i.quantity) - 1)) }))}>−</button>
             <input
@@ -55,7 +58,7 @@ export function PartialDeliveryForm({ order, items, forDriver }: { order: Partia
           </div>
         </div>
       ))}
-      <Aparece quando={filled}>
+      <Aparece quando={parcial}>
         <p aria-live="polite" className="rounded-md bg-surface px-3 py-2 font-medium">
           Novo total <LiveNumber value={total} cents />
           {change > 0 && (
@@ -69,7 +72,7 @@ export function PartialDeliveryForm({ order, items, forDriver }: { order: Partia
         <label className="label" htmlFor={`pnote-${order.id}`}>Por quê</label>
         <input id={`pnote-${order.id}`} name="note" required minLength={3} maxLength={160} className="input" placeholder="Ex.: cliente só quis 1 galão" />
       </div>
-      <button className="btn w-full">Registrar entrega parcial</button>
+      <button className="btn btn-primary w-full" disabled={!parcial}>Registrar entrega parcial</button>
     </ActionForm>
   );
 }

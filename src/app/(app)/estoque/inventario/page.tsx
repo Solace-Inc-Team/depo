@@ -29,7 +29,7 @@ export default async function Inventario() {
       )}
       <ActionForm action={inventoryAction} className="space-y-4" confirm="Registrar o inventário? As diferenças serão ajustadas no estoque.">
         <section className="panel overflow-x-auto">
-          <table className="table min-w-[36rem]">
+          <table className="table tabela-pilha rotulada sm:min-w-[36rem]">
             <thead>
               <tr>
                 <th>Produto</th>
@@ -43,7 +43,7 @@ export default async function Inventario() {
                 <tr key={p.id}>
                   <td className="font-medium">{p.name}</td>
                   <Count id={p.id} state="cheio" name={p.name} expected={p.fullStore} />
-                  {p.returnable ? <Count id={p.id} state="vazio" name={p.name} expected={p.emptyStore} /> : <td className="text-right text-muted">-</td>}
+                  {p.returnable ? <Count id={p.id} state="vazio" name={p.name} expected={p.emptyStore} /> : <td data-rotulo="Vazios" className="text-right text-muted">-</td>}
                   <Count id={p.id} state="avariado" name={p.name} expected={p.damaged} />
                 </tr>
               ))}
@@ -64,9 +64,11 @@ export default async function Inventario() {
   );
 }
 
+// o nome da coluna vai na célula: no celular a tabela vira blocos e cada contagem mostra de quê é
+const coluna = { cheio: "Cheios", vazio: "Vazios", avariado: "Avariados" } as Record<string, string>;
 function Count({ id, state, name, expected }: { id: string; state: string; name: string; expected: number }) {
   return (
-    <td className="text-right">
+    <td data-rotulo={coluna[state]} className="text-right">
       <CountInput name={`c:${state}:${id}`} label={`${name}, ${state}s contados`} expected={expected} />
     </td>
   );

@@ -17,14 +17,15 @@ function avisoDoCampo(campo: Campo) {
     // tira o que vem entre parênteses no rótulo, como "(opcional)"
     .replace(/\s*\(.*?\)\s*/g, " ")
     .trim();
-  const nome = rotulo ? `o campo "${rotulo}"` : "este campo";
+  // "no campo", "do campo", "neste campo": a preposição muda com o artigo, então cada frase tem a sua
+  const c = (no: string, neste: string) => (rotulo ? `${no} campo "${rotulo}"` : neste);
   const v = campo.validity;
-  if (v.valueMissing) return campo instanceof HTMLSelectElement ? `Escolha uma opção em ${nome}.` : `Preencha ${nome}.`;
+  if (v.valueMissing) return campo instanceof HTMLSelectElement ? `Escolha uma opção ${c("no", "neste campo")}.` : `Preencha ${c("o", "este campo")}.`;
   if (v.typeMismatch && campo.type === "email") return "Digite um e-mail válido, como nome@empresa.com.";
-  if (v.tooShort && "minLength" in campo) return `Em ${nome}, use pelo menos ${campo.minLength} caracteres.`;
-  if (v.rangeUnderflow || v.rangeOverflow || v.stepMismatch) return `O valor em ${nome} está fora do permitido.`;
-  if (v.patternMismatch) return `Confira o formato em ${nome}.`;
-  return `Confira ${nome}.`;
+  if (v.tooShort && "minLength" in campo) return `${c("No", "Neste campo")}, use pelo menos ${campo.minLength} caracteres.`;
+  if (v.rangeUnderflow || v.rangeOverflow || v.stepMismatch) return `O valor ${c("do", "deste campo")} está fora do permitido.`;
+  if (v.patternMismatch) return `Confira o formato ${c("do", "deste campo")}.`;
+  return `Confira ${c("o", "este campo")}.`;
 }
 
 /** Primeiro campo inválido do formulário: marca, faz tremer, põe o foco e devolve a mensagem. Sem erro, null. */
@@ -63,10 +64,15 @@ export function ActionForm({
   salvaAoMudar?: boolean;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
+  // salvando sozinho: guarda qual campo mudou, para o aviso dizer o quê e o próprio campo confirmar
+  const mudou = useRef<Campo | null>(null);
   useEffect(() => {
     const f = formRef.current;
     if (!salvaAoMudar || !f) return;
-    const salvar = () => f.requestSubmit();
+    const salvar = (e: Event) => {
+      mudou.current = e.target as Campo;
+      f.requestSubmit();
+    };
     f.addEventListener("change", salvar);
     return () => f.removeEventListener("change", salvar);
   }, [salvaAoMudar]);
@@ -134,7 +140,19 @@ export function ActionForm({
           button?.setAttribute("data-state", "done");
           setTimeout(() => button?.removeAttribute("data-state"), 1200);
           // o aviso fica fora do form: muitas ações trocam a tela e o form some junto
-          if (r?.ok) toast(r.ok);
+          const campo = mudou.current;
+          mudou.current = null;
+          if (salvaAoMudar && campo) {
+            // "Galão de água 20L: estoque mínimo 16" em vez de um "atualizado" genérico
+            const nome = (form.querySelector<HTMLInputElement>('input[name="name"]')?.value ?? "").trim();
+            const rotulo = (campo.labels?.[0]?.textContent ?? "").replace(/\s*\(.*?\)\s*/g, " ").trim().toLowerCase();
+            const valor = campo instanceof HTMLInputElement && campo.type === "checkbox" ? (campo.checked ? "sim" : "não") : campo.value;
+            toast(nome && rotulo ? `${nome}: ${rotulo} ${valor}` : (r?.ok ?? "Salvo."));
+            const alvo = campo instanceof HTMLInputElement && campo.type === "checkbox" ? campo.parentElement : campo;
+            alvo?.classList.remove("salvou");
+            void (alvo as HTMLElement | null)?.offsetWidth;
+            alvo?.classList.add("salvou");
+          } else if (r?.ok) toast(r.ok);
           const menu = form.closest("details");
           if (menu) menu.open = false;
           // dentro de uma JanelaAcao: deu certo, a janela fecha

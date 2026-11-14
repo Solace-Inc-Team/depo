@@ -177,7 +177,15 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
             filtrado ? (
               <Empty>Nenhum pedido {noDia}{entregador ? ` com ${entregador.name}` : ""}.</Empty>
             ) : (
-              <Empty>Nenhum pedido hoje. <Link href="/pedidos/novo" className="text-accent underline">Lançar o primeiro</Link></Empty>
+              // com fila de dias anteriores, "nenhum pedido" contradiria os números logo acima
+              d.pending + d.inRoute > 0 ? (
+                <Empty>
+                  Nenhum lançado hoje; {d.pending + d.inRoute} em aberto de antes.{" "}
+                  <Link href="/pedidos" className="text-accent underline">Ver pedidos</Link>
+                </Empty>
+              ) : (
+                <Empty>Nenhum pedido hoje. <Link href="/pedidos/novo" className="text-accent underline">Lançar o primeiro</Link></Empty>
+              )
             )
           )}
         </section>
