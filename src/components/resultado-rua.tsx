@@ -14,7 +14,7 @@ export function ResultadoRua({ id, numero, totalCents, pagamento }: { id: string
         <input type="hidden" name="orderId" value={id} />
         <button className="btn h-11 px-4 text-[13px] sm:h-8 sm:px-3">Entregue</button>
       </ActionForm>
-      <Link href={`/pedidos/${id}#resultado`} className="tap text-[13px] text-muted hover:text-fg">
+      <Link href={`/pedidos/${id}#resultado`} className="btn h-11 px-4 text-[13px] sm:h-8 sm:px-3">
         Parcial ou não entregue
       </Link>
     </div>

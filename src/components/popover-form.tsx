@@ -88,7 +88,7 @@ export function PopoverForm({
         }
       }}
     >
-      <summary className="tap cursor-pointer list-none whitespace-nowrap text-[13px] text-muted hover:text-fg">{label}</summary>
+      <summary className="btn btn-sm tap cursor-pointer list-none">{label}</summary>
       <ActionForm
         action={action}
         confirm={confirm}

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ShieldCheck } from "lucide-react";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { getPendingMfa } from "@/lib/auth";
 import { verifyMfaAction } from "@/app/actions";
 import { ActionForm } from "@/components/action-form";
@@ -35,7 +35,9 @@ export default async function Codigo() {
           <button className="btn btn-primary h-11 w-full">Confirmar</button>
         </ActionForm>
         <p className="mt-4 text-[13px] text-muted">Perdeu o celular ou trocou de aparelho? Peça ao dono da empresa para redefinir seu acesso (se você é o dono, fale com a Solace). A verificação em duas etapas é desligada e você ativa de novo no aparelho novo.</p>
-        <Link href="/login" className="mt-6 inline-block text-[13px] text-muted hover:text-fg">Voltar ao login</Link>
+        <Link href="/login" className="btn mt-6">
+          <ArrowLeft size={15} strokeWidth={1.75} aria-hidden="true" /> Voltar ao login
+        </Link>
       </div>
     </main>
   );

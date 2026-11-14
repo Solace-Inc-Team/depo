@@ -6,6 +6,7 @@ import { createOrderAction } from "@/app/actions";
 import { formatBRL, parseBRL } from "@/lib/money";
 import { LiveNumber } from "@/components/live-number";
 import { Aparece } from "@/components/saida";
+import { Plus } from "lucide-react";
 
 type Product = { id: string; name: string; priceCents: number; containerPriceCents: number; returnable: boolean; available: number; reserved: number };
 type Customer = { id: string; name: string; phone: string; address: string; addresses?: { id: string; label: string; address: string }[] };
@@ -142,7 +143,7 @@ export function NewOrderForm({
                 <p className="text-sm text-muted">{customer.address || "Sem endereço"}</p>
                 <p className="text-sm text-muted">{customer.phone}</p>
               </div>
-              <button type="button" className="tap text-sm text-accent underline" onClick={() => setCustomer(undefined)}>Trocar</button>
+              <button type="button" className="btn btn-sm tap shrink-0" onClick={() => setCustomer(undefined)}>Trocar</button>
             </div>
           ) : null}
           {customer && !creating && mode === "entrega" && (customer.addresses?.length ?? 0) > 0 && (
@@ -174,7 +175,7 @@ export function NewOrderForm({
                 <label className="label" htmlFor="nc-addr">Endereço</label>
                 <input id="nc-addr" name="newCustomerAddress" maxLength={200} className="input" />
               </div>
-              <button type="button" className="tap text-left text-sm text-accent underline" onClick={() => setCreating(false)}>
+              <button type="button" className="btn btn-sm tap w-fit" onClick={() => setCreating(false)}>
                 Buscar cliente cadastrado
               </button>
             </div>
@@ -200,8 +201,9 @@ export function NewOrderForm({
                 </ul>
               )}
               {nothingFound && <p className="enter mt-2 text-sm text-muted">Nenhum cliente encontrado.</p>}
-              <button type="button" className="tap mt-2 text-sm font-semibold text-accent" onClick={() => setCreating(true)}>
-                {nothingFound ? `+ Cadastrar "${q}" como cliente novo` : "+ Cadastrar cliente novo"}
+              <button type="button" className="btn btn-sm tap mt-2 max-w-full" onClick={() => setCreating(true)}>
+                <Plus size={14} strokeWidth={2} aria-hidden="true" />
+                <span className="truncate">{nothingFound ? `Cadastrar "${q}" como cliente novo` : "Cadastrar cliente novo"}</span>
               </button>
             </div>
           )}
@@ -337,7 +339,7 @@ export function NewOrderForm({
             <p className="text-sm text-muted">Fiado exige cliente identificado.</p>
           </Aparece>
           <details className="mt-3" open={!!discount}>
-            <summary className="tap cursor-pointer text-sm text-accent">Dar desconto</summary>
+            <summary className="btn btn-sm tap cursor-pointer list-none">Dar desconto</summary>
             <div className="mt-2 space-y-2">
               <div>
                 <label className="label" htmlFor="discount">Desconto em R$</label>

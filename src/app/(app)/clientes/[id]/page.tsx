@@ -282,7 +282,7 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                         </div>
                         <ActionForm action={removeAddressAction} confirm={`Remover o endereço "${a.label}"?`}>
                           <input type="hidden" name="addressId" value={a.id} />
-                          <button className="tap text-[13px] text-muted hover:text-danger">Remover</button>
+                          <button className="btn btn-sm tap hover:text-danger">Remover</button>
                         </ActionForm>
                       </li>
                     ))}

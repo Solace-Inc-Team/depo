@@ -46,7 +46,7 @@ export default async function Aceite() {
           <button className="btn btn-primary h-10 w-full">Aceitar e continuar</button>
         </ActionForm>
         <form action={logout} className="mt-4 text-center">
-          <button className="text-[13px] text-muted hover:text-fg">Sair sem aceitar</button>
+          <button className="btn h-10 w-full">Sair sem aceitar</button>
         </form>
       </div>
     </main>

@@ -112,7 +112,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             )}
             <TemaBotao className="size-11 lg:size-8" />
             <form action={logout} className="lg:hidden">
-              <button className="tap min-w-11 px-2 text-[13px] text-muted hover:text-fg">Sair</button>
+              <button className="btn btn-sm tap">Sair</button>
             </form>
           </div>
         </div>

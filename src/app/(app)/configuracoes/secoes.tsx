@@ -90,7 +90,7 @@ export async function secoesConfig(tenantId: string, pagoAte: string | null) {
                 <span className="truncate">{s.mpConta}</span>
               </p>
               <ActionForm action={desconectarMercadoPagoAction} confirm="Desconectar o Mercado Pago? Os próximos Pix voltam a ser conferidos à mão.">
-                <button className="tap text-[13px] text-muted hover:text-danger">Desconectar</button>
+                <button className="btn btn-sm tap hover:text-danger">Desconectar</button>
               </ActionForm>
             </div>
           ) : (
@@ -159,7 +159,7 @@ export async function secoesConfig(tenantId: string, pagoAte: string | null) {
                 <ActionForm action={ativarFilialAction} confirm={b.active ? `Desativar a filial ${b.name}? O histórico continua guardado.` : undefined}>
                   <input type="hidden" name="branchId" value={b.id} />
                   <input type="hidden" name="active" value={String(!b.active)} />
-                  <button className="tap text-[13px] text-muted hover:text-fg">{b.active ? "Desativar" : "Reativar"}</button>
+                  <button className="btn btn-sm tap">{b.active ? "Desativar" : "Reativar"}</button>
                 </ActionForm>
               )}
             </li>

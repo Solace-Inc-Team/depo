@@ -21,8 +21,8 @@ export default async function Senha() {
 
   return (
     <main className="mx-auto max-w-xl px-6 py-10">
-      <Link href={back} className="inline-flex min-h-11 items-center gap-1.5 text-[13px] text-muted hover:text-fg">
-        <ArrowLeft size={14} strokeWidth={1.75} aria-hidden="true" />
+      <Link href={back} className="btn tap">
+        <ArrowLeft size={15} strokeWidth={1.75} aria-hidden="true" />
         Voltar
       </Link>
       <h1 className="h1 mt-6">Conta e segurança</h1>

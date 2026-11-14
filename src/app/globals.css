@@ -132,6 +132,12 @@ body {
     white-space: nowrap;
     transition: background-color 120ms, border-color 120ms, opacity 120ms;
   }
+  /* ação de linha ou secundária: a mesma borda do botão, menor (no celular o .tap garante o toque) */
+  .btn-sm {
+    height: 2rem;
+    padding: 0 0.625rem;
+    font-size: 0.8125rem;
+  }
   .btn-primary {
     background: var(--fg);
     border-color: var(--fg);

@@ -34,10 +34,10 @@ export default async function Entregador() {
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-bg/85 px-4 py-3 backdrop-blur">
         <MarcaDaSessao />
         {/* no alto, só o que tem nome: quem nunca viu o sistema não adivinha ícone solto */}
-        <div className="flex items-center gap-1">
-          <Link href="/ajuda" className="tap rounded-md px-3 text-[15px] text-muted hover:bg-subtle hover:text-fg">Ajuda</Link>
+        <div className="flex items-center gap-2">
+          <Link href="/ajuda" className="btn tap">Ajuda</Link>
           <form action={logout}>
-            <button className="tap rounded-md px-3 text-[15px] text-muted hover:bg-subtle hover:text-fg">Sair</button>
+            <button className="btn tap">Sair</button>
           </form>
         </div>
       </header>
@@ -125,7 +125,7 @@ export default async function Entregador() {
                         {o.notes && <p className="mt-2 text-sm">Obs.: {o.notes}</p>}
                         {pixes.get(o.id) && (
                           <details className="mt-2">
-                            <summary className="tap cursor-pointer text-accent">Mostrar QR do Pix para o cliente</summary>
+                            <summary className="btn tap cursor-pointer list-none">Mostrar QR do Pix para o cliente</summary>
                             <div className="mt-2">
                               <PixBox code={pixes.get(o.id)!.codigo} size={200} />
                             </div>
