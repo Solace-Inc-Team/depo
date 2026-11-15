@@ -666,42 +666,70 @@ details[open] > :not(summary) {
 }
 
 /* telas avulsas (login, portal, 404, termos): os blocos entram um depois do outro */
-/* login e cadastro: o mapa some no centro, onde fica o formulário; os pinos pulsam, os pontos andam */
-.fundo-rota {
-  /* a coluna do formulário fica limpa de cima a baixo; o mapa aparece dos lados */
-  --limpa: linear-gradient(to right, #000 calc(50% - 21rem), transparent calc(50% - 14rem), transparent calc(50% + 14rem), #000 calc(50% + 21rem));
-  -webkit-mask-image: var(--limpa);
-  mask-image: var(--limpa);
-  opacity: 0.9;
+/* login e cadastro: feixes de luz da marca descendo do alto, como a luz do topo da página inicial, vivos.
+   Duas camadas de feixes desencontrados balançam em sentidos opostos; esmaecem antes do meio da tela. */
+.luz-raios {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  --raio: color-mix(in srgb, var(--marca) 55%, #fff);
+  -webkit-mask-image: radial-gradient(ellipse 60% 70% at 50% 0%, #000 15%, transparent 72%);
+  mask-image: radial-gradient(ellipse 60% 70% at 50% 0%, #000 15%, transparent 72%);
 }
-/* no celular não há lados: o mapa fica no alto e embaixo, e some onde está o formulário */
-@media (max-width: 47.99rem) {
-  .fundo-rota {
-    --limpa: linear-gradient(to bottom, #000 0, transparent 16%, transparent 80%, #000 100%);
-  }
+.luz-raios > span {
+  position: absolute;
+  inset: -10% -25% 0;
+  transform-origin: 50% 0;
+  filter: blur(12px);
+  opacity: 0.16;
+  animation: raios-balanco 14s ease-in-out infinite alternate;
 }
-.fundo-rota-pulso {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: rota-pulso 2.4s var(--ease-out) infinite;
+.luz-raios > span:first-child {
+  background: conic-gradient(
+    from 0deg at 50% -6%,
+    transparent 0 152deg,
+    var(--raio) 154deg,
+    transparent 157deg 161deg,
+    var(--raio) 164deg,
+    transparent 168deg 171deg,
+    var(--raio) 175deg 176deg,
+    transparent 180deg 186deg,
+    var(--raio) 189deg,
+    transparent 193deg 197deg,
+    var(--raio) 200deg,
+    transparent 204deg 360deg
+  );
 }
-.fundo-rota-ponto {
-  filter: drop-shadow(0 0 6px var(--accent));
+.luz-raios > span:last-child {
+  opacity: 0.11;
+  filter: blur(18px);
+  animation-duration: 19s;
+  animation-direction: alternate-reverse;
+  background: conic-gradient(
+    from 0deg at 50% -6%,
+    transparent 0 147deg,
+    var(--raio) 150deg 151deg,
+    transparent 155deg 166deg,
+    var(--raio) 169deg 171deg,
+    transparent 174deg 183deg,
+    var(--raio) 185deg,
+    transparent 189deg 207deg,
+    var(--raio) 209deg 210deg,
+    transparent 213deg 360deg
+  );
 }
-@keyframes rota-pulso {
+@keyframes raios-balanco {
   from {
-    transform: scale(1);
-    opacity: 0.7;
+    transform: rotate(-2.5deg);
   }
   to {
-    transform: scale(4);
-    opacity: 0;
+    transform: rotate(2.5deg);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .fundo-rota-pulso,
-  .fundo-rota-ponto {
-    display: none;
+  .luz-raios > span {
+    animation: none;
   }
 }
 
