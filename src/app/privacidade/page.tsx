@@ -56,13 +56,14 @@ export default function Privacidade() {
       <ul>
         <li><strong>Hostinger</strong>: servidor onde o sistema e o banco de dados rodam, localizado no Brasil.</li>
         <li><strong>Cloudflare</strong>: guarda as cópias de backup do banco de dados, com criptografia em repouso.</li>
+        <li><strong>Mercado Pago</strong>: gera e confirma as cobranças Pix. Recebe o valor e o número do pedido e, na cobrança da assinatura, o e-mail do dono da distribuidora. Quando a distribuidora conecta a própria conta, o dinheiro dos pedidos cai direto nela.</li>
         <li><strong>Telegram</strong>: recebe avisos técnicos de erro para a equipe da {name}. Os avisos trazem a mensagem técnica e a tela onde o erro aconteceu, sem dados de clientes.</li>
       </ul>
       <p>Também podemos fornecer dados quando exigido por lei ou por ordem judicial.</p>
 
       <h2>6. Transferência para fora do Brasil</h2>
       <p>
-        As cópias de backup podem ficar em servidores da Cloudflare fora do Brasil. Essa transferência é feita apenas para garantir
+        As cópias de backup ficam em servidores da Cloudflare na América do Norte. Essa transferência é feita apenas para garantir
         a recuperação dos dados e segue as hipóteses do artigo 33 da LGPD, com fornecedor que adota padrões de segurança
         compatíveis.
       </p>
