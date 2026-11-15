@@ -400,11 +400,16 @@ details[open] > :not(summary) {
     translate: 0 calc(var(--rise) * -1);
   }
 }
+/* menus que flutuam (filiais, "Dar desconto", "Estornar"...): abertura do "Menu dropdown" do transitions.dev,
+   crescendo de 97% a partir do canto do botão em 250ms; fecham em 150ms indo a 99% */
 .popover {
   transform-origin: top right;
-  transition: scale var(--dur) var(--ease-out);
+  transition:
+    scale 250ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 250ms cubic-bezier(0.22, 1, 0.36, 1);
   @starting-style {
-    scale: 0.96;
+    scale: 0.97;
+    opacity: 0;
   }
 }
 .popover-left {
@@ -480,7 +485,6 @@ details[open] > :not(summary) {
 
 /* saída dos que ficam um instante na tela depois de fechados (useSaida): mais rápida que a entrada */
 .popover[data-saindo],
-.seletor-filial + .popover[data-saindo],
 .filtro-painel[data-saindo] {
   opacity: 0;
   pointer-events: none;
@@ -490,8 +494,10 @@ details[open] > :not(summary) {
     translate var(--dur-fast) ease-in;
 }
 .popover[data-saindo] {
-  scale: 0.97;
-  translate: 0 -4px;
+  scale: 0.99;
+  transition:
+    opacity 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    scale 150ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 @media (max-width: 639px) {
   .filtro-painel {
@@ -550,17 +556,6 @@ details[open] > :not(summary) {
   }
 }
 
-/* menu de filiais: abre descendo do botão (o popover já cresce; aqui ele também desce um pouco) */
-.seletor-filial + .popover {
-  transition:
-    scale var(--dur) var(--ease-out),
-    translate var(--dur) var(--ease-out),
-    opacity var(--dur-fast);
-  @starting-style {
-    translate: 0 -4px;
-    opacity: 0;
-  }
-}
 /* inicial da filial: a nova chega com um leve crescer, e o nome pulsa enquanto o sistema troca */
 .filial-inicial {
   transition: scale var(--dur) var(--ease-chegada);
@@ -736,17 +731,6 @@ details[open] > :not(summary) {
   }
 }
 
-/* ✓ do acerto que bateu: o círculo fecha e o traço se desenha */
-.check-draw circle,
-.check-draw path {
-  stroke-dasharray: 64;
-  stroke-dashoffset: 0;
-  animation: draw 500ms var(--ease-out) both;
-}
-.check-draw path {
-  stroke-dasharray: 16;
-  animation-delay: 250ms;
-}
 
 /* quantidade que acabou de mudar */
 .bump {
@@ -774,8 +758,19 @@ details[open] > :not(summary) {
   stroke-dashoffset: 36;
   animation: chegada-traco 400ms var(--ease-out) 650ms forwards;
 }
+/* as duas linhas como o "Texts reveal" do transitions.dev: sobem 12px saindo de 3px de desfoque, 500ms, a segunda 40ms depois */
 .chegada-texto {
-  animation: 600ms var(--ease-out) 500ms both hero-up;
+  animation: texto-revela 500ms cubic-bezier(0.22, 1, 0.36, 1) 500ms both;
+}
+.chegada-texto + .chegada-texto {
+  animation-delay: 540ms;
+}
+@keyframes texto-revela {
+  from {
+    opacity: 0;
+    translate: 0 12px;
+    filter: blur(3px);
+  }
 }
 @keyframes chegada-traco {
   to {
@@ -909,19 +904,6 @@ html[data-trocando-tema]::view-transition-new(root) {
 }
 
 
-@keyframes draw {
-  from {
-    stroke-dashoffset: 64;
-  }
-}
-.check-draw path {
-  animation-name: draw-short;
-}
-@keyframes draw-short {
-  from {
-    stroke-dashoffset: 16;
-  }
-}
 @keyframes spin {
   to {
     rotate: 360deg;
@@ -997,8 +979,6 @@ html[data-trocando-tema]::view-transition-new(root) {
   .pulse-dot::after,
   .skeleton,
   .row-new,
-  .check-draw circle,
-  .check-draw path,
   .bump,
   .stagger > *,
   .enter {
@@ -3006,6 +2986,11 @@ html:has(.pagina-escura) body {
 :root[data-tema="claro"] .brilho {
   --brilho-cor: #0d0d0d;
 }
+/* dentro de um botão: a faixa e o texto na cor do próprio botão */
+.btn .brilho {
+  --brilho-cor: var(--btn-cor);
+  color: color-mix(in srgb, var(--btn-cor) 50%, transparent);
+}
 @keyframes brilho-passa {
   from {
     background-position: 100% 0;
@@ -3204,4 +3189,33 @@ html:has(.pagina-escura) body {
 }
 .campo-busca-limpar:hover {
   color: var(--fg);
+}
+
+/* caixa que acompanha a altura do conteúdo ("Card resize" do transitions.dev, 300ms); o recorte deixa folga
+   para o anel de foco dos campos não ser cortado */
+.altura-suave {
+  overflow: clip;
+  overflow-clip-margin: 6px;
+  transition: height 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .altura-suave {
+    transition: none;
+  }
+}
+
+/* passos do cadastro: "Page side by side" do transitions.dev. O que sai vai 8px para o lado desfocando 3px e o
+   que entra vem do outro lado, em 250ms */
+.passo {
+  transition:
+    translate 250ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 250ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 250ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .passo {
+    transition: opacity 150ms;
+    translate: 0 !important;
+    filter: none !important;
+  }
 }

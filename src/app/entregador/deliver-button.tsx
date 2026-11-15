@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { deliverAction } from "@/app/actions";
 import { toast } from "@/components/action-form";
+import { LiveNumber } from "@/components/live-number";
+import { TextoQueTroca } from "@/components/texto-que-troca";
 
 const WAIT = 5;
 const QUEUE = "deposito:entregas-a-enviar";
@@ -106,7 +108,10 @@ export function DeliverButton({ orderId, label }: { orderId: string; label: stri
     return (
       <div className="enter" role="status">
         <div className="flex items-center gap-3">
-          <p className="num flex-1 text-[15px]">Confirmando em {left}s…</p>
+          <p className="num flex-1 text-[15px]">
+            {/* o número desce rolando, como os outros números do sistema */}
+            Confirmando em <LiveNumber value={left} />s…
+          </p>
           <button type="button" className="btn h-12 px-5 text-[15px]" onClick={() => setLeft(null)}>
             Desfazer
           </button>
@@ -131,7 +136,7 @@ export function DeliverButton({ orderId, label }: { orderId: string; label: stri
         }}
         className="btn btn-primary deliver-btn h-12 w-full text-[15px]"
       >
-        {pending || left === 0 ? "Confirmando…" : label}
+        {pending || left === 0 ? <TextoQueTroca texto="Confirmando…" brilho /> : label}
       </button>
       {error && (
         <p role="alert" className="erro-form mt-2 rounded-lg bg-danger-soft px-3 py-2 text-[13px] font-medium text-danger">

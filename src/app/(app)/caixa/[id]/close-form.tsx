@@ -5,7 +5,7 @@ import { ActionForm } from "@/components/action-form";
 import { closeShiftAction } from "@/app/actions";
 import { formatBRL, parseBRL } from "@/lib/money";
 import { LiveNumber } from "@/components/live-number";
-import { CheckDrawn } from "@/components/ui";
+import { CheckSucesso } from "@/components/check-sucesso";
 
 export function CloseShiftForm({ shiftId, expectedCents }: { shiftId: string; expectedCents: number }) {
   const [counted, setCounted] = useState("");
@@ -42,7 +42,7 @@ export function CloseShiftForm({ shiftId, expectedCents }: { shiftId: string; ex
           >
             {diff === 0 ? (
               <>
-                <CheckDrawn className="size-5" /> bateu, sem diferença
+                <CheckSucesso size={20} /> bateu, sem diferença
               </>
             ) : (
               <>

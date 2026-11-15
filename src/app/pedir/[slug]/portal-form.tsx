@@ -7,7 +7,7 @@ import { ArrowRight, CircleAlert } from "lucide-react";
 import { CopyButton } from "@/components/copy-button";
 import { formatBRL } from "@/lib/money";
 import { LiveNumber } from "@/components/live-number";
-import { CheckDrawn } from "@/components/ui";
+import { CheckSucesso } from "@/components/check-sucesso";
 import { validarCampos } from "@/components/action-form";
 import type { PortalResult } from "@/app/actions";
 import { Aparece, useSaida } from "@/components/saida";
@@ -226,7 +226,7 @@ function Done({ number, totalCents, pix, pixAutomatico, lines, acompanhar }: { n
   return (
     <section className="enter panel space-y-4 p-5" role="status">
       <p className="flex items-center gap-2 text-lg font-semibold">
-        <CheckDrawn className="size-6 text-ok" />
+        <CheckSucesso size={24} />
         Pedido #{number} recebido
       </p>
       <ul className="text-muted">

@@ -28,7 +28,7 @@ export function Chegada({ nome, dias }: { nome: string; dias: number }) {
           <path d="M16 27l7 7 13-15" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
         <p className="chegada-texto mt-6 text-[1.75rem] leading-tight font-semibold tracking-[-0.03em] text-balance">{nome} está no ar.</p>
-        <p className="chegada-texto mt-2 text-muted [animation-delay:120ms]">Seus {dias} dias grátis começam agora.</p>
+        <p className="chegada-texto mt-2 text-muted">Seus {dias} dias grátis começam agora.</p>
       </div>
     </div>
   );

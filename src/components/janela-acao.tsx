@@ -2,6 +2,7 @@
 
 import { useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
+import { AlturaSuave } from "./altura-suave";
 
 /**
  * Botão que abre um formulário numa janela (a mesma da confirmação e das Configurações): a tela fica com o
@@ -79,7 +80,8 @@ export function JanelaAcao({
               <X size={16} strokeWidth={1.75} aria-hidden="true" />
             </button>
           </div>
-          {children}
+          {/* erro ou campo novo no formulário: a janela acompanha a altura suavemente */}
+          <AlturaSuave>{children}</AlturaSuave>
         </div>
       </dialog>
     </>

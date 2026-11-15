@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { isUuid } from "@/lib/ctx";
 import { requireUser } from "@/lib/auth";
 import { getShift } from "@/domain/queries";
-import { CheckDrawn, Difference, Money, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
+import { Difference, Money, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
+import { CheckSucesso } from "@/components/check-sucesso";
 import { JanelaAcao } from "@/components/janela-acao";
 import { ActionForm } from "@/components/action-form";
 import { PopoverForm } from "@/components/popover-form";
@@ -74,7 +75,7 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
             <div>
               <p className="text-muted">Resultado</p>
               <span className="flex items-center gap-3">
-                {s.differenceCents === 0 && <CheckDrawn className="size-10 text-ok" />}
+                {s.differenceCents === 0 && <CheckSucesso size={40} />}
                 <Difference cents={s.differenceCents ?? 0} className="text-4xl" />
               </span>
             </div>

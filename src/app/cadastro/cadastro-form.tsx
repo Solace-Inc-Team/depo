@@ -93,12 +93,12 @@ export function CadastroForm() {
         </span>
       </div>
 
-      {/* os dois passos ocupam o mesmo lugar; o que sai desliza para o lado e esmaece */}
-      <div className="relative transition-[height] duration-200 ease-out" style={{ height: altura }}>
+      {/* os dois passos ocupam o mesmo lugar; troca como o "Page side by side" do transitions.dev (.passo) */}
+      <div className="relative transition-[height] duration-[250ms] ease-[cubic-bezier(0.22,1,0.36,1)]" style={{ height: altura }}>
         <fieldset
           ref={um}
           inert={passo !== 1 || undefined}
-          className={`inset-x-0 top-0 space-y-4 transition duration-200 ${passo === 1 ? "relative translate-x-0 opacity-100" : "pointer-events-none absolute -translate-x-4 opacity-0"}`}
+          className={`passo inset-x-0 top-0 space-y-4 ${passo === 1 ? "relative" : "pointer-events-none absolute -translate-x-2 opacity-0 blur-[3px]"}`}
         >
           <legend className="sr-only">Você</legend>
           <div>
@@ -154,7 +154,7 @@ export function CadastroForm() {
         <fieldset
           ref={dois}
           inert={passo !== 2 || undefined}
-          className={`inset-x-0 top-0 space-y-4 transition duration-200 ${passo === 2 ? "relative translate-x-0 opacity-100" : "pointer-events-none absolute translate-x-4 opacity-0"}`}
+          className={`passo inset-x-0 top-0 space-y-4 ${passo === 2 ? "relative" : "pointer-events-none absolute translate-x-2 opacity-0 blur-[3px]"}`}
         >
           <legend className="sr-only">Sua revenda</legend>
           <div>
