@@ -1344,3 +1344,61 @@ test("admin da Solace nasce com filial: sem ela o login quebrava ao procurar ond
   // de novo não cria nada: o admin já existe
   assert.equal(await m.platform.ensurePlatformAdmin(email, "senha-forte-123"), false);
 });
+
+test("Mercado Pago pelo botão: só aceita a aplicação certa, guarda a renovação cifrada e renova perto de vencer", async () => {
+  const { eq } = await import("drizzle-orm");
+  const { randomBytes } = await import("node:crypto");
+  const { db } = m.db;
+  const { tenants } = m.schema;
+  process.env.SEGREDO_CHAVE ??= randomBytes(32).toString("base64");
+  Object.assign(process.env, { MP_CLIENT_ID: "app-1", MP_CLIENT_SECRET: "segredo-1", APP_URL: "https://app.teste" });
+  const mp = await import("@/lib/mercadopago");
+  const pix = await import("@/domain/pix");
+  const pedidos: string[] = [];
+  mp.usarRede(async (url, init) => {
+    const caminho = String(url).replace("https://api.mercadopago.com", "");
+    const b = init?.body ? JSON.parse(String(init.body)) : {};
+    if (caminho === "/oauth/token") {
+      pedidos.push(b.grant_type);
+      if (b.client_secret !== "segredo-1" || b.redirect_uri === "https://outro") return Response.json({ message: "invalid_client" }, { status: 400 });
+      const novo = b.grant_type === "refresh_token";
+      return Response.json({ access_token: novo ? "APP_USR-novo" : "APP_USR-primeiro", refresh_token: novo ? "TG-novo" : "TG-primeiro", expires_in: 15_552_000 });
+    }
+    if (caminho === "/users/me") return Response.json({ id: 9, email: "loja-o@mp.com" });
+    return new Response("{}", { status: 404 });
+  });
+
+  const app = mp.appMp()!;
+  assert.equal(app.redirectUri, "https://app.teste/api/mercadopago/retorno");
+  const ida = new URL(mp.urlAutorizacao(app, "st-1"));
+  assert.deepEqual([ida.searchParams.get("client_id"), ida.searchParams.get("state"), ida.searchParams.get("redirect_uri")], ["app-1", "st-1", app.redirectUri]);
+  await assert.rejects(mp.trocarCodigoMp({ ...app, clientSecret: "errado" }, "codigo-1"), /recusou a autorização/);
+
+  const O = await makeTenant("O");
+  await assert.rejects(pix.conectarMercadoPagoOAuth({ ...O.ctx, role: "atendente" }, await mp.trocarCodigoMp(app, "c")), /Sem permissão/);
+  await pix.conectarMercadoPagoOAuth(O.ctx, await mp.trocarCodigoMp(app, "codigo-1"));
+  const ler = async () => (await db.select().from(tenants).where(eq(tenants.id, O.t.id)))[0];
+  let t = await ler();
+  assert.equal(t.mpConta, "loja-o@mp.com");
+  assert.ok(t.mpRefreshEnc && !t.mpRefreshEnc.includes("TG-primeiro"));
+  assert.ok(t.mpExpiraEm! > new Date(Date.now() + 170 * 86_400_000));
+
+  // longe de vencer: usa o token atual, sem perguntar nada ao Mercado Pago
+  const antes = pedidos.length;
+  assert.equal(await pix.tokenMp(O.t.id, { ...t, mpTokenEnc: t.mpTokenEnc! }), "APP_USR-primeiro");
+  assert.equal(pedidos.length, antes);
+
+  // faltando 5 dias: renova, guarda o token e a chave novos e a validade nova
+  await db.update(tenants).set({ mpExpiraEm: new Date(Date.now() + 5 * 86_400_000) }).where(eq(tenants.id, O.t.id));
+  t = await ler();
+  assert.equal(await pix.tokenMp(O.t.id, { ...t, mpTokenEnc: t.mpTokenEnc! }), "APP_USR-novo");
+  t = await ler();
+  assert.ok(t.mpExpiraEm! > new Date(Date.now() + 170 * 86_400_000));
+  assert.equal(await pix.tokenMp(O.t.id, { ...t, mpTokenEnc: t.mpTokenEnc! }), "APP_USR-novo");
+  assert.equal(pedidos.at(-1), "refresh_token");
+
+  await pix.desconectarMercadoPago(O.ctx);
+  t = await ler();
+  assert.deepEqual([t.mpTokenEnc, t.mpRefreshEnc, t.mpExpiraEm, t.mpConta], [null, null, null, null]);
+  for (const k of ["MP_CLIENT_ID", "MP_CLIENT_SECRET", "APP_URL"]) delete process.env[k];
+});

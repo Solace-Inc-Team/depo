@@ -92,3 +92,52 @@ export async function pagamentoMp(token: string, id: string) {
 export async function cancelarPixMp(token: string, id: string) {
   await chamar(token, `/v1/payments/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify({ status: "cancelled" }) });
 }
+
+// OAuth: a Solace tem uma aplicação no Mercado Pago; cada revenda entra na própria conta e autoriza.
+// O Mercado Pago devolve um token que vale 180 dias e uma chave de renovação. Docs: "OAuth" em /developers.
+
+/** Aplicação da Solace no Mercado Pago (MP_CLIENT_ID e MP_CLIENT_SECRET); sem ela, só dá para colar o token. */
+export function appMp() {
+  const clientId = process.env.MP_CLIENT_ID ?? "";
+  const clientSecret = process.env.MP_CLIENT_SECRET ?? "";
+  const site = process.env.APP_URL ?? "";
+  if (!clientId || !clientSecret || !site.startsWith("https://")) return null;
+  return { clientId, clientSecret, redirectUri: `${site}/api/mercadopago/retorno` };
+}
+export type AppMp = NonNullable<ReturnType<typeof appMp>>;
+
+/** Cookie que guarda o `state` entre a ida ao Mercado Pago e o retorno. */
+export const COOKIE_MP = "mp_oauth";
+
+/** Página do Mercado Pago onde o dono entra e autoriza; `state` volta no retorno e prova que o pedido é nosso. */
+export function urlAutorizacao(app: AppMp, state: string) {
+  const q = new URLSearchParams({ client_id: app.clientId, response_type: "code", platform_id: "mp", state, redirect_uri: app.redirectUri });
+  return `https://auth.mercadopago.com/authorization?${q}`;
+}
+
+export type TokensMp = { accessToken: string; refreshToken: string; expiraEm: Date };
+
+async function oauth(body: Record<string, string>): Promise<TokensMp> {
+  let res: Response;
+  try {
+    res = await rede(`${API}/oauth/token`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch {
+    throw new ErroMp("O Mercado Pago não respondeu.");
+  }
+  const j = (await res.json().catch(() => ({}))) as { access_token?: string; refresh_token?: string; expires_in?: number; message?: string };
+  if (!res.ok || !j.access_token || !j.refresh_token) throw new ErroMp(`O Mercado Pago recusou a autorização${j.message ? `: ${j.message}` : ""}.`, true);
+  return { accessToken: j.access_token, refreshToken: j.refresh_token, expiraEm: new Date(Date.now() + (j.expires_in ?? 15_552_000) * 1000) };
+}
+
+/** Troca o código que veio no retorno pelo token da conta do dono. */
+export const trocarCodigoMp = (app: AppMp, code: string) =>
+  oauth({ grant_type: "authorization_code", client_id: app.clientId, client_secret: app.clientSecret, code, redirect_uri: app.redirectUri });
+
+/** Token novo antes do atual vencer; a chave de renovação também é trocada. */
+export const renovarTokenMp = (app: AppMp, refreshToken: string) =>
+  oauth({ grant_type: "refresh_token", client_id: app.clientId, client_secret: app.clientSecret, refresh_token: refreshToken });

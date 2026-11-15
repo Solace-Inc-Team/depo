@@ -169,6 +169,13 @@
       "when": 1794766827482,
       "tag": "0023_filial_padrao",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794767572296,
+      "tag": "0024_mp_oauth",
+      "breakpoints": true
     }
   ]
 }

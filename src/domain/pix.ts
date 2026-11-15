@@ -3,7 +3,7 @@ import { db, tenantTransaction, withTenant } from "@/db";
 import { auditLog, orders, tenants } from "@/db/schema";
 import { type Ctx, DomainError, assertRole, isUuid } from "@/lib/ctx";
 import { cifrar, decifrar } from "@/lib/segredo";
-import { ErroMp, cancelarPixMp, contaMp, criarPixMp, pagamentoMp } from "@/lib/mercadopago";
+import { ErroMp, type TokensMp, appMp, cancelarPixMp, contaMp, criarPixMp, pagamentoMp, renovarTokenMp } from "@/lib/mercadopago";
 import { pixPayload } from "@/lib/pix";
 import { audit } from "./stock";
 import { liberaParaFila } from "./orders";
@@ -29,24 +29,67 @@ export async function conectarMercadoPago(ctx: Ctx, token: string) {
   assertRole(ctx, "dono");
   const t = token.trim();
   if (!/^(APP_USR|TEST)-[\w-]{20,}$/.test(t)) throw new DomainError("Cole o Access Token inteiro (começa com APP_USR- ou TEST-).");
+  return ligarConta(ctx, { accessToken: t, refreshToken: null, expiraEm: null }, "token");
+}
+
+/** Pelo botão "Conectar com Mercado Pago": o dono autorizou na conta dele e o retorno trouxe os tokens. */
+export async function conectarMercadoPagoOAuth(ctx: Ctx, tokens: TokensMp) {
+  assertRole(ctx, "dono");
+  return ligarConta(ctx, tokens, "oauth");
+}
+
+type Ligacao = { accessToken: string; refreshToken: string | null; expiraEm: Date | null };
+
+async function ligarConta(ctx: Ctx, l: Ligacao, como: "token" | "oauth") {
   let conta: { nome: string };
   try {
-    conta = await contaMp(t);
+    conta = await contaMp(l.accessToken);
   } catch (e) {
     if (e instanceof ErroMp) throw new DomainError(e.tokenInvalido ? "O Mercado Pago não aceitou este token. Confira se copiou o Access Token certo." : `${e.message} Tente de novo em instantes.`);
     throw e;
   }
   await tenantTransaction(ctx, async (tx) => {
-    await tx.update(tenants).set({ mpTokenEnc: cifrar(t), mpConta: conta.nome }).where(eq(tenants.id, ctx.tenantId));
-    await audit(tx, ctx, "empresa.mp_conectar", "tenant", ctx.tenantId, { conta: conta.nome, teste: t.startsWith("TEST-") || undefined });
+    await tx
+      .update(tenants)
+      .set({ mpTokenEnc: cifrar(l.accessToken), mpRefreshEnc: l.refreshToken ? cifrar(l.refreshToken) : null, mpExpiraEm: l.expiraEm, mpConta: conta.nome })
+      .where(eq(tenants.id, ctx.tenantId));
+    await audit(tx, ctx, "empresa.mp_conectar", "tenant", ctx.tenantId, { conta: conta.nome, como, teste: l.accessToken.startsWith("TEST-") || undefined });
   });
   return conta;
+}
+
+// renova quando faltam menos de 30 dias; o token do OAuth vale 180
+const RENOVAR_ANTES_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * Token da empresa para chamar o Mercado Pago, renovado se estiver perto de vencer.
+ * shortcut: só renova quando o Pix é usado; loja que passar 150 dias sem Pix no Mercado Pago precisa conectar de
+ * novo. Trocar por uma tarefa diária se isso acontecer.
+ */
+export async function tokenMp(tenantId: string, t: { mpTokenEnc: string; mpRefreshEnc: string | null; mpExpiraEm: Date | null }) {
+  const atual = decifrar(t.mpTokenEnc);
+  const app = appMp();
+  if (!app || !t.mpRefreshEnc || !t.mpExpiraEm || t.mpExpiraEm.getTime() - Date.now() > RENOVAR_ANTES_MS) return atual;
+  try {
+    const novo = await renovarTokenMp(app, decifrar(t.mpRefreshEnc));
+    await withTenant(tenantId, () =>
+      db
+        .update(tenants)
+        .set({ mpTokenEnc: cifrar(novo.accessToken), mpRefreshEnc: cifrar(novo.refreshToken), mpExpiraEm: novo.expiraEm })
+        .where(eq(tenants.id, tenantId)),
+    );
+    return novo.accessToken;
+  } catch (e) {
+    // o token atual ainda vale até vencer; a próxima chamada tenta renovar de novo
+    console.error(`[pix] renovação do token do Mercado Pago da empresa ${tenantId} falhou:`, (e as Error).message);
+    return atual;
+  }
 }
 
 export async function desconectarMercadoPago(ctx: Ctx) {
   assertRole(ctx, "dono");
   await tenantTransaction(ctx, async (tx) => {
-    await tx.update(tenants).set({ mpTokenEnc: null, mpConta: null }).where(eq(tenants.id, ctx.tenantId));
+    await tx.update(tenants).set({ mpTokenEnc: null, mpRefreshEnc: null, mpExpiraEm: null, mpConta: null }).where(eq(tenants.id, ctx.tenantId));
     await audit(tx, ctx, "empresa.mp_desconectar", "tenant", ctx.tenantId);
   });
 }
@@ -55,7 +98,7 @@ export async function desconectarMercadoPago(ctx: Ctx) {
 const lerPedido = (tenantId: string, orderId: string) =>
   withTenant(tenantId, async () => {
     const [t] = await db
-      .select({ name: tenants.name, slug: tenants.slug, pixKey: tenants.pixKey, pixName: tenants.pixName, pixCity: tenants.pixCity, mpTokenEnc: tenants.mpTokenEnc })
+      .select({ name: tenants.name, slug: tenants.slug, pixKey: tenants.pixKey, pixName: tenants.pixName, pixCity: tenants.pixCity, mpTokenEnc: tenants.mpTokenEnc, mpRefreshEnc: tenants.mpRefreshEnc, mpExpiraEm: tenants.mpExpiraEm })
       .from(tenants)
       .where(eq(tenants.id, tenantId));
     const [o] = await db
@@ -100,7 +143,7 @@ export async function pixDoPedido(tenantId: string, orderId: string): Promise<{ 
     return { codigo: o.mpPixCode, automatico: true };
 
   try {
-    const token = decifrar(t.mpTokenEnc);
+    const token = await tokenMp(tenantId, { ...t, mpTokenEnc: t.mpTokenEnc });
     // o total mudou (entrega parcial): a cobrança antiga não pode mais ser paga
     if (o.mpPaymentId && o.mpAmountCents !== valor) await cancelarPixMp(token, o.mpPaymentId).catch(() => {});
     const app = process.env.APP_URL ?? "";
@@ -143,7 +186,7 @@ export async function conferirPixMp(tenantId: string, orderId: string): Promise<
   if (!t.mpTokenEnc || !o.mpPaymentId || o.paymentMethod !== "pix") return false;
   let p: Awaited<ReturnType<typeof pagamentoMp>>;
   try {
-    p = await pagamentoMp(decifrar(t.mpTokenEnc), o.mpPaymentId);
+    p = await pagamentoMp(await tokenMp(tenantId, { ...t, mpTokenEnc: t.mpTokenEnc }), o.mpPaymentId);
   } catch (e) {
     console.error(`[pix] consulta do pedido ${orderId} no Mercado Pago falhou:`, (e as Error).message);
     return false;

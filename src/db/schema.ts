@@ -53,6 +53,9 @@ export const tenants = pgTable("tenants", {
   // O token fica cifrado (lib/segredo); a conta é só para mostrar a qual conta está ligada.
   mpTokenEnc: text("mp_token_enc"),
   mpConta: text("mp_conta"),
+  // conectado pelo botão (OAuth): chave de renovação cifrada e até quando o token vale; colado à mão fica vazio
+  mpRefreshEnc: text("mp_refresh_enc"),
+  mpExpiraEm: timestamp("mp_expira_em", { withTimezone: true }),
   // portal de pedidos: endereço público /pedir/<slug>
   slug: text("slug").notNull().unique(),
   portalEnabled: boolean("portal_enabled").notNull().default(false),

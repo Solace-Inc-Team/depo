@@ -9,6 +9,8 @@ import { JanelaAcao } from "@/components/janela-acao";
 import Link from "next/link";
 import { PLANO, dataBR } from "@/lib/plano";
 import { formatBRL } from "@/lib/money";
+import { appMp } from "@/lib/mercadopago";
+import { AvisoMp } from "./aviso-mp";
 import {
   ativarFilialAction,
   conectarMercadoPagoAction,
@@ -83,6 +85,7 @@ export async function secoesConfig(tenantId: string, pagoAte: string | null) {
 
         <div className="border-t border-line pt-6">
           <h3 className="font-semibold">Mercado Pago</h3>
+          <AvisoMp />
           {s.mpConta ? (
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-md bg-subtle px-3 py-2.5">
               <p className="flex min-w-0 items-center gap-2 text-sm">
@@ -96,20 +99,28 @@ export async function secoesConfig(tenantId: string, pagoAte: string | null) {
           ) : (
             <>
               <p className="mt-1 mb-3 text-[13px] text-muted">Confirma o Pix de cada pedido sozinho.</p>
-              <JanelaAcao label="Conectar Mercado Pago" titulo="Conectar Mercado Pago">
-                <ActionForm action={conectarMercadoPagoAction} className="space-y-3" reset>
-                  <div>
-                    <label className="label" htmlFor="mp-token">Chave de acesso (Access Token)</label>
-                    <input id="mp-token" name="token" type="password" required autoComplete="off" spellCheck={false} className="input num" placeholder="APP_USR-..." />
-                    <p className="mt-1 text-[13px] text-muted">Em mercadopago.com.br/developers, Credenciais de produção.</p>
-                  </div>
-                  <div>
-                    <label className="label" htmlFor="mp-senha">Sua senha</label>
-                    <input id="mp-senha" name="confirmPassword" type="password" autoComplete="current-password" required className="input" />
-                  </div>
-                  <button className="btn btn-primary w-full">Conectar</button>
-                </ActionForm>
-              </JanelaAcao>
+              <div className="flex flex-wrap gap-2">
+                {/* com a aplicação da Solace no Mercado Pago, o dono só entra na conta dele e autoriza */}
+                {appMp() && (
+                  <a href="/api/mercadopago/conectar" className="btn btn-primary">
+                    Conectar com Mercado Pago
+                  </a>
+                )}
+                <JanelaAcao label={appMp() ? "Usar Access Token" : "Conectar Mercado Pago"} titulo="Conectar com o Access Token">
+                  <ActionForm action={conectarMercadoPagoAction} className="space-y-3" reset>
+                    <div>
+                      <label className="label" htmlFor="mp-token">Chave de acesso (Access Token)</label>
+                      <input id="mp-token" name="token" type="password" required autoComplete="off" spellCheck={false} className="input num" placeholder="APP_USR-..." />
+                      <p className="mt-1 text-[13px] text-muted">Em mercadopago.com.br/developers, Credenciais de produção.</p>
+                    </div>
+                    <div>
+                      <label className="label" htmlFor="mp-senha">Sua senha</label>
+                      <input id="mp-senha" name="confirmPassword" type="password" autoComplete="current-password" required className="input" />
+                    </div>
+                    <button className="btn btn-primary w-full">Conectar</button>
+                  </ActionForm>
+                </JanelaAcao>
+              </div>
             </>
           )}
         </div>

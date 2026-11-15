@@ -75,6 +75,7 @@ Para a demonstração, crie um segundo banco, `gestao-demo-db`. Assim os dados f
 | `APP_URL` | `https://app.meudominio.com.br` (prévia do link no WhatsApp e nas redes) |
 | `ADMIN_EMAIL` | seu e-mail da Solace |
 | `ADMIN_PASSWORD` | senha forte, só para o primeiro acesso |
+| `MP_CLIENT_ID` e `MP_CLIENT_SECRET` | aplicação da Solace no Mercado Pago (botão "Conectar com Mercado Pago"); URL de redirecionamento: `https://app.meudominio.com.br/api/mercadopago/retorno` |
 | `ALERT_TELEGRAM_BOT_TOKEN` e `ALERT_TELEGRAM_CHAT_ID` | opcionais, veja Monitoramento |
 
 6. **Deploy.** No log deve aparecer `[admin] ... criado`, e `/api/health` deve responder `{"ok":true}`.
