@@ -129,6 +129,8 @@ export async function cadastrarAction(fd: FormData): Promise<ActionState> {
   if (fd.get("agree") !== "on") return { error: "Para criar a conta, marque que leu e aceita os termos." };
   // conta toda tentativa, deu certo ou não: segura quem tenta criar empresas em série
   if (await attempt(`cadastro:${await clientIp()}`, 5)) return { error: "Muitos cadastros daqui. Espere 15 minutos e tente de novo." };
+  // a tela já confere; aqui vale para quem enviou sem o JavaScript
+  if (String(fd.get("password") ?? "") !== String(fd.get("confirm") ?? "")) return { error: "As duas senhas não são iguais. Digite de novo." };
   let ownerId = "";
   const r = await run(async () => {
     const input = cadastroSchema.parse({ company: str(fd, "company"), ownerName: str(fd, "ownerName"), email: str(fd, "email"), password: String(fd.get("password") ?? ""), vende: str(fd, "vende") });

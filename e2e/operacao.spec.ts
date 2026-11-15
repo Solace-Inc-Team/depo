@@ -19,6 +19,7 @@ async function cadastrar(page: Page, d: { nome: string; email: string; revenda: 
   await page.getByLabel("Seu nome").fill(d.nome);
   await page.getByLabel("E-mail").fill(d.email);
   await page.getByLabel("Senha", { exact: true }).fill("senha-boa-1");
+  await page.getByLabel("Repita a senha").fill("senha-boa-1");
   await page.getByRole("button", { name: "Continuar" }).click();
   await page.getByLabel("Nome da revenda").fill(d.revenda);
   await page.getByText(d.vende, { exact: true }).click();
@@ -169,6 +170,14 @@ test("cadastro: o dono cria a conta pela página inicial e cai no painel com os 
   await page.getByLabel("Seu nome").fill("Rita");
   await page.getByRole("button", { name: "Continuar" }).click();
   await expect(page.getByText(/Preencha o campo "E-mail"/)).toBeVisible();
+  // senha repetida diferente: não avança
+  await page.getByLabel("Seu nome").fill("Rita");
+  await page.getByLabel("E-mail").fill("rita@cadastro.test");
+  await page.getByLabel("Senha", { exact: true }).fill("senha-boa-1");
+  await page.getByLabel("Repita a senha").fill("senha-boa-2");
+  await page.getByRole("button", { name: "Continuar" }).click();
+  await expect(page.getByText("As duas senhas não são iguais. Digite de novo.")).toBeVisible();
+  await expect(page.getByText("1 de 2")).toBeVisible();
   // e-mail que já tem conta: volta ao primeiro passo, com o aviso no próprio campo
   await cadastrar(page, { nome: "Rita", email: "dono@demo.com", revenda: "Gás do Teste", vende: "Gás" });
   await expect(page.getByText("Já existe um usuário com este e-mail.")).toBeVisible();

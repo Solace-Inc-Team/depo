@@ -65,7 +65,16 @@ export function CadastroForm() {
       onSubmit={(e) => {
         e.preventDefault();
         if (passo === 1) {
-          if (conferir(um.current)) ir(2);
+          if (!conferir(um.current)) return;
+          // a senha digitada duas vezes: um erro de digitação aqui trancaria a pessoa fora da conta nova
+          const f = e.currentTarget;
+          const confirmar = f.elements.namedItem("confirm") as HTMLInputElement;
+          if (confirmar.value !== (f.elements.namedItem("password") as HTMLInputElement).value) {
+            setErro({ geral: "As duas senhas não são iguais. Digite de novo." });
+            confirmar.select();
+            return;
+          }
+          ir(2);
           return;
         }
         if (!conferir(dois.current)) return;
@@ -148,6 +157,11 @@ export function CadastroForm() {
                 {verSenha ? <EyeOff size={16} strokeWidth={1.75} /> : <Eye size={16} strokeWidth={1.75} />}
               </button>
             </div>
+          </div>
+          <div>
+            <label className="label" htmlFor="confirm">Repita a senha</label>
+            {/* segue o olho do campo de cima: com a senha à vista, as duas aparecem para comparar */}
+            <input id="confirm" name="confirm" type={verSenha ? "text" : "password"} autoComplete="new-password" required minLength={8} maxLength={200} className="input h-11" />
           </div>
         </fieldset>
 
