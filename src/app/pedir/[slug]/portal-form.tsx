@@ -105,7 +105,7 @@ export function PortalForm({
                     </div>
                     <div className="flex items-center gap-1" role="group" aria-label={`Quantidade de ${p.name}`}>
                       <button type="button" className="btn h-11 w-11 px-0 text-xl" onClick={() => step(p.id, -1)} disabled={acabou} aria-label="Diminuir">−</button>
-                      <span key={n} className="bump num w-9 text-center text-xl font-semibold" aria-live="polite">{n}</span>
+                      <span className="num w-9 text-center text-xl font-semibold" aria-live="polite"><LiveNumber value={n} /></span>
                       <button type="button" className="btn h-11 w-11 px-0 text-xl" onClick={() => step(p.id, 1)} disabled={acabou || n >= limite(p.id)} aria-label="Aumentar">+</button>
                     </div>
                   </div>

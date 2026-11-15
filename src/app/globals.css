@@ -314,32 +314,78 @@ body {
   transform: scale(0.97);
 }
 
-/* botão que enviou o formulário: girando enquanto espera, ✓ quando deu certo */
+/* botão que enviou o formulário: o texto se apaga, o giro entra e o ✓ se desenha no lugar. Troca de ícone do
+   transitions.dev ("Icon swap": de 25% com desfoque, 250ms); na volta o ícone sai do mesmo jeito e o texto reaparece */
+.btn {
+  --btn-icone: 250ms ease-in-out;
+}
 .btn[data-state]:disabled {
   opacity: 1;
 }
-.btn[data-state] {
+.btn[data-state="loading"],
+.btn[data-state="done"] {
   color: transparent;
+  transition-property: background-color, border-color, box-shadow, opacity, transform, color;
+  transition-duration: var(--dur-fast), var(--dur-fast), var(--dur), var(--dur-fast), var(--dur-fast), 150ms;
 }
-.btn[data-state]::before {
+.btn[data-state="saindo"] {
+  transition-property: color;
+  transition-duration: 150ms;
+  transition-delay: 100ms;
+}
+.btn[data-state]::after {
   content: "";
   position: absolute;
   inset: 0;
   margin: auto;
   width: 14px;
   height: 14px;
+  animation: btn-icone-entra var(--btn-icone) both;
 }
-.btn[data-state="loading"]::before {
+.btn[data-state="loading"]::after {
   border: 2px solid var(--btn-cor);
   border-right-color: transparent;
   border-radius: 50%;
-  animation: spin 0.6s linear infinite;
+  animation:
+    btn-icone-entra var(--btn-icone) both,
+    spin 0.6s linear infinite;
 }
-.btn[data-state="done"]::before {
+.btn[data-state="done"]::after,
+.btn[data-state="saindo"]::after {
   background: var(--btn-cor);
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E")
     center / contain no-repeat;
-  animation: pop var(--dur-slow) var(--ease-spring);
+}
+/* o ✓ se desenha da esquerda para a direita, como o traço do check */
+.btn[data-state="done"]::after {
+  animation:
+    btn-icone-entra var(--btn-icone) both,
+    btn-check-desenha 350ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.btn[data-state="saindo"]::after {
+  animation: btn-icone-sai 150ms ease-in-out both;
+}
+@keyframes btn-icone-entra {
+  from {
+    opacity: 0;
+    scale: 0.25;
+    filter: blur(2px);
+  }
+}
+@keyframes btn-icone-sai {
+  to {
+    opacity: 0;
+    scale: 0.25;
+    filter: blur(2px);
+  }
+}
+@keyframes btn-check-desenha {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
 }
 
 /* conteúdo de <details> (popovers, "entreguei só uma parte") abre deslizando */
@@ -588,17 +634,65 @@ details[open] > :not(summary) {
   }
 }
 
-/* aviso de sucesso */
-.toast {
+/* avisos de sucesso: a pilha do transitions.dev ("Banner stacking"). O novo sobe 60px e entra na frente em 350ms;
+   os anteriores recuam um degrau cada (12px acima, 6% menores, mais apagados e desfocados); com o mouse em cima
+   a pilha se abre em lista. Quem sai vai para trás de todos em 250ms */
+.pilha-avisos {
+  pointer-events: none;
+  transition: height 350ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.pilha-avisos[data-aberta] {
+  pointer-events: auto;
+}
+.pilha-avisos .toast {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  pointer-events: auto;
+  transform-origin: 50% 100%;
   transition:
-    opacity var(--dur) var(--ease-out),
-    translate var(--dur-slow) var(--ease-spring),
-    scale var(--dur-slow) var(--ease-out);
+    translate 350ms cubic-bezier(0.22, 1, 0.36, 1),
+    scale 350ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 350ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 350ms cubic-bezier(0.22, 1, 0.36, 1);
   @starting-style {
     opacity: 0;
-    translate: 0 12px;
-    scale: 0.96;
+    translate: 0 60px;
+    scale: 0.97;
+    filter: blur(2px);
   }
+}
+.pilha-avisos .toast[data-depth="0"] {
+  z-index: 3;
+}
+.pilha-avisos .toast[data-depth="1"] {
+  z-index: 2;
+  translate: 0 -12px;
+  scale: 0.94;
+  opacity: 0.6;
+  filter: blur(1px);
+}
+.pilha-avisos .toast[data-depth="2"] {
+  z-index: 1;
+  translate: 0 -24px;
+  scale: 0.88;
+  opacity: 0.36;
+  filter: blur(2px);
+}
+.pilha-avisos[data-aberta] .toast:not([data-leaving]) {
+  translate: 0 var(--aberta-y, 0px);
+  scale: 1;
+  opacity: 1;
+  filter: none;
+}
+.pilha-avisos .toast[data-leaving] {
+  z-index: 0;
+  translate: 0 -36px;
+  scale: 0.82;
+  opacity: 0;
+  filter: blur(2px);
+  transition-duration: 250ms;
 }
 /* campo que salvou sozinho: a borda acende em verde e volta */
 .salvou {
@@ -614,11 +708,6 @@ details[open] > :not(summary) {
   .salvou {
     animation: none;
   }
-}
-.toast[data-leaving] {
-  opacity: 0;
-  translate: 0 6px;
-  scale: 0.98;
 }
 
 /* selo de quem ainda está andando: o ponto pulsa */
@@ -639,12 +728,17 @@ details[open] > :not(summary) {
   animation: flash 2.4s var(--ease-out);
 }
 
-/* esqueleto de carregamento */
+/* carregando: o skeleton do transitions.dev ("Skeleton loader and reveal") pulsa entre 100% e 50% a cada segundo;
+   a tela chega com o mesmo desfoque de 2px saindo (keyframe entra, logo abaixo da cascata) */
 .skeleton {
   border-radius: 6px;
-  background: linear-gradient(90deg, var(--subtle) 30%, color-mix(in srgb, var(--line) 70%, var(--subtle)) 50%, var(--subtle) 70%)
-    0 0 / 300% 100%;
-  animation: shimmer 1.4s linear infinite;
+  background: color-mix(in srgb, var(--line) 80%, var(--subtle));
+  animation: skeleton-pulsa 1000ms ease-in-out infinite;
+}
+@keyframes skeleton-pulsa {
+  50% {
+    opacity: 0.5;
+  }
 }
 
 /* ✓ do acerto que bateu: o círculo fecha e o traço se desenha */
@@ -856,11 +950,6 @@ html[data-trocando-tema]::view-transition-new(root) {
     background-color: var(--accent-soft);
   }
 }
-@keyframes shimmer {
-  to {
-    background-position: -150% 0;
-  }
-}
 @keyframes shrink-out {
   to {
     opacity: 0;
@@ -925,6 +1014,7 @@ html[data-trocando-tema]::view-transition-new(root) {
     @starting-style {
       scale: 1;
       translate: 0;
+      filter: none;
     }
   }
   ::view-transition-group(*),
@@ -1431,6 +1521,7 @@ body[data-confirmando] .deliver-btn {
   from {
     opacity: 0;
     translate: 0 10px;
+    filter: blur(2px);
   }
 }
 @keyframes linha {
@@ -1752,7 +1843,7 @@ body[data-confirmando] .deliver-btn {
   }
 }
 
-/* barras da semana no painel: neutras, o dia escolhido em azul; o valor aparece em cima ao passar o mouse */
+/* barras da semana no painel: neutras, o dia escolhido em azul; o valor aparece na dica (Dicas) ao passar o mouse */
 .semana-barra > span:first-child {
   background: color-mix(in srgb, var(--muted) 30%, transparent);
   transition: background-color var(--dur-fast);
@@ -1765,27 +1856,6 @@ body[data-confirmando] .deliver-btn {
 }
 .semana-barra[data-atual]:hover > span:first-child {
   background: var(--marca);
-}
-.semana-dica {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  translate: -50% 4px;
-  padding: 3px 7px;
-  border-radius: 6px;
-  background: var(--fg);
-  color: var(--bg);
-  font-size: 11.5px;
-  white-space: nowrap;
-  opacity: 0;
-  pointer-events: none;
-  transition:
-    opacity var(--dur-fast),
-    translate var(--dur-fast) var(--ease-chegada);
-}
-.semana-barra:hover .semana-dica {
-  opacity: 1;
-  translate: -50% 0;
 }
 
 /* campos nativos com o traço do sistema: a seta do select e o calendário do Chrome destoavam.
@@ -1802,6 +1872,77 @@ select.input {
   background-size: 4.5px 4.5px;
   background-repeat: no-repeat;
   cursor: pointer;
+}
+/* A lista que abre: com mouse, no Chrome que já deixa estilizar o select nativo, vira um menu da casa com a
+   abertura do transitions.dev ("Menu dropdown": 250ms crescendo de 0,97, fecha em 150ms). Continua sendo o
+   select de verdade; no toque e nos navegadores sem suporte, abre a lista do próprio sistema. */
+@supports (appearance: base-select) {
+  @media (hover: hover) and (pointer: fine) {
+    select.input,
+    select.input::picker(select) {
+      appearance: base-select;
+    }
+    select.input {
+      display: flex;
+      align-items: center;
+    }
+    select.input::picker-icon {
+      display: none;
+    }
+    select.input::picker(select) {
+      margin-block: 4px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--surface);
+      color: var(--fg);
+      box-shadow:
+        0 2px 6px rgb(0 0 0 / 0.08),
+        0 12px 32px -8px rgb(0 0 0 / 0.28);
+      transform-origin: top center;
+      opacity: 0;
+      scale: 0.99;
+      transition:
+        opacity 150ms cubic-bezier(0.22, 1, 0.36, 1),
+        scale 150ms cubic-bezier(0.22, 1, 0.36, 1),
+        display 150ms allow-discrete,
+        overlay 150ms allow-discrete;
+    }
+    select.input:open::picker(select) {
+      opacity: 1;
+      scale: 1;
+      transition-duration: 250ms;
+      @starting-style {
+        opacity: 0;
+        scale: 0.97;
+      }
+    }
+    select.input option {
+      gap: 8px;
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    select.input option:hover,
+    select.input option:focus-visible {
+      background: var(--subtle);
+      outline: none;
+    }
+    select.input option:checked {
+      font-weight: 500;
+    }
+    select.input option::checkmark {
+      order: 1;
+      margin-left: auto;
+      color: var(--marca);
+    }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  select.input::picker(select) {
+    transition: none;
+  }
 }
 input[type="date"].input {
   font-variant-numeric: tabular-nums;

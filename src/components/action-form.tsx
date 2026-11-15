@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { CircleAlert, CircleCheck } from "lucide-react";
 import { progress } from "./nav-progress";
 import { confirmar } from "./confirm-dialog";
@@ -124,7 +124,7 @@ export function ActionForm({
             r = await action(fd);
           } catch (e) {
             progress(false);
-            button?.removeAttribute("data-state");
+            soltar(button);
             // sem sinal o fetch da ação falha: mantém a tela e o que foi digitado em vez de cair na página de erro
             if (e instanceof TypeError || !navigator.onLine) {
               setError("Sem internet. Tente de novo quando o sinal voltar.");
@@ -136,11 +136,11 @@ export function ActionForm({
           progress(false);
           setError(r?.error);
           if (r?.error) {
-            button?.removeAttribute("data-state");
+            soltar(button);
             return;
           }
           button?.setAttribute("data-state", "done");
-          setTimeout(() => button?.removeAttribute("data-state"), 1200);
+          setTimeout(() => soltar(button), 1200);
           // o aviso fica fora do form: muitas ações trocam a tela e o form some junto
           const campo = mudou.current;
           mudou.current = null;
@@ -181,6 +181,13 @@ export function ActionForm({
       </fieldset>
     </form>
   );
+}
+
+/** Devolve o botão ao normal sem cortar: o ícone sai, o texto volta, e só então o estado some. */
+function soltar(button: Element | null | undefined) {
+  if (!button?.hasAttribute("data-state")) return;
+  button.setAttribute("data-state", "saindo");
+  setTimeout(() => button.getAttribute("data-state") === "saindo" && button.removeAttribute("data-state"), 260);
 }
 
 /** Mostra os avisos de sucesso das ações. Fica no layout raiz. */
@@ -229,13 +236,41 @@ export function Toaster() {
       timers.forEach((ts) => ts.forEach(clearTimeout));
     };
   }, []);
+  // pilha do transitions.dev ("Banner stacking"): o aviso novo na frente, os anteriores recuam um degrau cada
+  // (menores, mais altos, apagados); com o mouse em cima a pilha se abre em lista
+  const [mouse, setMouse] = useState(false);
+  const pilha = useRef<HTMLDivElement>(null);
+  const ativos = toasts.filter((t) => !t.leaving);
+  const aberta = mouse && ativos.length > 0;
+  const profundidade = (t: Toast) => (t.leaving ? undefined : ativos.length - 1 - ativos.indexOf(t));
+  useLayoutEffect(() => {
+    const el = pilha.current;
+    if (!el) return;
+    // aberta, cada aviso sobe a altura dos que estão na frente dele, mais 8px de vão
+    let y = 0;
+    const itens = [...el.querySelectorAll<HTMLElement>(".toast:not([data-leaving])")].reverse();
+    for (const item of itens) {
+      item.style.setProperty("--aberta-y", `${-y}px`);
+      y += item.offsetHeight + 8;
+    }
+    el.style.height = !itens.length ? "0px" : `${aberta ? y - 8 : itens[0].offsetHeight + 24}px`;
+  });
   return (
-    <div role="status" aria-live="polite" className="pointer-events-none fixed right-4 bottom-4 left-4 z-50 flex flex-col items-end gap-2 sm:left-auto">
+    <div
+      ref={pilha}
+      role="status"
+      aria-live="polite"
+      data-aberta={aberta || undefined}
+      onPointerEnter={() => setMouse(true)}
+      onPointerLeave={() => setMouse(false)}
+      className="pilha-avisos fixed right-4 bottom-4 left-4 z-50 sm:left-auto sm:w-96"
+    >
       {toasts.map((current) => (
         <p
           key={current.id}
           data-leaving={current.leaving || undefined}
-          className="toast flex max-w-sm items-center gap-2 rounded-lg border border-line bg-surface px-4 py-3 text-[13px] font-medium shadow-[0_8px_30px_rgb(0_0_0/0.12)]"
+          data-depth={profundidade(current)}
+          className="toast flex items-center gap-2 rounded-lg border border-line bg-surface px-4 py-3 text-[13px] font-medium shadow-[0_8px_30px_rgb(0_0_0/0.12)]"
         >
           <CircleCheck size={16} strokeWidth={2} className="text-ok" aria-hidden="true" />
           {/* a chave muda a cada repetição: o texto dá o mesmo pulinho dos números (.bump) */}

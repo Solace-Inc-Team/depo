@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { countOrdersByStatus, listOrders } from "@/domain/queries";
 import { cancelarPixVencidos } from "@/domain/pix";
 import { Money, PageHeader, SiteBadge, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
+import { LiveNumber } from "@/components/live-number";
 
 export const metadata = { title: "Pedidos" };
 
@@ -61,7 +62,7 @@ export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
               }`}
             >
               {l}
-              <span className="num text-xs text-muted">{n}</span>
+              <span className="num text-xs text-muted"><LiveNumber value={n} /></span>
               {/* o traço da aba ativa é um só: ao trocar de filtro ele corre da aba antiga até a clicada */}
               {on && (
                 <ViewTransition name="aba-pedidos" share="move" default="none">

@@ -232,7 +232,7 @@ export function NewOrderForm({
                     <div className="flex items-center gap-1" role="group" aria-label={`Quantidade de ${p.name}`}>
                       <button type="button" className="btn h-11 w-11 px-0 text-xl" onClick={() => step(p.id, -1)} aria-label="Diminuir">−</button>
                       {/* a chave muda a cada clique e o número dá um pulinho (CSS): mais leve que rolar a cada toque */}
-                      <span key={n} aria-live="polite" className="bump num w-10 text-center text-2xl font-semibold">{n}</span>
+                      <span aria-live="polite" className="num w-10 text-center text-2xl font-semibold"><LiveNumber value={n} /></span>
                       <button type="button" className="btn h-11 w-11 px-0 text-xl" onClick={() => step(p.id, 1)} aria-label="Aumentar">+</button>
                     </div>
                   </div>
