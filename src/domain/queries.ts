@@ -207,6 +207,9 @@ export const listAddresses = scoped(function listAddresses(tenantId: string, cus
 export const getSettings = scoped(async function getSettings(tenantId: string) {
   const [t] = await db
     .select({
+      name: tenants.name,
+      phone: tenants.phone,
+      address: tenants.address,
       staffDiscountPct: tenants.staffDiscountPct,
       lateAfterMinutes: tenants.lateAfterMinutes,
       pixKey: tenants.pixKey,

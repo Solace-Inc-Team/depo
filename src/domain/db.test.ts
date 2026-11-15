@@ -1419,3 +1419,19 @@ test("Mercado Pago pelo botão: só aceita a aplicação certa, guarda a renova�
   assert.deepEqual([t.mpTokenEnc, t.mpRefreshEnc, t.mpExpiraEm, t.mpConta], [null, null, null, null]);
   for (const k of ["MP_CLIENT_ID", "MP_CLIENT_SECRET", "APP_URL"]) delete process.env[k];
 });
+
+test("empresa: o dono salva nome, telefone e endereço, e o portal mostra o contato", async () => {
+  const { db } = m.db;
+  const { tenants } = m.schema;
+  const { eq } = await import("drizzle-orm");
+  const [antes] = await db.select({ name: tenants.name, phone: tenants.phone, address: tenants.address, slug: tenants.slug, portal: tenants.portalEnabled }).from(tenants).where(eq(tenants.id, A.t.id));
+  await assert.rejects(m.registry.saveSettings(A.ctx, { phone: "123" }), /DDD/);
+  await assert.rejects(m.registry.saveSettings({ ...A.ctx, role: "atendente" }, { phone: "" }));
+  await m.registry.saveSettings(A.ctx, { name: "Fonte Azul", phone: "11987654321", address: "Rua A, 1" });
+  await m.registry.saveSettings(A.ctx, { portalEnabled: true });
+  const t = await m.portal.portalTenant(antes.slug);
+  assert.deepEqual([t?.name, t?.phone, t?.address], ["Fonte Azul", "(11) 98765-4321", "Rua A, 1"]);
+  // telefone vazio vale: a loja pode não querer mostrar
+  await m.registry.saveSettings(A.ctx, { phone: "" });
+  await db.update(tenants).set({ name: antes.name, phone: antes.phone, address: antes.address, portalEnabled: antes.portal }).where(eq(tenants.id, A.t.id));
+});

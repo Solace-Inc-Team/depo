@@ -17,7 +17,7 @@ import { todayISO } from "@/lib/period";
  */
 export async function portalTenant(slug: string, filial?: string) {
   const [t] = await db
-    .select({ id: tenants.id, name: tenants.name, pixKey: tenants.pixKey, pixName: tenants.pixName, pixCity: tenants.pixCity, mp: sql<boolean>`${tenants.mpTokenEnc} is not null`, pagoAte: tenants.pagoAte })
+    .select({ id: tenants.id, name: tenants.name, pixKey: tenants.pixKey, pixName: tenants.pixName, pixCity: tenants.pixCity, mp: sql<boolean>`${tenants.mpTokenEnc} is not null`, pagoAte: tenants.pagoAte, phone: tenants.phone, address: tenants.address })
     .from(tenants)
     .where(and(eq(tenants.slug, slug), eq(tenants.active, true), eq(tenants.portalEnabled, true)));
   if (!t || situacaoAssinatura(t.pagoAte, todayISO())?.bloqueado) return null;
@@ -125,7 +125,7 @@ export async function placePortalOrder(tenantId: string, branchId: string, input
 export async function pedidoAcompanhado(slug: string, codigo: string) {
   if (!isUuid(codigo)) return null;
   const [t] = await db
-    .select({ id: tenants.id, name: tenants.name, pixKey: tenants.pixKey, pixName: tenants.pixName, pixCity: tenants.pixCity })
+    .select({ id: tenants.id, name: tenants.name, pixKey: tenants.pixKey, pixName: tenants.pixName, pixCity: tenants.pixCity, phone: tenants.phone, address: tenants.address })
     .from(tenants)
     .where(and(eq(tenants.slug, slug), eq(tenants.active, true)));
   if (!t) return null;

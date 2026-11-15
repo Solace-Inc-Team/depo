@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { portalProducts, portalTenant } from "@/domain/portal";
 import { portalOrderAction } from "@/app/actions";
 import { PortalForm } from "./portal-form";
+import { ContatoLoja } from "./contato-loja";
 
 export async function generateMetadata({ params }: PageProps<"/pedir/[slug]">): Promise<Metadata> {
   const t = await portalTenant((await params).slug);
@@ -23,6 +24,7 @@ export default async function Pedir({ params, searchParams }: PageProps<"/pedir/
       <p className="text-[13px] text-muted">Pedido pelo site</p>
       <h1 className="h1">{t.name}</h1>
       {t.branchName && <p className="mt-0.5 font-medium">{t.branchName}</p>}
+      <ContatoLoja phone={t.phone} address={t.address} />
       <p className="mt-1 mb-6 text-muted">Escolha os produtos e informe onde entregar. A loja confirma pelo telefone se precisar.</p>
       {products.length ? (
         <PortalForm action={portalOrderAction.bind(null, slug, typeof filial === "string" ? filial : "")} products={products} pixEnabled={!!t.pixKey || t.mp} />

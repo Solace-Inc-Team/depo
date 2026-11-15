@@ -1635,7 +1635,7 @@ body[data-confirmando] .deliver-btn {
 }
 /* janela de Configurações: a mesma janela da confirmação, larga, com as seções num trilho à esquerda */
 .janela-config {
-  max-width: 46rem;
+  max-width: 54rem;
 }
 /* no computador o topo fica parado ao trocar de seção (só a borda de baixo cresce): o trilho não anda sob o mouse */
 @media (min-width: 640px) {
@@ -1649,12 +1649,11 @@ body[data-confirmando] .deliver-btn {
   /* recebe o foco ao abrir só para o X não ganhar o anel; ela mesma não mostra anel */
   outline: none;
 }
-/* a altura segue a seção mostrada (--altura, medida na janela), com o trilho como mínimo, e desliza ao trocar */
+/* altura fixa: trocar de seção só troca o conteúdo, a janela não pula; o que passar rola dentro */
 .config-corpo {
   display: grid;
-  grid-template-columns: 11rem minmax(0, 1fr);
-  height: min(max(var(--altura, 28rem), 13rem), 78vh);
-  transition: height var(--dur) var(--ease-out);
+  grid-template-columns: 13rem minmax(0, 1fr);
+  height: min(36rem, 78vh);
 }
 .config-trilho {
   position: relative;
@@ -1663,8 +1662,18 @@ body[data-confirmando] .deliver-btn {
   gap: 2px;
   padding: 0.5rem;
   border-right: 1px solid var(--line);
+  background: color-mix(in srgb, var(--subtle) 35%, transparent);
+}
+/* a empresa e o plano no pé do trilho */
+.config-rodape {
+  margin-top: auto;
+  padding: 0.75rem 0.75rem 0.25rem;
+  border-top: 1px solid var(--line);
 }
 .config-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   position: relative;
   z-index: 1;
   height: 2.25rem;
@@ -1746,7 +1755,8 @@ body[data-confirmando] .deliver-btn {
   .config-trilho[data-mais-esq][data-mais-dir] {
     mask-image: linear-gradient(to right, transparent, #000 3rem, #000 calc(100% - 3rem), transparent);
   }
-  .config-marca {
+  .config-marca,
+  .config-rodape {
     display: none;
   }
   .config-item {
@@ -1763,6 +1773,85 @@ body[data-confirmando] .deliver-btn {
   .config-conteudo {
     padding: 1rem;
   }
+}
+
+/* ajustes em cartões de linhas: ícone, nome e explicação à esquerda, o controle à direita */
+.ajuste-grupo + .ajuste-grupo {
+  margin-top: 1.5rem;
+}
+.ajuste-grupo-titulo {
+  margin-bottom: 0.5rem;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.ajuste-lista {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.ajuste-lista > * + * {
+  border-top: 1px solid var(--line);
+}
+.ajuste-linha {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+}
+.ajuste-icone {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--subtle);
+  color: var(--muted);
+}
+.ajuste-controle {
+  justify-self: end;
+}
+/* campo de texto: largura fixa à direita no computador; no celular desce para baixo do nome */
+.ajuste-linha[data-campo] .ajuste-controle {
+  width: 17rem;
+}
+@media (max-width: 639px) {
+  .ajuste-linha[data-campo] {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .ajuste-linha[data-campo] .ajuste-controle {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+}
+/* número com a unidade dentro do campo */
+.campo-unidade {
+  position: relative;
+  display: inline-flex;
+}
+.campo-unidade > input {
+  padding-right: 2.6rem;
+  text-align: right;
+}
+/* sem as setinhas do navegador: elas empurravam o número para longe da unidade */
+.campo-unidade > input {
+  appearance: textfield;
+}
+.campo-unidade > input::-webkit-inner-spin-button,
+.campo-unidade > input::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+.campo-unidade > span {
+  position: absolute;
+  right: 0.75rem;
+  top: 50%;
+  translate: 0 -50%;
+  font-size: 13px;
+  color: var(--muted);
+  pointer-events: none;
 }
 @media (prefers-reduced-motion: reduce) {
   .config-marca,

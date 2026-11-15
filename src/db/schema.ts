@@ -39,6 +39,9 @@ export const containerStateEnum = pgEnum("container_state", ["cheio", "vazio", "
 export const tenants = pgTable("tenants", {
   id: id(),
   name: text("name").notNull(),
+  // dados da empresa que o cliente vê no portal de pedidos e no acompanhamento
+  phone: text("phone").notNull().default(""),
+  address: text("address").notNull().default(""),
   active: boolean("active").notNull().default(true),
   // conta o prazo da política: dados de empresa cancelada saem em até 90 dias
   suspendedAt: timestamp("suspended_at", { withTimezone: true }),

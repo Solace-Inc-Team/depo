@@ -2,14 +2,15 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Settings, X } from "lucide-react";
+import { BadgeCheck, Building2, Globe, Settings, SlidersHorizontal, Store, Wallet, X } from "lucide-react";
 
 export const SECOES = [
-  { id: "regras", label: "Regras da casa" },
-  { id: "pagamentos", label: "Pagamentos" },
-  { id: "site", label: "Pedidos pelo site" },
-  { id: "filiais", label: "Filiais" },
-  { id: "assinatura", label: "Assinatura" },
+  { id: "empresa", label: "Empresa", icone: Building2 },
+  { id: "regras", label: "Regras da casa", icone: SlidersHorizontal },
+  { id: "pagamentos", label: "Pagamentos", icone: Wallet },
+  { id: "site", label: "Pedidos pelo site", icone: Globe },
+  { id: "filiais", label: "Filiais", icone: Store },
+  { id: "assinatura", label: "Assinatura", icone: BadgeCheck },
 ] as const;
 type Secao = (typeof SECOES)[number]["id"];
 
@@ -17,14 +18,15 @@ type Secao = (typeof SECOES)[number]["id"];
  * Configurações numa janela sobre a tela em que o dono está: a engrenagem abre, a seção vem no endereço
  * (?config=pagamentos), então "Voltar" fecha e qualquer link pode abrir direto numa seção.
  */
-export function MenuConfig({ secoes, className = "" }: { secoes: Record<Secao, ReactNode>; className?: string }) {
+/** `rodape`: quem é a empresa e o plano, no pé do trilho (só no computador). */
+export function MenuConfig({ secoes, rodape, className = "" }: { secoes: Record<Secao, ReactNode>; rodape?: ReactNode; className?: string }) {
   const path = usePathname();
   const params = useSearchParams();
   const pedida = SECOES.find((s) => s.id === params.get("config"))?.id;
   const janela = useRef<HTMLDialogElement>(null);
   const abriuAqui = useRef(false);
   // a seção na tela troca um instante depois da pedida, para a anterior sair antes da nova chegar
-  const [mostrada, setMostrada] = useState<Secao>(pedida ?? "regras");
+  const [mostrada, setMostrada] = useState<Secao>(pedida ?? "empresa");
   const trocando = !!pedida && pedida !== mostrada;
 
   const endereco = (config?: Secao) => {
@@ -60,10 +62,10 @@ export function MenuConfig({ secoes, className = "" }: { secoes: Record<Secao, R
   // a janela abre no próprio clique; o endereço vem depois (esperar o Next atualizar deixava 170ms parado)
   const abrir = () => {
     abriuAqui.current = true;
-    setMostrada("regras");
+    setMostrada("empresa");
     janela.current?.removeAttribute("data-saindo");
     janela.current?.showModal();
-    window.history.pushState(null, "", endereco("regras"));
+    window.history.pushState(null, "", endereco("empresa"));
   };
   // aberta pela engrenagem: fechar é voltar (o histórico fica limpo); aberta por link: tira o ?config
   const fechar = () => {
@@ -86,25 +88,6 @@ export function MenuConfig({ secoes, className = "" }: { secoes: Record<Secao, R
     t.addEventListener("scroll", bordas, { passive: true });
     return () => t.removeEventListener("scroll", bordas);
   }, [pedida]);
-  // a janela tem a altura da seção mostrada (sem vão embaixo das curtas) e muda de altura deslizando
-  const corpo = useRef<HTMLDivElement>(null);
-  const secao = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const c = corpo.current;
-    const s = secao.current;
-    if (!c || !s) return;
-    const medir = () => {
-      // a seção que já saiu da tela ainda pode avisar o ResizeObserver: aí não há o que medir
-      const conteudo = s.parentElement;
-      if (!s.isConnected || !conteudo) return;
-      const p = getComputedStyle(conteudo);
-      c.style.setProperty("--altura", `${s.offsetHeight + parseFloat(p.paddingTop) + parseFloat(p.paddingBottom)}px`);
-    };
-    medir();
-    const ro = new ResizeObserver(medir);
-    ro.observe(s);
-    return () => ro.disconnect();
-  }, [mostrada]);
   const indice = SECOES.findIndex((s) => s.id === (pedida ?? mostrada));
 
   return (
@@ -138,7 +121,7 @@ export function MenuConfig({ secoes, className = "" }: { secoes: Record<Secao, R
               <X size={16} strokeWidth={1.75} aria-hidden="true" />
             </button>
           </div>
-          <div ref={corpo} className="config-corpo">
+          <div className="config-corpo">
             <nav ref={trilho} aria-label="Seções" className="config-trilho" style={{ "--i": indice } as React.CSSProperties}>
               {/* a marca da seção ativa é uma só e desliza até a escolhida */}
               <span aria-hidden="true" className="config-marca" />
@@ -150,12 +133,14 @@ export function MenuConfig({ secoes, className = "" }: { secoes: Record<Secao, R
                   onClick={() => window.history.replaceState(null, "", endereco(s.id))}
                   className="config-item"
                 >
+                  <s.icone size={15} strokeWidth={1.75} aria-hidden="true" className="shrink-0" />
                   {s.label}
                 </button>
               ))}
+              {rodape && <div className="config-rodape">{rodape}</div>}
             </nav>
             <div className="config-conteudo" data-trocando={trocando || undefined}>
-              <div key={mostrada} ref={secao} className="config-secao">
+              <div key={mostrada} className="config-secao">
                 {secoes[mostrada]}
               </div>
             </div>

@@ -1,3 +1,4 @@
+import { ContatoLoja } from "../../contato-loja";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { pedidoAcompanhado } from "@/domain/portal";
@@ -65,6 +66,7 @@ export default async function Acompanhar({ params }: PageProps<"/pedir/[slug]/ac
       <AtualizaSozinho ativo={!cancelado && !entregue} />
       <p className="text-[13px] text-muted">{loja.name}</p>
       <h1 className="h1">Pedido #{p.number}</h1>
+      <ContatoLoja phone={loja.phone} address={loja.address} />
 
       <section className="panel mt-6 p-5" aria-live="polite">
         <p className="flex items-center gap-2.5 text-[1.375rem] leading-tight font-semibold tracking-[-0.02em]">

@@ -112,7 +112,16 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             {/* configurações do dono (o que se ajusta uma vez): numa engrenagem, fora do menu do dia a dia */}
             {user.role === "dono" && (
               <Suspense>
-                <MenuConfig secoes={await secoesConfig(user.tenantId, user.pagoAte)} className="size-11 lg:size-8" />
+                <MenuConfig
+                  secoes={await secoesConfig(user.tenantId, user.pagoAte)}
+                  rodape={
+                    <>
+                      <p className="truncate text-[12.5px] font-medium text-fg">{user.tenantName}</p>
+                      <p className="text-[11.5px] text-muted">{user.pagoAte ? "Plano mensal" : "Sem mensalidade"}</p>
+                    </>
+                  }
+                  className="size-11 lg:size-8"
+                />
               </Suspense>
             )}
             <TemaBotao className="size-11 lg:size-8" />

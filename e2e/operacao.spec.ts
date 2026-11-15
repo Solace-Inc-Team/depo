@@ -184,7 +184,7 @@ test("cadastro: o dono cria a conta pela página inicial e cai no painel com os 
   // vende gás: os botijões já estão cadastrados, com preço para conferir
   await expect(page.getByText("Confira os preços sugeridos")).toBeVisible();
   await page.goto("/produtos");
-  await expect(page.getByLabel("Nome").first()).toHaveValue("Gás P13");
+  await expect(page.getByLabel("Nome", { exact: true }).first()).toHaveValue("Gás P13");
   await expect(page.getByText("Preço sugerido")).toHaveCount(2);
   await page.getByRole("button", { name: "Preço certo" }).first().click();
   await expect(page.getByText("Preço sugerido")).toHaveCount(1);

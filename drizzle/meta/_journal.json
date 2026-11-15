@@ -183,6 +183,13 @@
       "when": 1794773441059,
       "tag": "0025_mp_orders",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1794782301500,
+      "tag": "0026_empresa_contato",
+      "breakpoints": true
     }
   ]
 }

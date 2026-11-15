@@ -336,11 +336,13 @@ export async function saveSettingsAction(fd: FormData) {
             ? { staffDiscountPct: int(fd, "staffDiscountPct"), lateAfterMinutes: int(fd, "lateAfterMinutes") }
             : section === "pix"
               ? { pixKey: str(fd, "pixKey"), pixName: str(fd, "pixName"), pixCity: str(fd, "pixCity") }
-              : { portalEnabled: fd.get("portalEnabled") === "on" },
+              : section === "empresa"
+                ? { name: str(fd, "empresaNome"), phone: str(fd, "phone"), address: str(fd, "address") }
+                : { portalEnabled: fd.get("portalEnabled") === "on" },
         ),
       ),
     ["/"],
-    section === "pix" ? "Dados do Pix salvos." : section === "portal" ? "Portal atualizado." : "Regras salvas.",
+    section === "pix" ? "Dados do Pix salvos." : section === "portal" ? "Portal atualizado." : section === "empresa" ? "Dados da empresa salvos." : "Regras salvas.",
   );
 }
 

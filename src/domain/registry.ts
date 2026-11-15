@@ -4,6 +4,7 @@ import { tenantTransaction } from "@/db";
 import { auditLog, customerAddresses, customers, orders, products, sessions, tenants, users } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
 import { telefoneSchema } from "./telefone";
+import { formatarTelefone, telefoneValido } from "@/lib/mascara";
 import { hashPassword } from "@/lib/password";
 import { audit } from "./stock";
 import { filialAtiva } from "./filiais";
@@ -109,6 +110,15 @@ export const settingsSchema = z
     pixName: z.string().trim().max(60, "Nome muito longo."),
     pixCity: z.string().trim().max(40, "Cidade muito longa."),
     portalEnabled: z.boolean(),
+    name: z.string().trim().min(2, "Nome da empresa muito curto.").max(80, "O nome pode ter até 80 letras."),
+    // vazio vale: a empresa pode não querer o telefone no portal
+    phone: z
+      .string()
+      .trim()
+      .max(30, "Telefone muito longo.")
+      .refine((v) => !v || telefoneValido(v), "Telefone com DDD, como (11) 91111-1111.")
+      .transform((v) => (v ? formatarTelefone(v) : "")),
+    address: z.string().trim().max(160, "Endereço muito longo."),
   })
   .partial()
   .refine((s) => !s.pixKey || ((s.pixName?.length ?? 0) >= 2 && (s.pixCity?.length ?? 0) >= 2), {
