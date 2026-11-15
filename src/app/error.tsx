@@ -1,10 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { RotateCw, TriangleAlert } from "lucide-react";
+import { recarregarSeVersaoNova } from "@/lib/versao-nova";
 
 // erro inesperado numa página: o servidor já registrou e avisou a Solace
 export default function ErrorPage({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  // tela aberta antes de um deploy: não é erro de verdade, só falta pegar a versão nova
+  useEffect(() => void recarregarSeVersaoNova(error), [error]);
   return (
     <main className="mx-auto flex min-h-[60vh] max-w-md flex-col items-center justify-center px-6 py-16 text-center">
       <TriangleAlert size={28} strokeWidth={1.5} className="text-warn" aria-hidden="true" />

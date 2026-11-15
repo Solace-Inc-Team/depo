@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState, useTransition, type React
 import { CircleAlert, CircleCheck } from "lucide-react";
 import { progress } from "./nav-progress";
 import { confirmar } from "./confirm-dialog";
+import { recarregarSeVersaoNova } from "@/lib/versao-nova";
 import { useSaida } from "./saida";
 
 export type ActionState = { error?: string; ok?: string } | undefined | void;
@@ -126,6 +127,11 @@ export function ActionForm({
             progress(false);
             soltar(button);
             // sem sinal o fetch da ação falha: mantém a tela e o que foi digitado em vez de cair na página de erro
+            // o depo foi atualizado com esta tela aberta: avisa e recarrega em vez de cair na página de erro
+            if (recarregarSeVersaoNova(e, 1500)) {
+              setError("O depo acabou de ser atualizado. Recarregando a tela, envie de novo em seguida.");
+              return;
+            }
             if (e instanceof TypeError || !navigator.onLine) {
               setError("Sem internet. Tente de novo quando o sinal voltar.");
               return;
