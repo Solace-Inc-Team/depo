@@ -2642,3 +2642,8 @@ html:has(.pagina-escura) body {
     animation: none !important;
   }
 }
+
+/* teste lucide-animated: o traço dos ícones novos na mesma espessura dos outros do menu */
+.icone-animado svg {
+  stroke-width: 1.75;
+}
