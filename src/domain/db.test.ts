@@ -603,6 +603,11 @@ test("portal: só com portal ligado, reconhece o cliente pelo telefone e não us
   await m.registry.saveSettings(A.ctx, { portalEnabled: true });
   await assert.rejects(m.registry.saveSettings(A.ctx, { pixKey: "chave@x.com", pixName: "", pixCity: "" }), /nome do recebedor/);
   assert.equal((await m.portal.portalTenant(t.slug))?.id, A.t.id);
+  // mensalidade pausada: o portal some junto, ninguém na loja veria o pedido
+  const [{ antes }] = await db.select({ antes: tenants.pagoAte }).from(tenants).where(eq(tenants.id, A.t.id));
+  await db.update(tenants).set({ pagoAte: "2000-01-01" }).where(eq(tenants.id, A.t.id));
+  assert.equal(await m.portal.portalTenant(t.slug), null);
+  await db.update(tenants).set({ pagoAte: antes }).where(eq(tenants.id, A.t.id));
   assert.ok((await m.portal.portalProducts(A.t.id, A.branch.id)).every((p) => p.name !== B.product.name));
 
   const input = {

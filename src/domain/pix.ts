@@ -223,6 +223,18 @@ async function cancelarCobranca(tenantId: string, orderId: string) {
   }
 }
 
+/**
+ * Pedido do site no Pix sem como gerar o código (Mercado Pago fora e sem chave Pix): em vez de esperar um pagamento
+ * que o cliente não tem como fazer, entra na fila e o Pix é pago na entrega.
+ */
+export const liberarSemPix = (tenantId: string, orderId: string) =>
+  withTenant(tenantId, () =>
+    db
+      .update(orders)
+      .set({ status: "aberto" })
+      .where(and(eq(orders.tenantId, tenantId), eq(orders.id, orderId), eq(orders.status, "aguardando_pagamento"))),
+  );
+
 export async function cancelarPixVencidos(tenantId: string) {
   const vencidos = await withTenant(tenantId, () =>
     db

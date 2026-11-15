@@ -16,7 +16,7 @@ import { clientIp } from "@/lib/request";
 import type { ActionState } from "@/components/action-form";
 import { createOrder, dispatchOrder, deliverOrder, cancelOrder, refundOrder, newOrderSchema, reportOccurrence, reassignOrder, confirmPix } from "@/domain/orders";
 import { inscreverAviso, placePortalOrder, portalOrderSchema, portalTenant } from "@/domain/portal";
-import { conectarMercadoPago, desconectarMercadoPago, pixDoPedido } from "@/domain/pix";
+import { conectarMercadoPago, desconectarMercadoPago, liberarSemPix, pixDoPedido } from "@/domain/pix";
 import { cancelarConta, criarConta, pagarConta } from "@/domain/contas";
 import { devolverVasilhame, registrarComodato } from "@/domain/comodato";
 import { createExpense, expenseSchema, voidExpense } from "@/domain/expenses";
@@ -263,7 +263,7 @@ export async function avisoPedidoAction(slug: string, codigo: string, inscricao:
   }
 }
 
-export type PortalResult = { error?: string; number?: number; totalCents?: number; pix?: string | null; pixAutomatico?: boolean; acompanhar?: string };
+export type PortalResult = { error?: string; number?: number; totalCents?: number; pix?: string | null; pixAutomatico?: boolean; pixNaEntrega?: boolean; acompanhar?: string };
 
 /** Pedido do portal público: sem login, então com limite por IP contra abuso. */
 export async function portalOrderAction(slug: string, filial: string, fd: FormData): Promise<PortalResult> {
@@ -291,11 +291,14 @@ export async function portalOrderAction(slug: string, filial: string, fd: FormDa
     );
     revalidatePath("/", "layout");
     const pix = order.paymentMethod === "pix" ? await pixDoPedido(t.id, order.id) : null;
+    const pixNaEntrega = order.paymentMethod === "pix" && !pix;
+    if (pixNaEntrega) await liberarSemPix(t.id, order.id);
     return {
       number: order.number,
       totalCents: order.totalCents,
       pix: pix?.codigo ?? null,
       pixAutomatico: pix?.automatico ?? false,
+      pixNaEntrega,
       acompanhar: `/pedir/${slug}/acompanhar/${order.trackingId}`,
     };
   } catch (e) {

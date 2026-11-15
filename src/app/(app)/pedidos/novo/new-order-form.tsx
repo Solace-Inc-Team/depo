@@ -57,7 +57,7 @@ export function NewOrderForm({
         e.preventDefault();
         searchRef.current?.focus();
       }
-      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && !e.repeat) {
         e.preventDefault();
         modeRef.current?.form?.requestSubmit();
       }

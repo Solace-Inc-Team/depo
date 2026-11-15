@@ -60,6 +60,7 @@ export function PortalForm({
         totalCents={result.totalCents!}
         pix={result.pix ?? null}
         pixAutomatico={!!result.pixAutomatico}
+        pixNaEntrega={!!result.pixNaEntrega}
         acompanhar={result.acompanhar}
         lines={products.filter((p) => qty[p.id] > 0).map((p) => `${qty[p.id]} x ${p.name}`)}
       />
@@ -218,7 +219,7 @@ export function PortalForm({
   );
 }
 
-function Done({ number, totalCents, pix, pixAutomatico, lines, acompanhar }: { number: number; totalCents: number; pix: string | null; pixAutomatico: boolean; lines: string[]; acompanhar?: string }) {
+function Done({ number, totalCents, pix, pixAutomatico, pixNaEntrega, lines, acompanhar }: { number: number; totalCents: number; pix: string | null; pixAutomatico: boolean; pixNaEntrega: boolean; lines: string[]; acompanhar?: string }) {
   const [qr, setQr] = useState<string>();
   useEffect(() => {
     if (pix) QRCode.toString(pix, { type: "svg", margin: 1, width: 200 }).then(setQr);
@@ -241,7 +242,9 @@ function Done({ number, totalCents, pix, pixAutomatico, lines, acompanhar }: { n
           ? pixAutomatico
             ? "Pague o Pix em até 15 minutos; assim que ele cair, a loja separa para entrega."
             : "Pague o Pix; assim que a loja confirmar o pagamento, ela separa para entrega."
-          : "A loja já está vendo seu pedido e vai separar para entrega."}
+          : pixNaEntrega
+            ? "Não deu para gerar o Pix agora. A loja já está vendo seu pedido, e você paga o Pix na entrega."
+            : "A loja já está vendo seu pedido e vai separar para entrega."}
       </p>
       {/* o caminho do pedido, num link que dá para guardar ou mandar para alguém da casa */}
       {acompanhar && (

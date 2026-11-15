@@ -65,6 +65,8 @@ export function ActionForm({
   salvaAoMudar?: boolean;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
+  // envio em andamento: o fieldset desabilitado não segura requestSubmit (Ctrl+Enter repetido criava pedidos em dobro)
+  const enviando = useRef(false);
   // salvando sozinho: guarda qual campo mudou, para o aviso dizer o quê e o próprio campo confirmar
   const mudou = useRef<Campo | null>(null);
   useEffect(() => {
@@ -101,6 +103,7 @@ export function ActionForm({
       noValidate
       onSubmit={async (e) => {
         e.preventDefault();
+        if (enviando.current && !salvaAoMudar) return;
         const form = e.currentTarget;
         // o botão que enviou mostra que está esperando e depois o ✓ (estilos em globals.css)
         const button = (e.nativeEvent as SubmitEvent).submitter;
@@ -119,54 +122,59 @@ export function ActionForm({
         const fd = new FormData(form);
         button?.setAttribute("data-state", "loading");
         progress(true);
+        enviando.current = true;
         start(async () => {
-          let r: ActionState;
           try {
-            r = await action(fd);
-          } catch (e) {
+            let r: ActionState;
+            try {
+              r = await action(fd);
+            } catch (e) {
+              progress(false);
+              soltar(button);
+              // sem sinal o fetch da ação falha: mantém a tela e o que foi digitado em vez de cair na página de erro
+              // o depo foi atualizado com esta tela aberta: avisa e recarrega em vez de cair na página de erro
+              if (recarregarSeVersaoNova(e, 1500)) {
+                setError("O depo acabou de ser atualizado. Recarregando a tela, envie de novo em seguida.");
+                return;
+              }
+              if (e instanceof TypeError || !navigator.onLine) {
+                setError("Sem internet. Tente de novo quando o sinal voltar.");
+                return;
+              }
+              throw e;
+            }
+            // se a ação trocou de tela a barra completa sozinha; se não, completa aqui
             progress(false);
-            soltar(button);
-            // sem sinal o fetch da ação falha: mantém a tela e o que foi digitado em vez de cair na página de erro
-            // o depo foi atualizado com esta tela aberta: avisa e recarrega em vez de cair na página de erro
-            if (recarregarSeVersaoNova(e, 1500)) {
-              setError("O depo acabou de ser atualizado. Recarregando a tela, envie de novo em seguida.");
+            setError(r?.error);
+            if (r?.error) {
+              soltar(button);
               return;
             }
-            if (e instanceof TypeError || !navigator.onLine) {
-              setError("Sem internet. Tente de novo quando o sinal voltar.");
-              return;
-            }
-            throw e;
+            button?.setAttribute("data-state", "done");
+            setTimeout(() => soltar(button), 1200);
+            // o aviso fica fora do form: muitas ações trocam a tela e o form some junto
+            const campo = mudou.current;
+            mudou.current = null;
+            if (salvaAoMudar && campo) {
+              // "Galão de água 20L: estoque mínimo 16" em vez de um "atualizado" genérico
+              const nome = (form.querySelector<HTMLInputElement>('input[name="name"]')?.value ?? "").trim();
+              const rotulo = (campo.labels?.[0]?.textContent ?? "").replace(/\s*\(.*?\)\s*/g, " ").trim().toLowerCase();
+              const valor = campo instanceof HTMLInputElement && campo.type === "checkbox" ? (campo.checked ? "sim" : "não") : campo.value;
+              toast(nome && rotulo ? `${nome}: ${rotulo} ${valor}` : (r?.ok ?? "Salvo."));
+              const alvo = campo instanceof HTMLInputElement && campo.type === "checkbox" ? campo.parentElement : campo;
+              alvo?.classList.remove("salvou");
+              void (alvo as HTMLElement | null)?.offsetWidth;
+              alvo?.classList.add("salvou");
+            } else if (r?.ok) toast(r.ok);
+            const menu = form.closest("details");
+            if (menu) menu.open = false;
+            // dentro de uma JanelaAcao: deu certo, a janela fecha
+            const janela = form.closest("dialog");
+            janela?.dispatchEvent(new Event("fechar"));
+            if (reset || menu || janela) form.reset();
+          } finally {
+            enviando.current = false;
           }
-          // se a ação trocou de tela a barra completa sozinha; se não, completa aqui
-          progress(false);
-          setError(r?.error);
-          if (r?.error) {
-            soltar(button);
-            return;
-          }
-          button?.setAttribute("data-state", "done");
-          setTimeout(() => soltar(button), 1200);
-          // o aviso fica fora do form: muitas ações trocam a tela e o form some junto
-          const campo = mudou.current;
-          mudou.current = null;
-          if (salvaAoMudar && campo) {
-            // "Galão de água 20L: estoque mínimo 16" em vez de um "atualizado" genérico
-            const nome = (form.querySelector<HTMLInputElement>('input[name="name"]')?.value ?? "").trim();
-            const rotulo = (campo.labels?.[0]?.textContent ?? "").replace(/\s*\(.*?\)\s*/g, " ").trim().toLowerCase();
-            const valor = campo instanceof HTMLInputElement && campo.type === "checkbox" ? (campo.checked ? "sim" : "não") : campo.value;
-            toast(nome && rotulo ? `${nome}: ${rotulo} ${valor}` : (r?.ok ?? "Salvo."));
-            const alvo = campo instanceof HTMLInputElement && campo.type === "checkbox" ? campo.parentElement : campo;
-            alvo?.classList.remove("salvou");
-            void (alvo as HTMLElement | null)?.offsetWidth;
-            alvo?.classList.add("salvou");
-          } else if (r?.ok) toast(r.ok);
-          const menu = form.closest("details");
-          if (menu) menu.open = false;
-          // dentro de uma JanelaAcao: deu certo, a janela fecha
-          const janela = form.closest("dialog");
-          janela?.dispatchEvent(new Event("fechar"));
-          if (reset || menu || janela) form.reset();
         });
       }}
     >

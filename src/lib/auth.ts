@@ -37,6 +37,8 @@ export async function destroySession() {
   const token = jar.get(COOKIE)?.value;
   if (token) await db.delete(sessions).where(eq(sessions.id, sha(token)));
   jar.delete(COOKIE);
+  // a filial escolhida é de quem saiu: o próximo a entrar neste navegador começa na dele
+  jar.delete(FILIAL_COOKIE);
 }
 
 export type SessionUser = Ctx & {

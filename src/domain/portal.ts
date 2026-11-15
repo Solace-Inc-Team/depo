@@ -7,17 +7,20 @@ import { createOrder } from "./orders";
 import { audit, disponivelNaLoja } from "./stock";
 import { telefoneSchema } from "./telefone";
 import { salvarInscricao } from "./aviso";
+import { situacaoAssinatura } from "@/lib/plano";
+import { todayISO } from "@/lib/period";
 
 /**
- * Empresa do portal público. Só aparece se estiver ativa e com o portal ligado pelo dono.
+ * Empresa do portal público. Só aparece se estiver ativa, com o portal ligado pelo dono e com a mensalidade em dia:
+ * pausada, ninguém na loja abre o sistema para ver o pedido.
  * Cada filial tem seu link (?filial=<slug>); sem filial, ou com uma que não existe mais, o pedido vai para a principal.
  */
 export async function portalTenant(slug: string, filial?: string) {
   const [t] = await db
-    .select({ id: tenants.id, name: tenants.name, pixKey: tenants.pixKey, pixName: tenants.pixName, pixCity: tenants.pixCity, mp: sql<boolean>`${tenants.mpTokenEnc} is not null` })
+    .select({ id: tenants.id, name: tenants.name, pixKey: tenants.pixKey, pixName: tenants.pixName, pixCity: tenants.pixCity, mp: sql<boolean>`${tenants.mpTokenEnc} is not null`, pagoAte: tenants.pagoAte })
     .from(tenants)
     .where(and(eq(tenants.slug, slug), eq(tenants.active, true), eq(tenants.portalEnabled, true)));
-  if (!t) return null;
+  if (!t || situacaoAssinatura(t.pagoAte, todayISO())?.bloqueado) return null;
   const lojas = await db
     .select({ id: branches.id, name: branches.name, slug: branches.slug, main: branches.main })
     .from(branches)
