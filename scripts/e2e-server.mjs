@@ -3,6 +3,7 @@
 import postgres from "postgres";
 import net from "node:net";
 import { spawn } from "node:child_process";
+import { rmSync } from "node:fs";
 
 const ADMIN_URL = process.env.TEST_PG_URL ?? "postgres://app:app@localhost:5433/postgres";
 const DB = "gestao_e2e";
@@ -21,6 +22,10 @@ const admin = postgres(ADMIN_URL, { max: 1, onnotice: () => {} });
 await admin.unsafe(`DROP DATABASE IF EXISTS ${DB} WITH (FORCE)`);
 await admin.unsafe(`CREATE DATABASE ${DB} ENCODING 'UTF8' TEMPLATE template0`);
 await admin.end();
+
+// a compilação guardada de uma rodada anterior (com o código de antes) fazia o login recarregar sem parar:
+// cada rodada começa do zero
+rmSync(".next-e2e", { recursive: true, force: true });
 
 const next = spawn("npx next dev -p 3100", {
   stdio: "inherit",
