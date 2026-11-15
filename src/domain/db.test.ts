@@ -1328,3 +1328,19 @@ test("mensalidade: teste grátis no cadastro, Pix na conta da Solace, pago soma 
   assert.equal(await ass.pixEmAberto(tenant.id), null);
   delete process.env.MP_TOKEN_SOLACE;
 });
+
+test("admin da Solace nasce com filial: sem ela o login quebrava ao procurar onde a pessoa trabalha", async () => {
+  const { eq } = await import("drizzle-orm");
+  const { db } = m.db;
+  const { users, branches } = m.schema;
+  const email = `admin-${Date.now()}@teste`;
+  assert.equal(await m.platform.ensurePlatformAdmin(email, "senha-forte-123"), true);
+  const [u] = await db.select().from(users).where(eq(users.email, email));
+  const filiais = await db.select().from(branches).where(eq(branches.tenantId, u.tenantId));
+  assert.deepEqual(
+    filiais.map((b) => [b.name, b.main, b.active]),
+    [["Principal", true, true]],
+  );
+  // de novo não cria nada: o admin já existe
+  assert.equal(await m.platform.ensurePlatformAdmin(email, "senha-forte-123"), false);
+});

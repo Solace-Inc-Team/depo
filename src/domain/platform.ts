@@ -209,6 +209,8 @@ export async function ensurePlatformAdmin(email: string, password: string) {
   const passwordHash = await hashPassword(password);
   await db.transaction(async (tx) => {
     const [t] = await tx.insert(tenants).values({ name: "Solace", slug: slugFor("Solace") }).returning();
+    // toda empresa precisa de uma filial: sem ela o login não acha onde a pessoa trabalha
+    await tx.insert(branches).values({ tenantId: t.id, name: "Principal", slug: "principal", main: true });
     await tx.insert(users).values({
       tenantId: t.id,
       name: "Administrador Solace",
