@@ -234,32 +234,35 @@ export default function Inicio() {
         </section>
 
         <section className="mx-auto grid max-w-6xl gap-16 px-4 pt-32 sm:px-6 sm:pt-36 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-20">
+          {/* o preço no mesmo cartão com luz da vitrine logo acima */}
           <div id="preco" className="scroll-mt-24">
-            <p className="text-[13px] font-medium text-accent">Preço</p>
-            <h2 className="reveal mt-3 text-[2rem] leading-[1.08] font-semibold tracking-[-0.04em] sm:text-[2.25rem]">
-              {PRECO ? (
-                <>
-                  {PRECO}
-                  <span className="text-[1.125rem] font-medium tracking-normal text-muted"> por mês</span>
-                </>
-              ) : (
-                "Sob consulta"
-              )}
-            </h2>
-            <p className="mt-3 text-muted">
-              {PRECO
-                ? `Com tudo o que está nesta página, para a equipe inteira. Os primeiros ${DIAS_GRATIS} dias são grátis.`
-                : "Conte quantos entregadores e quantos pedidos por dia a sua revenda tem, e a gente responde com o valor."}
-            </p>
-            <ul className="mt-6 space-y-2.5 border-t border-line pt-6 text-[15px]">
-              {INCLUSO.map((x) => (
-                <li key={x} className="flex items-center gap-3">
-                  <Check size={15} strokeWidth={2.25} className="shrink-0 text-accent" aria-hidden="true" />
-                  {x}
-                </li>
-              ))}
-            </ul>
-            <BotaoContato className="mt-8" />
+            <Peca className="bento">
+              <p className="text-[13px] font-medium text-accent">Preço</p>
+              <h2 className="reveal mt-3 text-[2rem] leading-[1.08] font-semibold tracking-[-0.04em] sm:text-[2.25rem]">
+                {PRECO ? (
+                  <>
+                    {PRECO}
+                    <span className="text-[1.125rem] font-medium tracking-normal text-muted"> por mês</span>
+                  </>
+                ) : (
+                  "Sob consulta"
+                )}
+              </h2>
+              <p className="mt-3 text-muted">
+                {PRECO
+                  ? `Com tudo o que está nesta página, para a equipe inteira. Os primeiros ${DIAS_GRATIS} dias são grátis.`
+                  : "Conte quantos entregadores e quantos pedidos por dia a sua revenda tem, e a gente responde com o valor."}
+              </p>
+              <ul className="mt-6 space-y-2.5 border-t border-line pt-6 text-[15px]">
+                {INCLUSO.map((x) => (
+                  <li key={x} className="flex items-center gap-3">
+                    <Check size={15} strokeWidth={2.25} className="shrink-0 text-accent" aria-hidden="true" />
+                    {x}
+                  </li>
+                ))}
+              </ul>
+              <BotaoContato className="mt-8" />
+            </Peca>
           </div>
 
           <div id="perguntas" className="scroll-mt-24">

@@ -1133,8 +1133,9 @@ body[data-confirmando] .deliver-btn {
     animation-timeline: scroll();
     animation-range: 0 80px;
   }
+  /* títulos das seções: o mesmo "Texts reveal" da chegada (12px, desfoque de 3px), puxado pela rolagem */
   .reveal {
-    animation: hero-up linear both;
+    animation: texto-revela cubic-bezier(0.22, 1, 0.36, 1) both;
     animation-timeline: view();
     animation-range: entry 0% entry 70%;
   }
