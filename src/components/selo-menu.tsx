@@ -8,7 +8,35 @@ import { LiveNumber } from "./live-number";
  * transitions.dev: desliza na diagonal (260ms) e cresce com uma mola leve (500ms); sai encolhendo em 180ms.
  * Enquanto está à vista, o número rola quando muda. O leitor de tela ouve "3 esperando saída" junto do item.
  */
-export function SeloMenu({ n }: { n: number }) {
+export function SeloMenu({ n: doServidor }: { n: number }) {
+  // o servidor manda o número a cada tela; entre uma tela e outra o selo pergunta sozinho, para um pedido que
+  // chegou pelo site aparecer em quem está parado em outra tela
+  const [vivo, setVivo] = useState<{ base: number; n: number } | null>(null);
+  const n = vivo && vivo.base === doServidor ? vivo.n : doServidor;
+
+  useEffect(() => {
+    let parado = false;
+    const conferir = async () => {
+      if (document.hidden) return;
+      try {
+        const r = await fetch("/entregas/fila", { cache: "no-store" });
+        if (r.ok && !parado) {
+          const { n: novo } = (await r.json()) as { n: number };
+          setVivo({ base: doServidor, n: novo });
+        }
+      } catch {
+        // sem sinal: fica o último número até a próxima conferida
+      }
+    };
+    const id = setInterval(conferir, 15000);
+    document.addEventListener("visibilitychange", conferir);
+    return () => {
+      parado = true;
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", conferir);
+    };
+  }, [doServidor]);
+
   // guarda o último número para o selo sair mostrando o que tinha, em vez de virar 0 antes de sumir
   const [mostrado, setMostrado] = useState(n);
   useEffect(() => {
