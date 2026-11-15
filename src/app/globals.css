@@ -1669,26 +1669,41 @@ body[data-confirmando] .deliver-btn {
   }
 }
 
-/* campo que faltou preencher: borda vermelha e uma chacoalhada curta */
+/* campo que faltou preencher: borda vermelha e o tremor do transitions.dev ("Error state shake") */
 .input[aria-invalid="true"] {
   border-color: var(--danger);
   box-shadow: 0 0 0 3px var(--danger-soft);
+  transition:
+    border-color 280ms ease-out,
+    box-shadow 280ms ease-out;
 }
 /* com o foco no campo que errou, o anel de foco não soma um azul ao vermelho */
 .input[aria-invalid="true"]:focus-visible {
   outline-color: var(--danger);
 }
+/* 6px para um lado, 6px para o outro, passa 4px e assenta: 80+80+60+60ms, cada trecho com a sua desaceleração */
 .campo-treme {
-  animation: treme 360ms ease-in-out;
+  animation: treme 280ms linear;
 }
 @keyframes treme {
-  20%,
-  60% {
-    translate: -4px 0;
+  0% {
+    translate: 0 0;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
   }
-  40%,
-  80% {
+  28.57% {
+    translate: 6px 0;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  57.14% {
+    translate: -6px 0;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  78.57% {
     translate: 4px 0;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  100% {
+    translate: 0 0;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -2186,6 +2201,194 @@ input[type="date"].input:hover::-webkit-calendar-picker-indicator {
   accent-color: var(--marca);
 }
 
+/* Toggle do transitions.dev: trilho 44x22, bolinha em pílula que passa 1px do fim e assenta (350ms) */
+.alternar {
+  --alternar-ida: 14.66px;
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 44px;
+  height: 22px;
+}
+.alternar input {
+  appearance: none;
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fg) 15%, transparent);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.alternar input:checked {
+  background: rgb(23 71 198 / 0.9);
+}
+.alternar input:focus-visible {
+  outline: 2px solid var(--marca);
+  outline-offset: 2px;
+}
+.alternar-bola {
+  position: absolute;
+  top: 3.67px;
+  left: 3.67px;
+  width: 22px;
+  height: 14.67px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow:
+    0 2px 6px rgb(0 0 0 / 0.05),
+    0 4px 42px rgb(0 0 0 / 0.06);
+  pointer-events: none;
+}
+.alternar input:checked + .alternar-bola {
+  translate: var(--alternar-ida) 0;
+}
+.alternar[data-mexeu] input + .alternar-bola {
+  animation: alternar-desliga 350ms cubic-bezier(0.34, 1.35, 0.64, 1) both;
+}
+.alternar[data-mexeu] input:checked + .alternar-bola {
+  animation-name: alternar-liga;
+}
+@keyframes alternar-liga {
+  0% {
+    translate: 0 0;
+  }
+  55% {
+    translate: calc(var(--alternar-ida) + 1px) 0;
+  }
+  100% {
+    translate: var(--alternar-ida) 0;
+  }
+}
+@keyframes alternar-desliga {
+  0% {
+    translate: var(--alternar-ida) 0;
+  }
+  55% {
+    translate: -1px 0;
+  }
+  100% {
+    translate: 0 0;
+  }
+}
+
+/* Tooltip do transitions.dev: entra em 150ms depois de 80ms, viaja entre os botões em 160ms e sai em 50ms */
+.dicas {
+  position: relative;
+}
+.dica {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0;
+  overflow: hidden;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #fff;
+  color: #2f2f2f;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 18px;
+  white-space: nowrap;
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.06),
+    0 2px 6px 0 rgb(0 0 0 / 0.05),
+    0 4px 42px 0 rgb(0 0 0 / 0.06);
+  opacity: 0;
+  translate: var(--dica-x, 0px) 0;
+  scale: 0.98;
+  transform-origin: 50% 100%;
+  pointer-events: none;
+  transition:
+    opacity 50ms ease-out,
+    scale 50ms ease-out,
+    translate 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.dicas[data-lado="baixo"] > .dica {
+  top: calc(100% + 8px);
+  bottom: auto;
+  transform-origin: 50% 0;
+}
+.dica[data-show="true"] {
+  opacity: 1;
+  scale: 1;
+  transition:
+    opacity 150ms ease-out 80ms,
+    scale 150ms ease-out 80ms,
+    translate 160ms cubic-bezier(0.22, 1, 0.36, 1),
+    width 160ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+:root[data-tema="escuro"] .dica,
+.pagina-escura .dica {
+  background: #222;
+  color: #f0f0f0;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.03),
+    0 1px 1px 0 rgb(0 0 0 / 0.08),
+    0 2px 6px 0 rgb(0 0 0 / 0.15);
+}
+@media (hover: none) {
+  .dica {
+    display: none;
+  }
+}
+
+/* Checkbox check do transitions.dev: a caixa enche em 150ms e o check se desenha em 350ms */
+.marcar {
+  position: relative;
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+}
+.marcar input {
+  appearance: none;
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  border-radius: 6px;
+  background: var(--surface);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fg) 18%, transparent);
+  cursor: pointer;
+  transition:
+    background 150ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.marcar input:checked {
+  background: var(--fg);
+  box-shadow: inset 0 0 0 1px var(--fg);
+}
+.marcar input:focus-visible {
+  outline: 2px solid var(--marca);
+  outline-offset: 2px;
+}
+.marcar svg {
+  position: relative;
+  overflow: visible;
+  pointer-events: none;
+}
+.marcar path {
+  stroke: var(--surface);
+  stroke-dasharray: 16;
+  stroke-dashoffset: 16;
+  transition: stroke-dashoffset 150ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.marcar input:checked + svg path {
+  stroke-dashoffset: 0;
+  transition-duration: 350ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  .alternar[data-mexeu] input + .alternar-bola {
+    animation: none;
+  }
+}
+
 /* barra do total no portal do cliente: sobe da borda de baixo quando o primeiro produto entra */
 .barra-sobe {
   animation: barra-sobe var(--dur-slow) var(--ease-chegada) both;
@@ -2375,20 +2578,16 @@ input[type="date"].input:hover::-webkit-calendar-picker-indicator {
   }
 }
 
-/* mosaico de detalhes da página inicial: peças com a mesma borda fina, e a borda ganha luz com o mouse */
+/* mosaico de detalhes da página inicial; a borda e a luz que segue o cursor vêm do Spotlight Card (peca.tsx) */
 .bento {
   overflow: hidden;
   padding: 1.5rem;
-  border: 1px solid var(--line);
   border-radius: 1rem;
   background: var(--surface);
-  transition:
-    border-color var(--dur) var(--ease-chegada),
-    box-shadow var(--dur-slow) var(--ease-chegada);
+  transition: box-shadow var(--dur-slow) var(--ease-chegada);
 }
 @media (hover: hover) {
   .bento:hover {
-    border-color: color-mix(in srgb, var(--fg) 18%, var(--line));
     box-shadow: 0 12px 32px -16px color-mix(in srgb, #000 22%, transparent);
   }
 }
@@ -2408,26 +2607,6 @@ input[type="date"].input:hover::-webkit-calendar-picker-indicator {
   color-scheme: dark;
   color: var(--fg);
   background: color-mix(in srgb, var(--bg) 55%, #000);
-}
-/* luz que segue o cursor dentro da peça do mosaico; aparece só com o mouse em cima */
-.bento {
-  position: relative;
-  isolation: isolate;
-}
-.bento::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  background: radial-gradient(260px circle at var(--luz-x, 50%) var(--luz-y, 50%), color-mix(in srgb, var(--luz, var(--marca)) 12%, transparent), transparent 70%);
-  opacity: 0;
-  transition: opacity var(--dur-slow) var(--ease-chegada);
-}
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  .bento:hover::before {
-    opacity: 1;
-  }
 }
 /* âmbar só onde é alerta: o vasilhame abaixo do mínimo no mosaico */
 .estoque-mosaico .nivel-vasilhame.text-danger {

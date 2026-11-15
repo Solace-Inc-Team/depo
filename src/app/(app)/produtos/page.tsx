@@ -4,6 +4,7 @@ import { ActionForm } from "@/components/action-form";
 import { saveProductAction } from "@/app/actions";
 import { PageHeader } from "@/components/ui";
 import { centsToInput } from "@/lib/money";
+import { Alternar } from "@/components/controles";
 
 export const metadata = { title: "Produtos e preços" };
 
@@ -34,7 +35,7 @@ function Fields({ p = {}, rotulos = true }: { p?: P; rotulos?: boolean }) {
       </div>
       {/* no computador a caixa tem a altura do campo, para o texto alinhar com os valores; no celular, altura de toque */}
       <label className="flex min-h-11 items-center gap-2 lg:min-h-9">
-        <input type="checkbox" name="returnable" defaultChecked={p.returnable ?? true} /> Retornável
+        <Alternar name="returnable" defaultChecked={p.returnable ?? true} /> Retornável
       </label>
     </>
   );
@@ -57,7 +58,7 @@ export default async function Produtos() {
             <input type="hidden" name="id" value={p.id} />
             <Fields p={p} rotulos={i === 0} />
             <label className="flex min-h-11 items-center gap-2 lg:min-h-9">
-              <input type="checkbox" name="active" defaultChecked={p.active} /> À venda
+              <Alternar name="active" defaultChecked={p.active} /> À venda
             </label>
             {/* preço que veio com o cadastro: se já está certo, um clique confirma (salvar tira a marca) */}
             {p.precoSugerido && <button className="btn btn-sm tap">Preço certo</button>}

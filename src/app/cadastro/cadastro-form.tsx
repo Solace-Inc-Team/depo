@@ -6,6 +6,7 @@ import { ArrowLeft, ArrowRight, Droplet, Eye, EyeOff, Flame } from "lucide-react
 import { cadastrarAction } from "@/app/actions";
 import { validarCampos } from "@/components/action-form";
 import { Aparece } from "@/components/saida";
+import { Marcar } from "@/components/controles";
 
 const VENDE = [
   { valor: "agua", rotulo: "Água", icones: [Droplet] },
@@ -178,7 +179,7 @@ export function CadastroForm() {
           {/* só robô preenche: fica fora da tela e fora do Tab */}
           <input name="site" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute -left-[9999px] h-px w-px opacity-0" />
           <label className="flex items-start gap-2.5 text-[13px] text-muted">
-            <input type="checkbox" name="agree" required aria-label="Aceito os Termos de uso e a Política de privacidade" className="mt-0.5" />
+            <Marcar name="agree" required aria-label="Aceito os Termos de uso e a Política de privacidade" className="mt-0.5" />
             <span>
               Li e aceito os <Link href="/termos" target="_blank" className="alvo font-medium text-fg underline underline-offset-2">Termos de uso</Link> e a{" "}
               <Link href="/privacidade" target="_blank" className="alvo font-medium whitespace-nowrap text-fg underline underline-offset-2">Política de privacidade</Link>.

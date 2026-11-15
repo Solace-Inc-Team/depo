@@ -11,6 +11,7 @@ import { CheckDrawn } from "@/components/ui";
 import { validarCampos } from "@/components/action-form";
 import type { PortalResult } from "@/app/actions";
 import { Aparece, useSaida } from "@/components/saida";
+import { Marcar } from "@/components/controles";
 
 type Product = { id: string; name: string; priceCents: number; returnable: boolean; containerPriceCents: number; disponivel: number };
 
@@ -114,7 +115,7 @@ export function PortalForm({
                   </Aparece>
                   <Aparece quando={n > 0 && p.returnable}>
                     <label className="mt-2 flex min-h-11 items-center gap-2 text-sm">
-                      <input type="checkbox" checked={!!noBottle[p.id]} onChange={(e) => setNoBottle((b) => ({ ...b, [p.id]: e.target.checked }))} />
+                      <Marcar checked={!!noBottle[p.id]} onChange={(e) => setNoBottle((b) => ({ ...b, [p.id]: e.target.checked }))} />
                       Não tenho vasilhame vazio para trocar
                       {p.containerPriceCents > 0 && <span className="text-muted">(+{formatBRL(p.containerPriceCents)} cada)</span>}
                     </label>

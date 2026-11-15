@@ -7,6 +7,7 @@ import { formatBRL, parseBRL } from "@/lib/money";
 import { LiveNumber } from "@/components/live-number";
 import { Aparece } from "@/components/saida";
 import { Plus } from "lucide-react";
+import { Marcar } from "@/components/controles";
 
 type Product = { id: string; name: string; priceCents: number; containerPriceCents: number; returnable: boolean; available: number; reserved: number };
 type Customer = { id: string; name: string; phone: string; address: string; addresses?: { id: string; label: string; address: string }[] };
@@ -237,8 +238,7 @@ export function NewOrderForm({
                   </div>
                   <Aparece quando={n > 0 && p.returnable}>
                     <label className="mt-2 flex items-center gap-2 text-sm">
-                      <input
-                        type="checkbox"
+                      <Marcar
                         checked={!!keepsBottle[p.id]}
                         onChange={(e) => setKeepsBottle((k) => ({ ...k, [p.id]: e.target.checked }))}
                       />

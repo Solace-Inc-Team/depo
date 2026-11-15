@@ -11,6 +11,7 @@ import { roleLabel } from "@/components/ui";
 import { PageTransition } from "@/components/page-transition";
 import { SeletorFilial } from "@/components/seletor-filial";
 import { MenuConfig } from "@/components/menu-config";
+import { Dicas } from "@/components/dicas";
 import { secoesConfig } from "./configuracoes/secoes";
 import { Suspense } from "react";
 import { dataBR, situacaoAssinatura } from "@/lib/plano";
@@ -88,10 +89,10 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="app-shell lg:grid lg:min-h-screen lg:grid-cols-[15rem_1fr]">
       <aside className="relative z-20 border-b border-line lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:border-r lg:border-b-0">
-        <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-3 lg:pt-5">
+        <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-3 lg:px-5 lg:pt-5">
           <MarcaDaSessao />
           {/* o tema fica no alto nas duas larguras; Sair aqui só no celular (no computador está no rodapé) */}
-          <div className="flex items-center gap-1">
+          <Dicas lado="baixo" className="flex items-center gap-1">
             {/* no celular e no tablet não há rodapé lateral: quem está logado aparece aqui, e o toque leva a trocar a senha */}
             <Link
               href="/senha"
@@ -114,7 +115,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             <form action={logout} className="lg:hidden">
               <button className="btn btn-sm tap">Sair</button>
             </form>
-          </div>
+          </Dicas>
         </div>
         {user.branches.length > 1 && user.role === "dono" ? (
           // o dono com mais de uma filial troca de filial aqui: a empresa e a filial num botão só, em qualquer largura
@@ -151,19 +152,19 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             <p className="truncate text-[13px] font-medium">{user.name.split(" ")[0]}</p>
             <p className="text-xs text-muted">{roleLabel[user.role]}</p>
           </div>
-          <div className="-mr-1.5 flex shrink-0">
-            <Link href="/ajuda" title="Ajuda" aria-label="Ajuda" className="grid size-8 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
+          <Dicas className="-mr-1.5 flex shrink-0">
+            <Link href="/ajuda" data-dica="Ajuda" aria-label="Ajuda" className="grid size-8 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
               <CircleHelp size={15} strokeWidth={1.75} />
             </Link>
-            <Link href="/senha" title="Trocar senha" aria-label="Trocar senha" className="grid size-8 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
+            <Link href="/senha" data-dica="Trocar senha" aria-label="Trocar senha" className="grid size-8 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
               <KeyRound size={15} strokeWidth={1.75} />
             </Link>
             <form action={logout}>
-              <button title="Sair" aria-label="Sair" className="grid size-8 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
+              <button data-dica="Sair" aria-label="Sair" className="grid size-8 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
                 <LogOut size={15} strokeWidth={1.75} />
               </button>
             </form>
-          </div>
+          </Dicas>
         </div>
       </aside>
       <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-10 lg:py-10">

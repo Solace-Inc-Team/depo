@@ -112,7 +112,7 @@ export function MenuConfig({ secoes, className = "" }: { secoes: Record<Secao, R
       <button
         type="button"
         aria-label="Configurações"
-        title="Configurações"
+        data-dica="Configurações"
         aria-haspopup="dialog"
         aria-expanded={!!pedida}
         onClick={abrir}

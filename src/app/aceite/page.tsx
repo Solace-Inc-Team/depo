@@ -5,6 +5,7 @@ import { company, termsDate } from "@/lib/legal";
 import { acceptTermsAction, logout } from "@/app/actions";
 import { ActionForm } from "@/components/action-form";
 import { Logo } from "@/components/logo";
+import { Marcar } from "@/components/controles";
 
 export const metadata = { title: "Termos de uso" };
 
@@ -40,7 +41,7 @@ export default async function Aceite() {
 
         <ActionForm action={acceptTermsAction} className="mt-6 space-y-4">
           <label className="flex items-start gap-2.5 text-[13px]">
-            <input type="checkbox" name="agree" required className="mt-0.5" />
+            <Marcar name="agree" required className="mt-0.5" />
             Li e aceito os Termos de uso e a Política de privacidade em nome de {user.tenantName}.
           </label>
           <button className="btn btn-primary h-10 w-full">Aceitar e continuar</button>

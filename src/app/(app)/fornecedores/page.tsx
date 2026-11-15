@@ -4,6 +4,7 @@ import { listSuppliers } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
 import { saveSupplierAction } from "@/app/actions";
 import { Empty } from "@/components/ui";
+import { Alternar } from "@/components/controles";
 
 export const metadata = { title: "Fornecedores" };
 
@@ -60,7 +61,7 @@ export default async function Fornecedores({ searchParams }: PageProps<"/fornece
               <input type="hidden" name="id" value={s.id} />
               <Fields s={s} />
               <label className="flex min-h-10 items-center gap-2">
-                <input type="checkbox" name="active" defaultChecked={s.active} /> Ativo
+                <Alternar name="active" defaultChecked={s.active} /> Ativo
               </label>
               <button className="btn">Salvar</button>
             </ActionForm>

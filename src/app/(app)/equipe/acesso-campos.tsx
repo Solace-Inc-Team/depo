@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Marcar } from "@/components/controles";
 
 // Perfil e acesso de quem entra na equipe. Entregador pode trabalhar sem celular (a lei não obriga a usar o
 // aparelho pessoal): aí não tem e-mail nem senha, e a loja lança as entregas dele pela folha da rota.
@@ -22,7 +23,7 @@ export function AcessoCampos() {
       <div className="recolhe" data-aberto={perfil === "entregador" || undefined} inert={perfil !== "entregador"}>
         <div>
           <label className="flex min-h-11 items-start gap-2 pt-1 text-sm">
-            <input type="checkbox" name="semAcesso" value="true" checked={semCelular} onChange={(e) => setSemCelular(e.target.checked)} className="mt-1" />
+            <Marcar name="semAcesso" value="true" checked={semCelular} onChange={(e) => setSemCelular(e.target.checked)} className="mt-1" />
             <span>
               Trabalha sem celular
               <span className="block text-[13px] text-muted">Não entra no sistema; sai com a folha da rota.</span>

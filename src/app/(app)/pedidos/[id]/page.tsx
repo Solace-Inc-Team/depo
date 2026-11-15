@@ -14,6 +14,7 @@ import { Money, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
 import { CopyButton } from "@/components/copy-button";
 import { headers } from "next/headers";
 import { MessageCircle } from "lucide-react";
+import { Marcar } from "@/components/controles";
 
 export const metadata = { title: "Pedido" };
 
@@ -286,7 +287,7 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
                     <input id="refund-reason" name="reason" required minLength={3} className="input" />
                   </div>
                   <label className="flex items-center gap-2 text-[13px]">
-                    <input type="checkbox" name="restock" defaultChecked />
+                    <Marcar name="restock" defaultChecked />
                     Os produtos voltaram para a loja
                   </label>
                   <div>

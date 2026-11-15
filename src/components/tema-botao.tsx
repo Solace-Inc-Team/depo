@@ -23,7 +23,7 @@ export function TemaBotao({ className = "" }: { className?: string }) {
   return (
     <button
       type="button"
-      title={`${info[escolha].texto}. Clique para ${info[proxima].texto.toLowerCase()}.`}
+      data-dica={`Mudar para ${info[proxima].texto.toLowerCase()}`}
       aria-label={`${info[escolha].texto}. Trocar tema`}
       onClick={(e) => {
         // o tema novo nasce do centro do ícone clicado

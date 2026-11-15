@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { KeyRound, LogOut } from "lucide-react";
 import { TemaBotao } from "@/components/tema-botao";
+import { Dicas } from "@/components/dicas";
 import { count, isNull } from "drizzle-orm";
 import { db } from "@/db";
 import { errorEvents } from "@/db/schema";
@@ -27,18 +28,18 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
               <AdminNav openErrors={openErrors} />
             </span>
           </div>
-          <div className="flex items-center gap-1">
+          <Dicas lado="baixo" className="flex items-center gap-1">
             <span className="mr-2 hidden text-[13px] text-muted sm:inline">{admin.email}</span>
             <TemaBotao className="size-8" />
-            <Link href="/senha" aria-label="Trocar senha" title="Trocar senha" className="grid size-8 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
+            <Link href="/senha" aria-label="Trocar senha" data-dica="Trocar senha" className="grid size-8 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
               <KeyRound size={15} strokeWidth={1.75} />
             </Link>
             <form action={logout}>
-              <button aria-label="Sair" title="Sair" className="grid size-8 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
+              <button aria-label="Sair" data-dica="Sair" className="grid size-8 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
                 <LogOut size={15} strokeWidth={1.75} />
               </button>
             </form>
-          </div>
+          </Dicas>
         </div>
       </header>
       <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-10 lg:py-10">

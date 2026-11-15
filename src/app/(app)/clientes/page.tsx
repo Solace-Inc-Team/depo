@@ -7,6 +7,7 @@ import { CustomerFields } from "@/components/customer-fields";
 import { saveCustomerAction } from "@/app/actions";
 import { Empty, PageHeader } from "@/components/ui";
 import { JanelaAcao } from "@/components/janela-acao";
+import { Dicas } from "@/components/dicas";
 
 export const metadata = { title: "Clientes" };
 
@@ -51,14 +52,16 @@ export default async function Clientes({ searchParams }: PageProps<"/clientes">)
                     </a>
                   )}
                 </div>
+                <Dicas className="shrink-0">
                 <Link
                   href={`/pedidos/novo?cliente=${c.id}`}
-                  title="Novo pedido"
+                  data-dica="Novo pedido"
                   aria-label={`Novo pedido para ${c.name}`}
                   className="relative grid size-11 shrink-0 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg sm:size-9"
                 >
                   <Plus size={17} strokeWidth={1.75} aria-hidden="true" />
                 </Link>
+                </Dicas>
               </li>
             ))}
           </ul>

@@ -11,7 +11,7 @@ import { DemoEntrega } from "./demo-entrega";
 import { DemoPortal } from "./demo-portal";
 import { MiniEstorno, MiniExportar, MiniSoSua } from "./detalhes";
 import { DIAS_GRATIS, INCLUSO, PRECO, WHATSAPP, linkWhatsApp } from "./contato";
-import { LuzCursor } from "./luz-cursor";
+import { Peca } from "./peca";
 
 // A vitrine: sempre escura, com uma ideia visual só (a tela do produto e luz). Ritmo de escala variada:
 // topo com o Painel vivo, dois capítulos grandes, um mosaico de detalhes, preço e perguntas, e um
@@ -177,9 +177,8 @@ export default function Inicio() {
         {/* mosaico: os detalhes em peças menores, cada uma com a sua prova */}
         <section style={{ "--luz": "color-mix(in srgb, var(--marca) 45%, var(--chama))" } as React.CSSProperties} className="mx-auto max-w-6xl px-4 pt-32 sm:px-6 sm:pt-36">
           <Capitulo centro rotulo="Os detalhes" titulo="Feito em cima do que dá errado numa revenda." apoio="O que não aparece no dia bom e salva o dia ruim." />
-          <LuzCursor>
           <InView className="mt-14 grid gap-4 lg:grid-cols-3">
-            <article className="bento lg:row-span-2">
+            <Peca className="bento lg:row-span-2">
               <h3 className="text-[17px] font-semibold tracking-tight">Pedido pelo link, com Pix</h3>
               <p className="mt-1.5 text-muted">O cliente pede sozinho e já recebe o QR para pagar.</p>
               <div
@@ -189,9 +188,9 @@ export default function Inicio() {
               >
                 <DemoPortal escuro />
               </div>
-            </article>
+            </Peca>
 
-            <article className="bento lg:col-span-2">
+            <Peca className="bento lg:col-span-2">
               <h3 className="text-[17px] font-semibold tracking-tight">Estoque que fecha sozinho</h3>
               <p className="mt-1.5 text-muted">Saiu cheio, voltou vazio. Cliente sem casco paga o vasilhame; o amassado sai como avariado.</p>
               <div className="estoque-mosaico mt-8 flex flex-wrap items-end gap-x-12 gap-y-6">
@@ -209,30 +208,29 @@ export default function Inicio() {
                   </div>
                 ))}
               </div>
-            </article>
+            </Peca>
 
             {/* mesma ordem em todas as peças: título, uma linha, e o pedaço da tela embaixo */}
-            <article className="bento">
+            <Peca className="bento">
               <h3 className="text-[17px] font-semibold tracking-tight">Ninguém apaga nada</h3>
               <p className="mt-1.5 text-muted">Erro se corrige com estorno, com a senha de quem está logado, e fica no histórico.</p>
               <MiniEstorno />
-            </article>
+            </Peca>
 
-            <article className="bento">
+            <Peca className="bento">
               <h3 className="text-[17px] font-semibold tracking-tight">O que é seu, só você vê</h3>
               <p className="mt-1.5 text-muted">Cada revenda separada das outras, até no banco de dados.</p>
               <MiniSoSua />
-            </article>
+            </Peca>
 
-            <article className="bento grid items-center gap-6 lg:col-span-3 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+            <Peca className="bento grid items-center gap-6 lg:col-span-3 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
               <div>
                 <h3 className="text-[17px] font-semibold tracking-tight">Seus dados, quando quiser</h3>
                 <p className="mt-1.5 text-muted">Relatórios por dia, entregador e produto, e tudo em planilha para baixar. Se um dia quiser sair, os dados vão com você.</p>
               </div>
               <MiniExportar />
-            </article>
+            </Peca>
           </InView>
-          </LuzCursor>
         </section>
 
         <section className="mx-auto grid max-w-6xl gap-16 px-4 pt-32 sm:px-6 sm:pt-36 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-20">
