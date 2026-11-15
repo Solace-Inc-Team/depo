@@ -1,4 +1,4 @@
-/* O visual do Depósito aplicado ao kit das demos: as mesmas variáveis do sistema,
+/* O visual do depo aplicado ao kit das demos: as mesmas variáveis do sistema,
    então claro e escuro acompanham a página sozinhos. */
 .palco .ss-stage {
   --ss-font: var(--font-geist), ui-sans-serif, system-ui, sans-serif;

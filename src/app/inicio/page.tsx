@@ -17,14 +17,14 @@ import { Peca } from "./peca";
 // topo com o Painel vivo, dois capítulos grandes, um mosaico de detalhes, preço e perguntas, e um
 // fechamento curto. A luz esquenta conforme a página desce, do azul da manhã ao âmbar do fim do dia.
 export const metadata = {
-  title: { absolute: "Depósito: gestão para revendas de água e gás" },
+  title: { absolute: "depo: gestão para revendas de água e gás" },
   description: "Pedido, entrega, cascos e acerto de caixa num lugar só, para revendas de água e gás.",
 };
 
 const titulo = ["Onde está cada casco.", "Quanto cada entregador te deve."].map((l) => l.split(" "));
 const atraso = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
 const temZap = WHATSAPP !== "";
-const zap = linkWhatsApp("Olá! Quero conhecer o Depósito para a minha revenda.");
+const zap = linkWhatsApp("Olá! Quero conhecer o depo para a minha revenda.");
 
 const fatos = [
   { icone: WifiOff, t: "Funciona sem internet", d: "A entrega confirmada no celular sobe sozinha quando o sinal volta." },
@@ -34,8 +34,8 @@ const fatos = [
 ];
 
 const perguntas = [
-  ["Precisa instalar alguma coisa?", "Não. O Depósito abre no navegador do computador e do celular. No celular do entregador dá para pôr um ícone na tela inicial, como um aplicativo."],
-  ["Emite nota fiscal?", "Ainda não. O Depósito cuida da operação: pedido, entrega, estoque e caixa. A nota continua no emissor que você já usa."],
+  ["Precisa instalar alguma coisa?", "Não. O depo abre no navegador do computador e do celular. No celular do entregador dá para pôr um ícone na tela inicial, como um aplicativo."],
+  ["Emite nota fiscal?", "Ainda não. O depo cuida da operação: pedido, entrega, estoque e caixa. A nota continua no emissor que você já usa."],
   ["E se o entregador não tiver celular?", "Funciona igual. Ele sai com a folha da rota impressa, com endereço, troco e o QR do Pix de cada pedido, e na volta a loja marca o que foi entregue."],
   ["E se o celular do entregador ficar sem internet?", "Ele confirma a entrega mesmo assim. A confirmação fica guardada no aparelho e é enviada sozinha quando o sinal volta, sem duplicar."],
   ["O cliente consegue pedir sozinho?", "Sim. Cada loja tem um link de pedido. O pedido cai na fila com o selo do site e, se for Pix, o cliente já recebe o QR para pagar."],
@@ -71,8 +71,8 @@ export default function Inicio() {
     <div className="pagina-escura overflow-x-clip">
       <header className="site-header sticky top-0 z-20 border-b">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <Link href="/" aria-label="Depósito, início" className="alvo">
-            <Logo />
+          <Link href="/" aria-label="depo, início" className="alvo">
+            <Logo animar="entrada" />
           </Link>
           <nav className="flex items-center gap-6 text-[13px] text-muted">
             <Link href="/login" className="btn px-3 text-[13px] sm:h-8">Entrar</Link>
@@ -289,7 +289,7 @@ export default function Inicio() {
             Feche o dia sabendo de tudo.
           </h2>
           <p className="mx-auto mt-5 max-w-[32rem] text-[16px] text-muted sm:text-[17px]">
-            {temZap ? "Chame no WhatsApp e veja o Depósito funcionando com a rotina da sua revenda." : "Do primeiro pedido da manhã ao acerto da noite."}
+            {temZap ? "Chame no WhatsApp e veja o depo funcionando com a rotina da sua revenda." : "Do primeiro pedido da manhã ao acerto da noite."}
           </p>
           <div className="mt-8 flex justify-center">
             <BotaoContato />

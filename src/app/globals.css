@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  /* marca do Depósito: azul tinta (água, desenho técnico), âmbar chama (gás) e papel de prancha */
+  /* marca do depo: azul do ponto, âmbar chama (gás) e papel */
   --marca: #1747c6;
   --marca-forte: #1745d0;
   --chama: #f5a524;
@@ -1409,46 +1409,50 @@ body[data-confirmando] .deliver-btn {
   }
 }
 
-/* logotipo: a chama acende ao abrir e tremula com o mouse; o acento do "ó" é uma faísca âmbar */
-.logo-acento {
-  position: absolute;
-  top: 0.01em;
-  left: 0.27em;
-  width: 0.15em;
-  height: 0.3em;
-  border-radius: 0.1em 0.1em 0.04em 0.04em;
-  background: var(--chama);
-  rotate: 32deg;
-}
-.logo-chama {
+/* logotipo depo., animação "Saída": as letras assentam e o ponto nasce dentro do "o" (o depósito) e sai em arco
+   até o fim da palavra. A curva de cada trecho fica no próprio keyframe; o deslocamento é do "o" até o ponto. */
+.depo-logo [data-letra],
+.depo-logo [data-ponto] {
   transform-box: fill-box;
-  transform-origin: 50% 90%;
-  animation: chama-acende 700ms var(--ease-spring) 150ms both;
+  transform-origin: 50% 50%;
 }
-:is(a, .logo):hover .logo-chama {
-  animation: chama-tremula 900ms ease-in-out;
+.depo-logo[data-tocando] [data-letra] {
+  animation: depo-letra 420ms cubic-bezier(0.22, 1, 0.36, 1) calc(var(--i) * 40ms) both;
 }
-@keyframes chama-acende {
+.depo-logo[data-tocando] [data-ponto] {
+  animation: depo-ponto 820ms linear 120ms both;
+}
+@keyframes depo-letra {
   from {
-    scale: 0.2 0;
+    opacity: 0;
+    transform: translateY(12px);
+    filter: blur(3px);
   }
 }
-@keyframes chama-tremula {
-  20% {
-    scale: 0.92 1.08;
-    rotate: -4deg;
+@keyframes depo-ponto {
+  0% {
+    transform: translate(-79px, -35px) scale(0);
+    animation-timing-function: cubic-bezier(0.34, 1.36, 0.64, 1);
   }
-  45% {
-    scale: 1.06 0.94;
-    rotate: 3deg;
+  28% {
+    transform: translate(-79px, -35px) scale(1);
+    animation-timing-function: cubic-bezier(0.3, 0, 0.6, 1);
   }
-  70% {
-    scale: 0.96 1.04;
-    rotate: -2deg;
+  60% {
+    transform: translate(-35.55px, -105px) scale(1);
+    animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
+  }
+  86% {
+    transform: translate(0, -4px) scale(1);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  100% {
+    transform: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .logo-chama {
+  .depo-logo [data-letra],
+  .depo-logo [data-ponto] {
     animation: none !important;
   }
 }

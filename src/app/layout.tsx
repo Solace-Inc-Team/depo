@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.APP_URL || "http://localhost:3000"),
-  title: { default: "Depósito", template: "%s | Depósito" },
+  title: { default: "depo", template: "%s · depo" },
   description: "Gestão de pedidos, entregas, estoque de retornáveis e acerto de caixa para distribuidoras de água e gás.",
-  applicationName: "Depósito",
+  applicationName: "depo",
 };
 
 export const viewport: Viewport = {

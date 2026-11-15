@@ -16,7 +16,7 @@ export default async function Codigo() {
         <MarcaDaSessao size={28} />
         <ShieldCheck size={28} strokeWidth={1.5} className="mt-8 text-muted" aria-hidden="true" />
         <h1 className="mt-3 text-[1.75rem] leading-tight font-semibold tracking-[-0.03em]">Código de verificação</h1>
-        <p className="mt-1.5 text-muted">Abra o app autenticador e digite o código de 6 dígitos do Depósito.</p>
+        <p className="mt-1.5 text-muted">Abra o app autenticador e digite o código de 6 dígitos do depo.</p>
         <ActionForm action={verifyMfaAction} className="mt-8 space-y-4">
           <div>
             <label className="label" htmlFor="code">Código</label>

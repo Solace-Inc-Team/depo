@@ -7,7 +7,7 @@ export default async function NotFound() {
   const user = await getUser();
   return (
     <main className="stagger mx-auto max-w-md px-6 py-24">
-      <Link href="/" aria-label="Depósito, início">
+      <Link href="/" aria-label="depo, início">
         <Logo size={26} />
       </Link>
       <h1 className="h1 mt-10">Página não encontrada</h1>

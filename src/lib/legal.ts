@@ -1,7 +1,7 @@
 // Dados da Solace usados nos termos e na política de privacidade.
 // Preencher antes do primeiro cliente e revisar o texto com um advogado.
 export const company = {
-  product: "Depósito",
+  product: "depo",
   name: "Solace",
   legalName: "63.249.697 LEONARDO KENNEDY FERNANDES DE SOUSA",
   cnpj: "63.249.697/0001-59",

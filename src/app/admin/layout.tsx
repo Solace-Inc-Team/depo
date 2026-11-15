@@ -11,7 +11,7 @@ import { Logo } from "@/components/logo";
 import { AdminNav } from "./admin-nav";
 import { PageTransition } from "@/components/page-transition";
 
-export const metadata = { title: { default: "Painel da Solace", template: "%s | Depósito" } };
+export const metadata = { title: { default: "Painel da Solace", template: "%s · depo" } };
 
 export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const admin = await requireAdmin();

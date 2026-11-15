@@ -1,4 +1,4 @@
-// O plano do Depósito e a conta de quando o acesso vence. Pura, sem banco.
+// O plano do depo e a conta de quando o acesso vence. Pura, sem banco.
 
 export const PLANO = {
   mensalCents: 12900,

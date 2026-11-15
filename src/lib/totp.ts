@@ -59,5 +59,5 @@ export function verifyTotp(secret: string, code: string, time = Date.now()) {
   });
 }
 
-export const otpauthUri = (secret: string, account: string, issuer = "Depósito") =>
+export const otpauthUri = (secret: string, account: string, issuer = "depo") =>
   `otpauth://totp/${encodeURIComponent(`${issuer}:${account}`)}?secret=${secret}&issuer=${encodeURIComponent(issuer)}&digits=6&period=30`;

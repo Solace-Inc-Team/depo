@@ -30,7 +30,7 @@ export async function sendTestAlert(admin: SessionUser) {
   if (!admin.platformAdmin) throw new DomainError("Sem permissão.");
   if (!alertsConfigured()) throw new DomainError("Configure ALERT_TELEGRAM_BOT_TOKEN e ALERT_TELEGRAM_CHAT_ID no servidor.");
   try {
-    await telegramAlert(`Teste de alerta do Depósito, enviado por ${admin.email}. Se chegou, os avisos de erro estão funcionando.`);
+    await telegramAlert(`Teste de alerta do depo, enviado por ${admin.email}. Se chegou, os avisos de erro estão funcionando.`);
   } catch (e) {
     throw new DomainError(`O Telegram recusou: ${e instanceof Error ? e.message : String(e)}`);
   }
@@ -77,7 +77,7 @@ export async function recordError(
 
     if (alert) {
       const env = process.env.NODE_ENV === "production" ? "" : " (desenvolvimento)";
-      await send(`Erro no Depósito${env}\n${redact(message).slice(0, 300)}\n${req.method} ${path}\nOcorrências: ${count}`).catch((e) =>
+      await send(`Erro no depo${env}\n${redact(message).slice(0, 300)}\n${req.method} ${path}\nOcorrências: ${count}`).catch((e) =>
         console.error("[monitor] falha ao enviar alerta:", e),
       );
     }

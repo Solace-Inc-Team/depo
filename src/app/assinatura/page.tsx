@@ -37,7 +37,7 @@ export default async function Assinatura() {
 
   const titulo = sit.bloqueado ? "O acesso está pausado" : venceu ? "A mensalidade venceu" : emTeste ? "Teste grátis" : "Assinatura";
   const situacao = !dono
-    ? "A mensalidade do Depósito venceu. Peça ao dono da empresa para pagar; tudo volta na hora."
+    ? "A mensalidade do depo venceu. Peça ao dono da empresa para pagar; tudo volta na hora."
     : sit.bloqueado
       ? `Venceu em ${dataBR(sit.pagoAte)}. Pague a mensalidade e tudo volta na hora, com todos os dados.`
       : venceu

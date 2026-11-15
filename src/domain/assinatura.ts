@@ -7,7 +7,7 @@ import { ErroMp, criarPixMp, pagamentoMp } from "@/lib/mercadopago";
 import { PLANO } from "@/lib/plano";
 import { todayISO } from "@/lib/period";
 
-// Mensalidade do Depósito: um Pix por mês na conta do Mercado Pago da Solace (token em MP_TOKEN_SOLACE).
+// Mensalidade do depo: um Pix por mês na conta do Mercado Pago da Solace (token em MP_TOKEN_SOLACE).
 // Pago, o acesso da empresa ganha mais um mês. Sem cartão e sem débito automático: o dono paga quando vence.
 
 const tokenSolace = () => process.env.MP_TOKEN_SOLACE?.trim() ?? "";

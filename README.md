@@ -1,4 +1,4 @@
-# Depósito
+# depo
 
 Gestão para distribuidoras de água e gás: pedidos, entregas, estoque de botijões e galões (cheios e
 vazios) e o acerto de caixa de cada entregador. Começou para uma revenda e já atende várias empresas no

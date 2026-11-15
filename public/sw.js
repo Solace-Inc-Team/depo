@@ -13,6 +13,7 @@ self.addEventListener("push", (event) => {
       // a mesma etiqueta substitui o aviso anterior do mesmo pedido em vez de empilhar
       tag: dados.tag,
       renotify: true,
+      icon: "/icones/192.png",
       data: { url: dados.url || "/" },
     }),
   );

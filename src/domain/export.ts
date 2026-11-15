@@ -150,7 +150,7 @@ function tables(t: string): Record<string, { header: string[]; query: SQL }> {
   };
 }
 
-const README = `Exportação completa dos dados da empresa no sistema Depósito.
+const README = `Exportação completa dos dados da empresa no sistema depo.
 
 Cada arquivo .csv abre direto no Excel ou no Google Planilhas (separador ";").
 Valores estão em reais e datas no horário de Brasília.

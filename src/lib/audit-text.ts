@@ -235,7 +235,7 @@ export function descrever(action: string, dados: Dados, nomes: Record<string, st
       l.titulo = "Desconectou o Mercado Pago";
       break;
     case "assinatura.pago":
-      l.titulo = "Mensalidade do Depósito paga";
+      l.titulo = "Mensalidade do depo paga";
       det(`Valor ${din(d.valor)}`);
       break;
     case "pedido.pix_mercadopago":

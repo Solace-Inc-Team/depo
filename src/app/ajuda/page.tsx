@@ -166,7 +166,7 @@ export default async function Ajuda() {
       </header>
       <main className="stagger mx-auto max-w-3xl px-6 py-12">
         <p className="text-[13px] text-muted">Manual de operação, {roleLabel[user.role].toLowerCase()}</p>
-        <h1 className="text-[2rem] leading-tight font-semibold tracking-[-0.03em]">Como usar o Depósito</h1>
+        <h1 className="text-[2rem] leading-tight font-semibold tracking-[-0.03em]">Como usar o depo</h1>
         <nav aria-label="Seções" className="mt-8 flex flex-wrap gap-2">
           {ordem.map((s) => (
             <a key={s.id} href={`#${s.id}`} className="btn h-11 text-[13px] sm:h-9">{s.titulo.split(":")[0]}</a>

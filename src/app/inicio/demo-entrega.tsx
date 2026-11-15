@@ -141,7 +141,7 @@ export function DemoEntrega({ escuro = false }: { escuro?: boolean }) {
               lights="grey"
               sidebar={
                 layout === "wide" ? <nav className="de-nav">
-                  <span className="de-marca">Depósito</span>
+                  <span className="de-marca">depo</span>
                   {NAV.map(({ icon: I, nome, w }, i) => (
                     <span key={i} className="de-nav__item" data-on={i === 0 || undefined}>
                       <I size={16} strokeWidth={1.9} aria-hidden="true" />

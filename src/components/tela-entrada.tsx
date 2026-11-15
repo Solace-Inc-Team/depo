@@ -18,8 +18,8 @@ export function TelaEntrada({ children }: { children: ReactNode }) {
       </div>
       <div className="flex w-full flex-1 items-center justify-center py-8">
         <div className="stagger w-full max-w-[22rem]">
-          <Link href="/" aria-label="Depósito, início" className="alvo mx-auto block w-fit">
-            <MarcaDaSessao size={28} />
+          <Link href="/" aria-label="depo, início" className="alvo mx-auto block w-fit">
+            <MarcaDaSessao size={28} animar="entrada" />
           </Link>
           {children}
         </div>
