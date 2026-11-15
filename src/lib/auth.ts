@@ -3,7 +3,7 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { createHash, randomBytes } from "node:crypto";
-import { and, asc, desc, eq, gt } from "drizzle-orm";
+import { and, asc, desc, eq, gt, lt } from "drizzle-orm";
 import { db } from "@/db";
 import { branches, sessions, users, tenants } from "@/db/schema";
 import type { Ctx, Role } from "./ctx";
@@ -14,7 +14,12 @@ import { todayISO } from "./period";
 const COOKIE = "sessao";
 /** filial que o dono escolheu ver; a equipe ignora, fica sempre na sua */
 export const FILIAL_COOKIE = "filial";
+// a sessão vence depois de 12 horas SEM USO: quem está trabalhando nunca cai no meio do turno, e o computador do
+// balcão esquecido logado fecha sozinho na manhã seguinte. O cookie dura mais; quem decide é o vencimento no banco.
 const TTL_MS = 1000 * 60 * 60 * 12;
+const COOKIE_MS = 1000 * 60 * 60 * 24 * 30;
+// renova no máximo a cada 10 minutos, para não gravar no banco a cada clique
+const RENOVA_MS = 1000 * 60 * 10;
 
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
 
@@ -28,7 +33,7 @@ export async function createSession(userId: string, mfaPending = false) {
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    expires: expiresAt,
+    expires: mfaPending ? expiresAt : new Date(Date.now() + COOKIE_MS),
   });
 }
 
@@ -114,11 +119,25 @@ export async function completeMfa(sessionId: string, userId: string) {
   await createSession(userId);
 }
 
+/**
+ * Uso de verdade (abrir uma tela, enviar um formulário) empurra o vencimento. Fica fora do getUser de propósito: o
+ * selo de Entregas consulta a cada 15 segundos e manteria logado para sempre um computador esquecido aberto.
+ */
+async function renovarSessao() {
+  const token = (await cookies()).get(COOKIE)?.value;
+  if (!token) return;
+  await db
+    .update(sessions)
+    .set({ expiresAt: new Date(Date.now() + TTL_MS) })
+    .where(and(eq(sessions.id, sha(token)), eq(sessions.mfaPending, false), lt(sessions.expiresAt, new Date(Date.now() + TTL_MS - RENOVA_MS))));
+}
+
 /** Dono que ainda não aceitou a versão atual dos termos: só pode ver o aceite e sair. */
 export const pendingTerms = (u: SessionUser) => u.role === "dono" && !u.platformAdmin && u.termsVersion !== TERMS_VERSION;
 
 export async function requireUser(...roles: Role[]): Promise<SessionUser> {
   const user = await getUser();
+  if (user) await renovarSessao();
   // com um cookie velho no navegador, passa antes por /login/sair para apagá-lo
   if (!user) redirect((await cookies()).has(COOKIE) ? "/login/sair" : "/login");
   if (pendingTerms(user)) redirect("/aceite");
@@ -132,5 +151,6 @@ export async function requireUser(...roles: Role[]): Promise<SessionUser> {
 export async function requireAdmin(): Promise<SessionUser> {
   const user = await getUser();
   if (!user?.platformAdmin) notFound();
+  await renovarSessao();
   return user;
 }
