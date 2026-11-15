@@ -117,7 +117,8 @@ export const pendingTerms = (u: SessionUser) => u.role === "dono" && !u.platform
 
 export async function requireUser(...roles: Role[]): Promise<SessionUser> {
   const user = await getUser();
-  if (!user) redirect("/login");
+  // com um cookie velho no navegador, passa antes por /login/sair para apagá-lo
+  if (!user) redirect((await cookies()).has(COOKIE) ? "/login/sair" : "/login");
   if (pendingTerms(user)) redirect("/aceite");
   // venceu e passou da tolerância: o sistema pausa até pagar (os dados ficam)
   if (!user.platformAdmin && situacaoAssinatura(user.pagoAte, todayISO())?.bloqueado) redirect("/assinatura");
