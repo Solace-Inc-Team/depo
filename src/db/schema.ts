@@ -294,6 +294,8 @@ export const orders = pgTable(
     index("orders_branch_status_idx").on(t.branchId, t.status),
     index("orders_tenant_created_idx").on(t.tenantId, t.createdAt),
     uniqueIndex("orders_tenant_number_uq").on(t.tenantId, t.number),
+    // o aviso do Mercado Pago chega só com o id da cobrança
+    index("orders_mp_payment_idx").on(t.mpPaymentId),
   ],
 );
 
@@ -522,7 +524,7 @@ export const assinaturaPagamentos = pgTable(
     pagoEm: timestamp("pago_em", { withTimezone: true }),
     createdAt: createdAt(),
   },
-  (t) => [index("assinatura_pagamentos_tenant_idx").on(t.tenantId, t.createdAt)],
+  (t) => [index("assinatura_pagamentos_tenant_idx").on(t.tenantId, t.createdAt), index("assinatura_pagamentos_mp_idx").on(t.mpPaymentId)],
 );
 
 export const auditLog = pgTable(

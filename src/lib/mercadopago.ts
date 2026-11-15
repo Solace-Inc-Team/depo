@@ -51,46 +51,59 @@ export async function contaMp(token: string) {
 
 export type NovoPix = {
   valorCents: number;
-  descricao: string;
   /** id do pedido: volta na consulta e prova de qual pedido é o pagamento */
   referencia: string;
   emailPagador: string;
   expiraEm: Date;
-  /** endereço público (https) para o aviso de pagamento; sem ele, a confirmação vem pela consulta */
-  avisoUrl?: string;
   /** mesma chave = mesma cobrança: dois cliques não criam dois Pix */
   chave: string;
 };
 
+// Pix pela API de Orders (a de Payments foi marcada para sair). O aviso de pagamento não vai na cobrança:
+// fica configurado na aplicação do Mercado Pago (evento "Order") e chega em /api/mercadopago.
+type Order = {
+  id: string;
+  status: string;
+  external_reference?: string;
+  total_amount?: string;
+  transactions?: { payments?: { payment_method?: { qr_code?: string } }[] };
+};
+const pedidoMp = (token: string, id: string) => chamar<Order>(token, `/v1/orders/${encodeURIComponent(id)}`);
+const qrDo = (o: Order) => o.transactions?.payments?.[0]?.payment_method?.qr_code;
+
 /** Cria a cobrança Pix e devolve o código copia e cola. */
 export async function criarPixMp(token: string, p: NovoPix) {
-  const r = await chamar<{ id: number; status: string; point_of_interaction?: { transaction_data?: { qr_code?: string } } }>(token, "/v1/payments", {
+  const valor = (p.valorCents / 100).toFixed(2);
+  // o Mercado Pago só aceita Pix que dura de 30 minutos a 30 dias; quem precisa de menos cancela antes (cancelarPixMp)
+  const minutos = Math.min(30 * 24 * 60, Math.max(30, Math.ceil((p.expiraEm.getTime() - Date.now()) / 60_000)));
+  let r = await chamar<Order>(token, "/v1/orders", {
     method: "POST",
     headers: { "X-Idempotency-Key": p.chave },
     body: JSON.stringify({
-      transaction_amount: p.valorCents / 100,
-      description: p.descricao,
-      payment_method_id: "pix",
+      type: "online",
+      processing_mode: "automatic",
+      total_amount: valor,
       external_reference: p.referencia,
-      date_of_expiration: p.expiraEm.toISOString().replace("Z", "+00:00"),
       payer: { email: p.emailPagador },
-      ...(p.avisoUrl ? { notification_url: p.avisoUrl } : {}),
+      transactions: { payments: [{ amount: valor, payment_method: { id: "pix", type: "bank_transfer" }, expiration_time: `PT${minutos}M` }] },
     }),
   });
-  const codigo = r.point_of_interaction?.transaction_data?.qr_code;
+  // a criação pode terminar depois da resposta: uma consulta busca o código que faltou
+  if (!qrDo(r) && r.id) r = await pedidoMp(token, r.id);
+  const codigo = qrDo(r);
   if (!codigo) throw new ErroMp("O Mercado Pago não devolveu o código Pix.");
-  return { id: String(r.id), codigo };
+  return { id: r.id, codigo };
 }
 
-/** Situação do pagamento: "approved" é Pix pago. */
+/** Situação da cobrança: "processed" é Pix pago. */
 export async function pagamentoMp(token: string, id: string) {
-  const r = await chamar<{ status: string; external_reference?: string; transaction_amount: number }>(token, `/v1/payments/${encodeURIComponent(id)}`);
-  return { pago: r.status === "approved", situacao: r.status, referencia: r.external_reference ?? "", valorCents: Math.round(r.transaction_amount * 100) };
+  const r = await pedidoMp(token, id);
+  return { pago: r.status === "processed", situacao: r.status, referencia: r.external_reference ?? "", valorCents: Math.round(Number(r.total_amount ?? 0) * 100) };
 }
 
-/** Cancela uma cobrança que não vale mais (o total do pedido mudou). Se já tiver sido paga, o MP recusa. */
+/** Cancela uma cobrança que não vale mais (o total mudou ou o prazo acabou). Se já tiver sido paga, o MP recusa. */
 export async function cancelarPixMp(token: string, id: string) {
-  await chamar(token, `/v1/payments/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify({ status: "cancelled" }) });
+  await chamar(token, `/v1/orders/${encodeURIComponent(id)}/cancel`, { method: "POST" });
 }
 
 // OAuth: a Solace tem uma aplicação no Mercado Pago; cada revenda entra na própria conta e autoriza.

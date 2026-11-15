@@ -963,9 +963,10 @@ test("Mercado Pago: conecta com o token da loja, cobra o Pix do pedido, confirma
   const mp = await import("@/lib/mercadopago");
   const pix = await import("@/domain/pix");
 
-  // Mercado Pago de mentira: guarda as cobranças e responde como a API
+  // Mercado Pago de mentira: guarda as cobranças e responde como a API de Orders
+  const ORD = (n: string) => `ORD${n.padStart(16, "0")}`;
   const TOKEN = "TEST-1234567890123456-loja-a";
-  const cobrancas = new Map<string, { ref: string; valor: number; pago: boolean; outraRef?: string }>();
+  const cobrancas = new Map<string, { ref: string; valor: number; pago: boolean; outraRef?: string; cancelada?: boolean }>();
   const chaves = new Map<string, string>();
   let fora = false;
   mp.usarRede(async (url, init) => {
@@ -975,21 +976,28 @@ test("Mercado Pago: conecta com o token da loja, cobra o Pix do pedido, confirma
     const caminho = String(url).replace("https://api.mercadopago.com", "");
     const json = (o: unknown) => new Response(JSON.stringify(o), { status: 200 });
     if (caminho === "/users/me") return json({ id: 77, email: "financeiro@loja-a.com" });
-    if (caminho === "/v1/payments" && init?.method === "POST") {
+    if (caminho === "/v1/orders" && init?.method === "POST") {
       const chave = new Headers(init.headers).get("X-Idempotency-Key")!;
       const b = JSON.parse(String(init.body));
+      assert.equal(b.transactions.payments[0].payment_method.id, "pix");
+      assert.match(b.transactions.payments[0].expiration_time, /^PT\d+M$/);
       let id = chaves.get(chave);
       if (!id) {
         id = String(9000 + cobrancas.size);
         chaves.set(chave, id);
-        cobrancas.set(id, { ref: b.external_reference, valor: Math.round(b.transaction_amount * 100), pago: false });
+        cobrancas.set(id, { ref: b.external_reference, valor: Math.round(Number(b.total_amount) * 100), pago: false });
       }
-      return json({ id: Number(id), status: "pending", point_of_interaction: { transaction_data: { qr_code: `000201MP${id}` } } });
+      return json({ id: ORD(id), status: "action_required", transactions: { payments: [{ payment_method: { qr_code: `000201MP${id}` } }] } });
     }
-    const c = cobrancas.get(caminho.split("/").pop()!);
+    const [, , , ordId, acao] = caminho.split("/");
+    const c = cobrancas.get(ordId?.replace(/^ORD0+/, "") ?? "");
     if (!c) return new Response("{}", { status: 404 });
-    if (init?.method === "PUT") return json({});
-    return json({ status: c.pago ? "approved" : "pending", external_reference: c.outraRef ?? c.ref, transaction_amount: c.valor / 100 });
+    if (acao === "cancel") {
+      if (c.pago) return new Response("{}", { status: 409 });
+      c.cancelada = true;
+      return json({});
+    }
+    return json({ id: ordId, status: c.pago ? "processed" : "action_required", external_reference: c.outraRef ?? c.ref, total_amount: (c.valor / 100).toFixed(2) });
   });
 
   await assert.rejects(pix.conectarMercadoPago(A.ctx, "abc"), /Access Token inteiro/);
@@ -1026,10 +1034,11 @@ test("Mercado Pago: conecta com o token da loja, cobra o Pix do pedido, confirma
   // o aviso (webhook) com outro pagamento é ignorado; com o certo, confirma
   const aviso = await import("@/app/api/mercadopago/route");
   delete cobrancas.get("9000")!.outraRef;
-  const avisar = (id: string) => aviso.POST(new Request(`http://x/api/mercadopago?pedido=${o.id}`, { method: "POST", body: JSON.stringify({ data: { id } }) }));
+  const avisar = (id: string) => aviso.POST(new Request("http://x/api/mercadopago", { method: "POST", body: JSON.stringify({ type: "order", data: { id } }) }));
   assert.equal((await avisar("1234")).status, 200);
+  assert.equal((await avisar(ORD("9999"))).status, 200);
   assert.equal((await m.q.getOrder(A.t.id, o.id))!.pixConfirmedAt, null);
-  await avisar("9000");
+  await avisar(ORD("9000"));
   const pago = (await m.q.getOrder(A.t.id, o.id))!;
   assert.ok(pago.pixConfirmedAt);
   assert.equal(pago.pixConfirmedBy, null);
@@ -1062,7 +1071,7 @@ test("Mercado Pago: conecta com o token da loja, cobra o Pix do pedido, confirma
   const [comCobranca] = await db.select().from(orders).where(eq(orders.id, s1.id));
   assert.equal(comCobranca.mpExpiresAt!.getTime(), comCobranca.createdAt.getTime() + pix.PRAZO_PAGAR_MS);
   // pagou: entra na fila sozinho
-  cobrancas.get(comCobranca.mpPaymentId!)!.pago = true;
+  cobrancas.get(comCobranca.mpPaymentId!.replace(/^ORD0+/, ""))!.pago = true;
   assert.equal(await pix.conferirPixMp(A.t.id, s1.id), true);
   assert.equal((await m.q.getOrder(A.t.id, s1.id))!.status, "aberto");
 
@@ -1074,11 +1083,14 @@ test("Mercado Pago: conecta com o token da loja, cobra o Pix do pedido, confirma
   const vinteMinAtras = new Date(Date.now() - 20 * 60_000);
   for (const s of [s2, s3]) await db.update(orders).set({ createdAt: vinteMinAtras }).where(eq(orders.id, s.id));
   const [p3] = await db.select({ id: orders.mpPaymentId }).from(orders).where(eq(orders.id, s3.id));
-  cobrancas.get(p3.id!)!.pago = true;
+  cobrancas.get(p3.id!.replace(/^ORD0+/, ""))!.pago = true;
   await pix.cancelarPixVencidos(A.t.id);
   const v2 = (await m.q.getOrder(A.t.id, s2.id))!;
   assert.equal(v2.status, "cancelado");
   assert.equal(v2.cancelReason, "Pix não pago em 15 minutos");
+  // a cobrança dura no mínimo 30 minutos no Mercado Pago: foi cancelada lá também
+  const [p2] = await db.select({ id: orders.mpPaymentId }).from(orders).where(eq(orders.id, s2.id));
+  assert.equal(cobrancas.get(p2.id!.replace(/^ORD0+/, ""))!.cancelada, true);
   assert.equal((await m.q.getOrder(A.t.id, s3.id))!.status, "aberto");
   // vencido não tem mais Pix para pagar
   assert.equal(await pix.pixDoPedido(A.t.id, s2.id), null);
@@ -1295,14 +1307,14 @@ test("mensalidade: teste grátis no cadastro, Pix na conta da Solace, pago soma 
     if (new Headers(init?.headers).get("Authorization") !== "Bearer APP_USR-solace") return new Response("{}", { status: 401 });
     const json = (o: unknown) => new Response(JSON.stringify(o), { status: 200 });
     const caminho = String(url).replace("https://api.mercadopago.com", "");
-    if (caminho === "/v1/payments" && init?.method === "POST") {
+    if (caminho === "/v1/orders" && init?.method === "POST") {
       const b = JSON.parse(String(init.body));
       const id = String(7000 + cobrancas.size);
-      cobrancas.set(id, { ref: b.external_reference, valor: Math.round(b.transaction_amount * 100), pago: false });
-      return json({ id: Number(id), status: "pending", point_of_interaction: { transaction_data: { qr_code: `000201SOLACE${id}` } } });
+      cobrancas.set(id, { ref: b.external_reference, valor: Math.round(Number(b.total_amount) * 100), pago: false });
+      return json({ id: `ORD00000000000${id}`, status: "action_required", transactions: { payments: [{ payment_method: { qr_code: `000201SOLACE${id}` } }] } });
     }
-    const c = cobrancas.get(caminho.split("/").pop()!);
-    return c ? json({ status: c.pago ? "approved" : "pending", external_reference: c.ref, transaction_amount: c.valor / 100 }) : new Response("{}", { status: 404 });
+    const c = cobrancas.get(caminho.split("/").pop()!.replace(/^ORD0+/, ""));
+    return c ? json({ status: c.pago ? "processed" : "action_required", external_reference: c.ref, total_amount: (c.valor / 100).toFixed(2) }) : new Response("{}", { status: 404 });
   });
 
   await assert.rejects(ass.pixAssinatura({ ...dono, role: "caixa" }), /Sem permissão/);
@@ -1318,7 +1330,7 @@ test("mensalidade: teste grátis no cadastro, Pix na conta da Solace, pago soma 
   cobrancas.get("7000")!.pago = true;
   // o aviso com o pagamento certo confirma; repetir não soma de novo
   const aviso = await import("@/app/api/mercadopago/route");
-  await aviso.POST(new Request(`http://x/api/mercadopago?assinatura=${pix.id}`, { method: "POST", body: JSON.stringify({ data: { id: "7000" } }) }));
+  await aviso.POST(new Request("http://x/api/mercadopago", { method: "POST", body: JSON.stringify({ type: "order", data: { id: "ORD000000000007000" } }) }));
   const esperado = new Date(Date.parse(`${somarDias(hoje, PLANO.diasGratis)}T00:00:00Z`));
   esperado.setUTCMonth(esperado.getUTCMonth() + 1);
   assert.equal(await pagoAte(), esperado.toISOString().slice(0, 10));

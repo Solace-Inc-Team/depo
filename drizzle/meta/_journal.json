@@ -176,6 +176,13 @@
       "when": 1794767572296,
       "tag": "0024_mp_oauth",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1794773441059,
+      "tag": "0025_mp_orders",
+      "breakpoints": true
     }
   ]
 }

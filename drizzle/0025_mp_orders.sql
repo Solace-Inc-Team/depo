@@ -1,0 +1,2 @@
+CREATE INDEX "assinatura_pagamentos_mp_idx" ON "assinatura_pagamentos" USING btree ("mp_payment_id");--> statement-breakpoint
+CREATE INDEX "orders_mp_payment_idx" ON "orders" USING btree ("mp_payment_id");

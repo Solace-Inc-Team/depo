@@ -146,16 +146,13 @@ export async function pixDoPedido(tenantId: string, orderId: string): Promise<{ 
     const token = await tokenMp(tenantId, { ...t, mpTokenEnc: t.mpTokenEnc });
     // o total mudou (entrega parcial): a cobrança antiga não pode mais ser paga
     if (o.mpPaymentId && o.mpAmountCents !== valor) await cancelarPixMp(token, o.mpPaymentId).catch(() => {});
-    const app = process.env.APP_URL ?? "";
     const expiraEm = new Date(limite ?? Date.now() + PRAZO_MS);
     const novo = await criarPixMp(token, {
       valorCents: valor,
-      descricao: `Pedido #${o.number}, ${t.name}`.slice(0, 120),
       referencia: orderId,
       // shortcut: o Mercado Pago exige um e-mail do pagador e o pedido não tem; vai um endereço do pedido. Conferir no sandbox.
       emailPagador: `pedido${o.number}@${t.slug}.pedidos.com.br`,
       expiraEm,
-      avisoUrl: app.startsWith("https://") ? `${app}/api/mercadopago?pedido=${orderId}` : undefined,
       // mesmo pedido, mesmo valor, mesmo dia = mesma cobrança, mesmo com duas telas pedindo ao mesmo tempo
       chave: `${orderId}:${valor}:${Math.floor(Date.now() / PRAZO_MS)}`,
     });
@@ -213,6 +210,19 @@ export async function conferirPixMp(tenantId: string, orderId: string): Promise<
  * confere é a loja, que pode ter recebido e ainda não olhado o extrato. Roda quando a loja ou o cliente abre
  * a fila, o painel, os pedidos ou o acompanhamento: sem tarefa agendada, e nada fica preso por muito tempo.
  */
+/** Cancela no Mercado Pago a cobrança do pedido. Devolve false se não deu (já paga, ou o Mercado Pago fora). */
+async function cancelarCobranca(tenantId: string, orderId: string) {
+  const lido = await lerPedido(tenantId, orderId);
+  if (!lido?.t.mpTokenEnc || !lido.o.mpPaymentId) return true;
+  try {
+    await cancelarPixMp(await tokenMp(tenantId, { ...lido.t, mpTokenEnc: lido.t.mpTokenEnc }), lido.o.mpPaymentId);
+    return true;
+  } catch (e) {
+    console.error(`[pix] cancelar a cobrança do pedido ${orderId} falhou:`, (e as Error).message);
+    return false;
+  }
+}
+
 export async function cancelarPixVencidos(tenantId: string) {
   const vencidos = await withTenant(tenantId, () =>
     db
@@ -229,6 +239,9 @@ export async function cancelarPixVencidos(tenantId: string) {
   );
   for (const v of vencidos) {
     if (await conferirPixMp(tenantId, v.id)) continue;
+    // a cobrança no Mercado Pago dura no mínimo 30 minutos: cancela lá para ninguém pagar um pedido cancelado.
+    // Se o cancelamento falhar porque o Pix caiu agora, a conferência de novo pega.
+    if (!(await cancelarCobranca(tenantId, v.id)) && (await conferirPixMp(tenantId, v.id))) continue;
     await tenantTransaction({ tenantId }, async (tx) => {
       const [ok] = await tx
         .update(orders)

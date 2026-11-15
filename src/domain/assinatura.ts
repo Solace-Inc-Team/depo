@@ -73,16 +73,13 @@ export async function pixAssinatura(ctx: Ctx) {
   // o id nasce aqui: vai como referência e como chave, então dois cliques não criam duas cobranças
   const id = randomUUID();
   const expiraEm = new Date(Date.now() + PRAZO_MS);
-  const app = process.env.APP_URL ?? "";
   let novo: { id: string; codigo: string };
   try {
     novo = await criarPixMp(token, {
       valorCents: PLANO.mensalCents,
-      descricao: `Depósito, mensalidade de ${nome}`.slice(0, 120),
       referencia: `assinatura:${id}`,
       emailPagador: email,
       expiraEm,
-      avisoUrl: app.startsWith("https://") ? `${app}/api/mercadopago?assinatura=${id}` : undefined,
       chave: id,
     });
   } catch (e) {
