@@ -18,7 +18,13 @@ import { Marcar } from "@/components/controles";
 import { TextoQueTroca } from "@/components/texto-que-troca";
 import { CheckSucesso } from "@/components/check-sucesso";
 
-export const metadata = { title: "Pedido" };
+// a aba mostra qual pedido é: com vários abertos dá para achar o certo
+export async function generateMetadata({ params }: PageProps<"/pedidos/[id]">) {
+  const user = await requireUser("dono", "atendente", "caixa");
+  const { id } = await params;
+  const o = isUuid(id) ? await getOrder(user.tenantId, id) : null;
+  return { title: o ? `Pedido #${o.number}` : "Pedido" };
+}
 
 const actionLabel: Record<string, string> = {
   "pedido.criar": "Pedido lançado",

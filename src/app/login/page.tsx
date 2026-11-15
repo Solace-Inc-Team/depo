@@ -5,7 +5,7 @@ import { login } from "@/app/actions";
 import { ActionForm } from "@/components/action-form";
 import { TelaEntrada } from "@/components/tela-entrada";
 
-export const metadata = { title: "Entrar" };
+export const metadata = { title: { absolute: "Entrar no depo" } };
 
 export default async function LoginPage() {
   const user = await getUser();

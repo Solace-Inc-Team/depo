@@ -5,7 +5,7 @@ import { TelaEntrada } from "@/components/tela-entrada";
 import { DIAS_GRATIS, PRECO } from "@/app/inicio/contato";
 import { CadastroForm } from "./cadastro-form";
 
-export const metadata = { title: "Criar conta" };
+export const metadata = { title: { absolute: "Criar conta no depo" } };
 
 export default async function Cadastro() {
   if (await getUser()) redirect("/");
