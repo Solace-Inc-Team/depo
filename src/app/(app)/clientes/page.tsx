@@ -2,21 +2,30 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { listCustomers } from "@/domain/queries";
+import { listDebtors } from "@/domain/receivables";
 import { ActionForm } from "@/components/action-form";
 import { CustomerFields } from "@/components/customer-fields";
 import { saveCustomerAction } from "@/app/actions";
-import { Empty, PageHeader } from "@/components/ui";
+import { Empty, Money, PageHeader } from "@/components/ui";
 import { JanelaAcao } from "@/components/janela-acao";
-import { Dicas } from "@/components/dicas";
 import { CampoBusca } from "@/components/campo-busca";
 
 export const metadata = { title: "Clientes" };
+
+const DIA = 864e5;
+/** "pediu hoje", "pediu ontem", "pediu há 6 dias": quem sumiu aparece sem abrir a ficha. */
+function ultimoPedido(d: Date | null) {
+  if (!d) return "ainda sem pedido";
+  const dias = Math.floor((Date.now() - d.getTime()) / DIA);
+  return dias < 1 ? "pediu hoje" : dias === 1 ? "pediu ontem" : `pediu há ${dias} dias`;
+}
 
 export default async function Clientes({ searchParams }: PageProps<"/clientes">) {
   const user = await requireUser("dono", "atendente", "caixa");
   const { q } = await searchParams;
   const term = typeof q === "string" ? q : "";
-  const customers = await listCustomers(user.tenantId, term);
+  const [customers, devedores] = await Promise.all([listCustomers(user.tenantId, term), listDebtors(user.tenantId)]);
+  const deve = new Map(devedores.map((d) => [d.id, d.owed]));
 
   return (
     <>
@@ -50,17 +59,32 @@ export default async function Clientes({ searchParams }: PageProps<"/clientes">)
                       {c.phone}
                     </a>
                   )}
+                  {/* no celular não cabe a coluna da direita: o mesmo resumo desce para baixo do telefone */}
+                  <p className="text-[12.5px] text-muted sm:hidden">
+                    {ultimoPedido(c.ultimoPedido)}
+                    {deve.has(c.id) && (
+                      <span className="text-warn-fg">
+                        {" "}
+                        · deve <Money cents={deve.get(c.id)!} className="font-medium" />
+                      </span>
+                    )}
+                  </p>
                 </div>
-                <Dicas className="shrink-0">
-                <Link
-                  href={`/pedidos/novo?cliente=${c.id}`}
-                  data-dica="Novo pedido"
-                  aria-label={`Novo pedido para ${c.name}`}
-                  className="relative grid size-11 shrink-0 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg sm:size-9"
-                >
-                  <Plus size={17} strokeWidth={1.75} aria-hidden="true" />
-                </Link>
-                </Dicas>
+                <div className="flex shrink-0 items-center gap-4">
+                  <div className="hidden text-right text-[13px] sm:block">
+                    <p className="text-muted">{ultimoPedido(c.ultimoPedido)}</p>
+                    {deve.has(c.id) && (
+                      <p className="text-warn-fg">
+                        deve <Money cents={deve.get(c.id)!} className="font-medium" />
+                      </p>
+                    )}
+                  </div>
+                  {/* um botão de verdade: o "+" solto parecia "adicionar cliente" */}
+                  <Link href={`/pedidos/novo?cliente=${c.id}`} aria-label={`Novo pedido para ${c.name}`} className="btn btn-sm tap relative gap-1.5">
+                    <Plus size={15} strokeWidth={1.75} aria-hidden="true" />
+                    <span className="max-sm:hidden">Novo pedido</span>
+                  </Link>
+                </div>
               </li>
             ))}
           </ul>

@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, gte, lt, inArray, isNull, sql, ilike, or } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lt, inArray, isNull, sql, ilike, or, getTableColumns } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db, scoped } from "@/db";
 import { branches, cashEntries, customerAddresses, customers, orderItems, orders, products, shifts, stockMovements, suppliers, tenants, users, auditLog } from "@/db/schema";
@@ -47,7 +47,12 @@ export const listCustomers = scoped(function listCustomers(tenantId: string, q: 
   // telefone digitado só com números acha "(11) 98811-2034"
   const digits = q.replace(/\D/g, "");
   return db
-    .select()
+    .select({
+      ...getTableColumns(customers),
+      // quando pediu pela última vez (cancelado não conta): mostra na lista quem está na hora de pedir de novo.
+      // A coluna vai com a tabela escrita: dentro do select o drizzle escreve só "id", que na subconsulta seria o do pedido
+      ultimoPedido: sql<Date | null>`(select max(o.created_at) from orders o where o.tenant_id = ${tenantId} and o.customer_id = "customers"."id" and o.status <> 'cancelado')`.mapWith(customers.createdAt),
+    })
     .from(customers)
     .where(
       and(

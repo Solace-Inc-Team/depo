@@ -127,6 +127,8 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
           <div className="flex flex-col border-t border-line p-5 sm:border-t-0">
             <p className="text-muted">Dinheiro na rua agora</p>
             <LiveNumber value={d.cashInStreet} cents fromZero="once" className="text-[2rem] leading-tight font-semibold tracking-[-0.03em]" />
+            {/* com quem está o dinheiro: a mesma barra das formas de pagamento, um trecho por entregador */}
+            <DivisaoPagamento className="mt-4" partes={d.openShifts.map((s) => ({ rotulo: s.driverName, cents: s.expected }))} />
             <p className="mt-1 text-sm text-muted sm:mt-auto">
               com {d.openShifts.length} {d.openShifts.length === 1 ? "entregador" : "entregadores"}, a acertar
             </p>
@@ -136,7 +138,14 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
             <p className="num text-[2rem] leading-tight font-semibold tracking-[-0.03em]">
               <LiveNumber value={d.pending} fromZero="once" /> <span className="text-xl font-medium text-muted">aguardando</span>
             </p>
-            <p className="mt-1 text-sm text-muted sm:mt-auto">{d.inRoute} em rota</p>
+            <DivisaoPagamento
+              className="mt-4"
+              contagem
+              partes={[
+                { rotulo: "Aguardando saída", cents: d.pending },
+                { rotulo: "Em rota", cents: d.inRoute },
+              ]}
+            />
           </div>
         </section>
 

@@ -1435,3 +1435,16 @@ test("empresa: o dono salva nome, telefone e endereço, e o portal mostra o cont
   await m.registry.saveSettings(A.ctx, { phone: "" });
   await db.update(tenants).set({ name: antes.name, phone: antes.phone, address: antes.address, portalEnabled: antes.portal }).where(eq(tenants.id, A.t.id));
 });
+
+test("lista de clientes traz quando cada um pediu pela última vez", async () => {
+  const lista = await m.q.listCustomers(A.t.id);
+  const comPedido = lista.find((c) => c.id === A.customer.id);
+  assert.ok(comPedido?.ultimoPedido instanceof Date, "o cliente com pedido mostra a data do último");
+  const { and, eq, max, ne } = await import("drizzle-orm");
+  const { orders } = m.schema;
+  const [ultimo] = await m.db.db
+    .select({ m: max(orders.createdAt) })
+    .from(orders)
+    .where(and(eq(orders.customerId, A.customer.id), ne(orders.status, "cancelado")));
+  assert.equal(comPedido!.ultimoPedido!.getTime(), ultimo.m!.getTime());
+});

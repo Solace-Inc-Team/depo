@@ -4,7 +4,7 @@ import { Plus, ReceiptText } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { countOrdersByStatus, listOrders } from "@/domain/queries";
 import { cancelarPixVencidos } from "@/domain/pix";
-import { Money, PageHeader, SiteBadge, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
+import { Money, PageHeader, SiteBadge, StatusBadge, fmtQuando, paymentLabel } from "@/components/ui";
 import { LiveNumber } from "@/components/live-number";
 import { CampoBusca } from "@/components/campo-busca";
 
@@ -22,6 +22,9 @@ const tabs = [
   ["cancelado", "Cancelados"],
   ["estornado", "Estornados"],
 ] as const;
+
+// pedido ainda sem entregador: diz por quê, em vez de um traço solto
+const semEntregador: Partial<Record<string, string>> = { entregue: "Balcão", aberto: "Aguardando saída", aguardando_pagamento: "Esperando o Pix" };
 
 export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
   const user = await requireUser("dono", "atendente", "caixa");
@@ -105,7 +108,7 @@ export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
                     {o.origin === "portal" && <SiteBadge />}
                     <span>
                       {paymentLabel[o.paymentMethod]}
-                      {o.driverName ? `, ${o.driverName}` : ""}, {fmtDateTime(o.createdAt)}
+                      {o.driverName ? `, ${o.driverName}` : ""}, {fmtQuando(o.createdAt)}
                     </span>
                   </span>
                 </Link>
@@ -136,8 +139,8 @@ export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
                     {o.customerAddress && <p className="text-[13px] text-muted">{o.customerAddress}</p>}
                   </td>
                   {/* entregue sem entregador é venda no balcão; sem entregador ainda é pedido esperando */}
-                  <td>{o.driverName ?? <span className="text-muted">{o.status === "entregue" ? "Balcão" : "-"}</span>}</td>
-                  <td className="whitespace-nowrap text-muted">{fmtDateTime(o.createdAt)}</td>
+                  <td>{o.driverName ?? <span className="text-muted">{semEntregador[o.status] ?? ""}</span>}</td>
+                  <td className="whitespace-nowrap text-muted">{fmtQuando(o.createdAt)}</td>
                   <td>{paymentLabel[o.paymentMethod]}</td>
                   <td><StatusBadge status={o.status} />{o.origin === "portal" && <SiteBadge />}</td>
                   <td className="text-right font-medium"><Money cents={o.totalCents} /></td>

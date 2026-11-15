@@ -173,7 +173,7 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
                   </li>
                 ))
               ) : (
-                <li className="text-muted">Nenhuma despesa no período.</li>
+                <li className="text-muted">Ainda sem gastos por categoria.</li>
               )}
             </ul>
           </section>
@@ -224,7 +224,7 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
               <div className="flex flex-col items-center px-6 py-14 text-center">
                 <Receipt size={28} strokeWidth={1.5} className="text-muted" aria-hidden="true" />
                 <p className="mt-3 font-medium">Nenhuma despesa no período</p>
-                <p className="mt-1 text-muted">Nenhuma despesa no período.</p>
+                <p className="mt-1 text-muted">Combustível, manutenção, aluguel: o que for lançado aqui sai do resultado em Relatórios.</p>
               </div>
             )}
           </section>

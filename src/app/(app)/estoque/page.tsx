@@ -138,7 +138,8 @@ export default async function Estoque() {
           <tbody>
             {stock.filter((p) => p.active).map((p, i) => (
               <tr key={p.id}>
-                <td className="font-medium">
+                {/* a coluna do produto não espreme: o nome quebrava em quatro linhas ao lado de colunas de um número só */}
+                <td className="font-medium sm:min-w-[13rem]">
                   <div className="flex items-center gap-3">
                     {/* sem casco que volta não há cheio e vazio para comparar: no lugar do nível, uma caixa em linha, do mesmo tamanho */}
                     {p.returnable ? (
@@ -148,14 +149,18 @@ export default async function Estoque() {
                     )}
                     <div>
                       {p.name}
-                      {!p.returnable && <p className="text-sm font-normal text-muted">não retornável</p>}
+                      {!p.returnable && <p className="text-[12.5px] font-normal whitespace-nowrap text-muted">não retornável</p>}
                     </div>
                   </div>
                 </td>
                 <td data-rotulo="Cheios na loja" className={`num text-right text-xl font-semibold ${p.low ? "text-danger" : ""}`}>
                   {p.fullStore}
-                  {p.low && <span className="block text-sm font-medium">abaixo do mínimo ({p.minStock})</span>}
-                  {p.reserved > 0 && <span className="block text-sm font-normal text-muted">{p.reserved} em pedidos aguardando</span>}
+                  {p.low && <span className="block text-sm font-medium whitespace-nowrap">abaixo do mínimo ({p.minStock})</span>}
+                  {p.reserved > 0 && (
+                    <span className="block text-sm font-normal whitespace-nowrap text-muted" title="Já separados para pedidos que ainda não saíram">
+                      {p.reserved} {p.reserved === 1 ? "reservado" : "reservados"}
+                    </span>
+                  )}
                 </td>
                 <td data-rotulo="Vazios na loja" className="num text-right text-xl">{p.returnable ? p.emptyStore : "-"}</td>
                 <td data-rotulo="Cheios em rota" className="num text-right text-xl">{p.fullTransit}</td>

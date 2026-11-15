@@ -25,6 +25,9 @@ const Card = ({ id, children }: { id: string; children: React.ReactElement }) =>
 const waited = (min: number) =>
   min < 60 ? `${min} min` : min % 60 ? `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, "0")}` : `${min / 60} h`;
 
+// "há 0 min" parecia defeito: antes do primeiro minuto é "agora"
+const ha = (min: number) => (min < 1 ? "agora" : `há ${waited(min)}`);
+
 export default async function Entregas() {
   const user = await requireUser("dono", "atendente", "caixa");
   // quem passou dos 15 minutos sem pagar sai antes de a fila ser montada
@@ -121,7 +124,7 @@ export default async function Entregas() {
                         {o.origin === "portal" && <SiteBadge />}
                       </Link>
                       <span className={`text-[13px] ${late(o) ? "font-semibold text-danger" : "text-muted"}`}>
-                        {late(o) ? "Atrasado, " : ""}há {waited(minutesSince(o.createdAt))}
+                        {late(o) ? "Atrasado, " : ""}{ha(minutesSince(o.createdAt))}
                       </span>
                     </div>
                     <p className="text-sm text-muted">
@@ -197,7 +200,7 @@ export default async function Entregas() {
                             <span className="block text-sm text-muted">{o.customerAddress}</span>
                           </Link>
                           <span className={`text-[13px] ${late(o) ? "font-semibold text-danger" : "text-muted"}`}>
-                            saiu há {waited(minutesSince(o.dispatchedAt))}
+                            saiu {ha(minutesSince(o.dispatchedAt))}
                           </span>
                         </div>
                         {/* o entregador voltou ou ligou: a loja lança o que aconteceu */}

@@ -71,3 +71,12 @@ const dt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "sh
 const tm = new Intl.DateTimeFormat("pt-BR", { timeStyle: "short", timeZone: "America/Sao_Paulo" });
 export const fmtDateTime = (d: Date | null) => (d ? dt.format(d) : "-");
 export const fmtTime = (d: Date | null) => (d ? tm.format(d) : "-");
+const diaSP = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" });
+/** "hoje, 20:32" e "ontem, 18:10"; dias antes, a data inteira. Numa lista de hoje, repetir a data era ruído. */
+export const fmtQuando = (d: Date | null) => {
+  if (!d) return "-";
+  const dia = diaSP.format(d);
+  if (dia === diaSP.format(new Date())) return `hoje, ${tm.format(d)}`;
+  if (dia === diaSP.format(new Date(Date.now() - 864e5))) return `ontem, ${tm.format(d)}`;
+  return dt.format(d);
+};
