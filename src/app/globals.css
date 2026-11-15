@@ -1409,50 +1409,112 @@ body[data-confirmando] .deliver-btn {
   }
 }
 
-/* logotipo depo., animação "Saída": as letras assentam e o ponto nasce dentro do "o" (o depósito) e sai em arco
-   até o fim da palavra. A curva de cada trecho fica no próprio keyframe; o deslocamento é do "o" até o ponto. */
+/* logotipo depo., animação "Saída" ------------------------------------------------------------------------
+   Entrada (1,6s): cada letra se desenha com o traço, o anel primeiro e a haste depois, uma atrás da outra. O ponto
+   nasce dentro do "o" (o depósito), afunda para pegar impulso, o "o" recua e o ponto sai em arco por trás do anel até o fim da
+   palavra, esticando no voo e achatando ao pousar. O arco é amostrado de uma curva de verdade (gerado por script), com uma
+   curva de velocidade só no trajeto inteiro, por isso não dá trancos. Com o mouse em cima, o ponto dá um pulo. */
 .depo-logo [data-letra],
-.depo-logo [data-ponto] {
+.depo-logo [data-ponto],
+.depo-logo [data-letra] > circle {
   transform-box: fill-box;
   transform-origin: 50% 50%;
 }
-.depo-logo[data-tocando] [data-letra] {
-  animation: depo-letra 420ms cubic-bezier(0.22, 1, 0.36, 1) calc(var(--i) * 40ms) both;
+/* o anel começa a se desenhar do alto, como uma caneta */
+.depo-logo [data-letra] > circle {
+  rotate: -90deg;
 }
-.depo-logo[data-tocando] [data-ponto] {
-  animation: depo-ponto 820ms linear 120ms both;
+.depo-logo [data-letra] > * {
+  stroke-dasharray: 1 2;
 }
-@keyframes depo-letra {
+.depo-logo[data-tocando="entrada"] [data-letra] > :first-child {
+  animation: depo-traco 680ms cubic-bezier(0.65, 0, 0.25, 1) calc(var(--i) * 80ms) both;
+}
+.depo-logo[data-tocando="entrada"] [data-letra] > :nth-child(2) {
+  animation: depo-traco 480ms cubic-bezier(0.22, 1, 0.36, 1) calc(var(--i) * 80ms + 260ms) both;
+}
+.depo-logo[data-tocando="entrada"] [data-ponto] {
+  animation: depo-ponto 1200ms linear 420ms both;
+}
+.depo-logo[data-tocando="entrada"] [data-letra]:last-of-type {
+  animation: depo-recuo 1200ms linear 420ms both;
+}
+.depo-logo[data-tocando="pulo"] [data-ponto] {
+  animation: depo-pulo 760ms linear both;
+}
+@keyframes depo-traco {
   from {
-    opacity: 0;
-    transform: translateY(12px);
-    filter: blur(3px);
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
   }
 }
 @keyframes depo-ponto {
+  0% { transform: translate(-79px, -35px) scale(0); animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
+  20% { transform: translate(-79px, -35px) scale(1); animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1); }
+  30% { transform: translate(-79px, -30px) scale(1.12, 0.86); animation-timing-function: linear; }
+  32.5% { transform: translate(-78.71px, -35.99px) scale(0.99, 1.02); animation-timing-function: linear; }
+  35% { transform: translate(-77.77px, -39.22px) scale(0.97, 1.04); animation-timing-function: linear; }
+  37.5% { transform: translate(-76px, -45.12px) scale(0.96, 1.05); animation-timing-function: linear; }
+  40% { transform: translate(-73.22px, -54.15px) scale(0.95, 1.07); animation-timing-function: linear; }
+  42.5% { transform: translate(-69.12px, -66.72px) scale(0.94, 1.08); animation-timing-function: linear; }
+  45% { transform: translate(-63.32px, -82.91px) scale(0.93, 1.09); animation-timing-function: linear; }
+  47.5% { transform: translate(-55.36px, -101.76px) scale(0.92, 1.1); animation-timing-function: linear; }
+  50% { transform: translate(-44.98px, -119.34px) scale(0.92, 1.1); animation-timing-function: linear; }
+  52.5% { transform: translate(-33.13px, -126.95px) scale(0.92, 1.1); animation-timing-function: linear; }
+  55% { transform: translate(-22.53px, -118.07px) scale(0.92, 1.1); animation-timing-function: linear; }
+  57.5% { transform: translate(-14.9px, -98.35px) scale(0.93, 1.09); animation-timing-function: linear; }
+  60% { transform: translate(-9.83px, -76.33px) scale(0.93, 1.08); animation-timing-function: linear; }
+  62.5% { transform: translate(-6.45px, -56.25px) scale(0.94, 1.07); animation-timing-function: linear; }
+  65% { transform: translate(-4.16px, -39.43px) scale(0.95, 1.06); animation-timing-function: linear; }
+  67.5% { transform: translate(-2.58px, -26.02px) scale(0.97, 1.04); animation-timing-function: linear; }
+  70% { transform: translate(-1.5px, -15.8px) scale(0.98, 1.02); animation-timing-function: linear; }
+  72.5% { transform: translate(-0.78px, -8.43px) scale(0.99, 1.01); animation-timing-function: linear; }
+  75% { transform: translate(-0.32px, -3.55px) scale(1, 1); animation-timing-function: linear; }
+  77.5% { transform: translate(-0.08px, -0.84px) scale(1, 1); animation-timing-function: linear; }
+  80% { transform: translate(0px, 0px) scale(1.24, 0.78); animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1); }
+  100% { transform: none; }
+}
+/* o "o" se encolhe quando o ponto pega impulso e volta com mola quando ele sai */
+@keyframes depo-recuo {
+  0%,
+  22% {
+    transform: none;
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  30% {
+    transform: scale(0.93);
+    animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  44%,
+  100% {
+    transform: none;
+  }
+}
+@keyframes depo-pulo {
   0% {
-    transform: translate(-79px, -35px) scale(0);
-    animation-timing-function: cubic-bezier(0.34, 1.36, 0.64, 1);
+    transform: none;
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
   }
-  28% {
-    transform: translate(-79px, -35px) scale(1);
-    animation-timing-function: cubic-bezier(0.3, 0, 0.6, 1);
+  16% {
+    transform: translateY(4px) scale(1.16, 0.84);
+    animation-timing-function: cubic-bezier(0.2, 0.7, 0.4, 1);
   }
-  60% {
-    transform: translate(-35.55px, -105px) scale(1);
-    animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
+  48% {
+    transform: translateY(-40px) scale(0.92, 1.1);
+    animation-timing-function: cubic-bezier(0.6, 0, 0.8, 0.6);
   }
-  86% {
-    transform: translate(0, -4px) scale(1);
-    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  76% {
+    transform: translateY(3px) scale(1.22, 0.8);
+    animation-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
   }
   100% {
     transform: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .depo-logo [data-letra],
-  .depo-logo [data-ponto] {
+  .depo-logo * {
     animation: none !important;
   }
 }

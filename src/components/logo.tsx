@@ -17,18 +17,20 @@ const ARCO = (() => {
 })();
 
 /**
- * `size` é a altura do desenho em px. `animar`: "entrada" toca ao abrir e de novo com o mouse em cima;
- * "passar" só com o mouse; false fica parado.
+ * `size` é a altura do desenho em px. `animar`: "entrada" desenha a palavra ao abrir; com o mouse em cima o ponto pula
+ * (nos dois modos); false fica parado.
  */
 export function Logo({ size = 22, animar = "passar" }: { size?: number; animar?: "entrada" | "passar" | false }) {
-  // reinicia a animação: tira o atributo, força o recálculo e põe de novo
-  const tocar = (e: React.MouseEvent<SVGSVGElement>) => {
+  // o ponto pula com o mouse em cima; não interrompe a entrada que ainda está tocando
+  const pular = (e: React.MouseEvent<SVGSVGElement>) => {
     const s = e.currentTarget;
+    if (s.getAnimations({ subtree: true }).some((a) => a.playState === "running")) return;
     s.removeAttribute("data-tocando");
     void s.getBoundingClientRect();
-    s.setAttribute("data-tocando", "");
+    s.setAttribute("data-tocando", "pulo");
   };
-  const traco = { fill: "none", stroke: "currentColor", strokeWidth: W };
+  // pathLength 1: o traço de cada peça se desenha com o mesmo stroke-dashoffset, qualquer que seja o tamanho
+  const traco = { fill: "none", stroke: "currentColor", strokeWidth: W, pathLength: 1 };
   return (
     <svg
       viewBox={`0 -46 ${LARGURA} ${ALTURA}`}
@@ -36,8 +38,8 @@ export function Logo({ size = 22, animar = "passar" }: { size?: number; animar?:
       height={size}
       role="img"
       aria-label="depo"
-      data-tocando={animar === "entrada" ? "" : undefined}
-      onMouseEnter={animar ? tocar : undefined}
+      data-tocando={animar === "entrada" ? "entrada" : undefined}
+      onMouseEnter={animar ? pular : undefined}
       className="depo-logo shrink-0 overflow-visible text-fg"
     >
       <g data-letra style={{ "--i": 0 } as React.CSSProperties}>
@@ -52,10 +54,11 @@ export function Logo({ size = 22, animar = "passar" }: { size?: number; animar?:
         <circle cx={XS[2]} cy={CY} r={R} {...traco} />
         <line x1={XS[2] - R} y1={0} x2={XS[2] - R} y2={146} {...traco} />
       </g>
+      {/* o ponto vem antes do "o" no desenho: ao sair, ele passa por trás do anel, saindo de dentro do depósito */}
+      <circle data-ponto cx={X_PONTO} cy={100 - DOT} r={DOT} fill="var(--marca)" />
       <g data-letra style={{ "--i": 3 } as React.CSSProperties}>
         <circle cx={XS[3]} cy={CY} r={R} {...traco} />
       </g>
-      <circle data-ponto cx={X_PONTO} cy={100 - DOT} r={DOT} fill="var(--marca)" />
     </svg>
   );
 }
