@@ -13,6 +13,7 @@ import { PLANO, dataBR, situacaoAssinatura } from "@/lib/plano";
 import { todayISO } from "@/lib/period";
 import { INCLUSO } from "@/app/inicio/contato";
 import { ArrowLeft, Check, LogOut } from "lucide-react";
+import { TextoQueTroca } from "@/components/texto-que-troca";
 
 export const metadata = { title: "Assinatura" };
 
@@ -83,7 +84,8 @@ export default async function Assinatura() {
             <section className="panel mt-8 p-5">
               <p className="num text-[1.5rem] font-semibold tracking-tight">{valor}</p>
               <p className="mt-1 mb-5 text-[13px] text-muted">
-                Pague até {fmtTime(aberto.expiraEm)} de {fmtDateTime(aberto.expiraEm).split(" ")[0].replace(",", "")}. A confirmação chega sozinha.
+                Pague até {fmtTime(aberto.expiraEm)} de {fmtDateTime(aberto.expiraEm).split(" ")[0].replace(",", "")}.{" "}
+                <TextoQueTroca texto="Esperando o pagamento; a confirmação chega sozinha." brilho />
               </p>
               <PixBox code={aberto.codigo} />
               <AtualizaSozinho ativo />

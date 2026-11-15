@@ -7,6 +7,8 @@ import { fmtDateTime, fmtTime } from "@/components/ui";
 import { formatBRL } from "@/lib/money";
 import { AtualizaSozinho } from "@/components/atualiza-sozinho";
 import { AvisoNoCelular } from "./aviso-celular";
+import { CheckSucesso } from "@/components/check-sucesso";
+import { TextoQueTroca } from "@/components/texto-que-troca";
 
 // Página que o cliente abre pelo link do pedido: a situação em destaque, o caminho até a porta
 // (recebido, saiu, entregue) e o que foi pedido. Sem login; o código do link é a chave.
@@ -67,7 +69,9 @@ export default async function Acompanhar({ params }: PageProps<"/pedir/[slug]/ac
       <section className="panel mt-6 p-5" aria-live="polite">
         <p className="flex items-center gap-2.5 text-[1.375rem] leading-tight font-semibold tracking-[-0.02em]">
           {!cancelado && !entregue && <span aria-hidden="true" className="status-vivo size-2 shrink-0 rounded-full bg-ok" />}
-          {manchete}
+          {entregue && <CheckSucesso size={28} />}
+          {/* em andamento o status brilha; quando muda, o texto antigo sai e o novo entra */}
+          <TextoQueTroca texto={manchete} brilho={!cancelado && !entregue} />
         </p>
         {cancelado ? (
           <p className="mt-2 text-muted">
@@ -114,7 +118,12 @@ export default async function Acompanhar({ params }: PageProps<"/pedir/[slug]/ac
           <span className="text-muted">{pagamento[p.paymentMethod]}</span>
           <span className="num text-xl font-semibold">{formatBRL(p.totalCents)}</span>
         </div>
-        {p.paymentMethod === "pix" && p.pixConfirmedAt && <p className="mt-2 text-[13px] text-ok">Pix recebido pela loja.</p>}
+        {p.paymentMethod === "pix" && p.pixConfirmedAt && (
+          <p className="mt-2 flex items-center gap-2 text-[13px] text-ok">
+            <CheckSucesso size={18} />
+            Pix recebido pela loja.
+          </p>
+        )}
       </section>
 
       {pix && (

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
+import { TextoQueTroca } from "./texto-que-troca";
 
 export function CopyButton({ text, label = "Copiar código" }: { text: string; label?: string }) {
   const [done, setDone] = useState(false);
@@ -20,13 +21,13 @@ export function CopyButton({ text, label = "Copiar código" }: { text: string; l
         setTimeout(() => setDone(false), 2000);
       }}
     >
-      {/* os dois ícones no mesmo lugar: o de copiar sai girando e o ✓ chega, e voltam depois */}
+      {/* os dois ícones no mesmo lugar, trocando como no "Icon swap" do transitions.dev (de 25% com desfoque, 250ms) */}
       <span aria-hidden="true" className="relative grid size-4 place-items-center">
         <Copy size={16} strokeWidth={1.75} className="copiar-icone copiar-de" />
         <Check size={16} strokeWidth={2} className="copiar-icone copiar-ok" />
       </span>
-      {/* o texto troca com um esmaecer curto (a chave nova faz a palavra chegar) */}
-      <span key={String(done)} className="copiar-texto">{done ? "Copiado" : label}</span>
+      {/* e o texto como no "Text states swap": o antigo sobe desfocando, o novo vem de baixo */}
+      <TextoQueTroca texto={done ? "Copiado" : label} />
     </button>
   );
 }

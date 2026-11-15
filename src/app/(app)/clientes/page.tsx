@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { listCustomers } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
@@ -8,6 +8,7 @@ import { saveCustomerAction } from "@/app/actions";
 import { Empty, PageHeader } from "@/components/ui";
 import { JanelaAcao } from "@/components/janela-acao";
 import { Dicas } from "@/components/dicas";
+import { CampoBusca } from "@/components/campo-busca";
 
 export const metadata = { title: "Clientes" };
 
@@ -31,11 +32,9 @@ export default async function Clientes({ searchParams }: PageProps<"/clientes">)
       <section className="panel">
         {/* a mesma busca de Pedidos: Enter procura */}
         <form className="border-b border-line p-3" role="search">
-          <label className="relative block w-full sm:max-w-sm">
-            <span className="sr-only">Buscar cliente</span>
-            <Search size={15} strokeWidth={1.75} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted" aria-hidden="true" />
-            <input name="q" type="search" defaultValue={term} placeholder="Nome, telefone ou endereço" className="input pl-9" />
-          </label>
+          <div className="sm:max-w-sm">
+            <CampoBusca name="q" defaultValue={term} placeholder="Nome, telefone ou endereço" rotulo="Buscar cliente" />
+          </div>
         </form>
         {customers.length ? (
           <ul>

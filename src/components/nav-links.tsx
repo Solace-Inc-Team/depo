@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, type ForwardRefExoticComponent, type HTMLAttributes, type RefAttributes } from "react";
 import { MotionConfig } from "motion/react";
+import { SeloMenu } from "./selo-menu";
 // teste: ícones animados da lucide-animated (https://lucide-animated.com) no lugar da animação em CSS
 import { LayoutGridIcon } from "./icones-animados/layout-grid";
 import { PlusIcon } from "./icones-animados/plus";
@@ -47,7 +48,7 @@ const icons: Record<string, Animado | LucideIcon> = {
 const animados = new Set<unknown>([LayoutGridIcon, PlusIcon, ReceiptTextIcon, TruckIcon, WalletIcon, UsersIcon, HandCoinsIcon, ChartColumnIncreasingIcon, ReceiptIcon, UserRoundCogIcon, HistoryIcon, CircleHelpIcon]);
 
 // o ícone anima com o mouse sobre a linha inteira do menu, e uma vez quando a tela dele vira a atual
-function ItemMenu({ href, label, on }: { href: string; label: string; on: boolean }) {
+function ItemMenu({ href, label, on, selo }: { href: string; label: string; on: boolean; selo?: number }) {
   const Icon = icons[href];
   const ctrl = useRef<Controle>(null);
   useEffect(() => {
@@ -71,12 +72,13 @@ function ItemMenu({ href, label, on }: { href: string; label: string; on: boolea
       {Anim && <Anim ref={ctrl} size={16} aria-hidden="true" className="icone-animado shrink-0" />}
       {Estatico && <Estatico size={16} strokeWidth={1.75} aria-hidden="true" />}
       {label}
+      {selo !== undefined && <SeloMenu n={selo} />}
     </Link>
   );
 }
 
 // soCelular: no computador o item mora no rodapé lateral (Ajuda), e o menu cabe na tela do notebook
-export type NavGroup = { title?: string; soCelular?: boolean; links: { href: string; label: string }[] };
+export type NavGroup = { title?: string; soCelular?: boolean; links: { href: string; label: string; selo?: number }[] };
 
 export function NavLinks({ groups }: { groups: NavGroup[] }) {
   const path = usePathname();
@@ -116,7 +118,7 @@ export function NavLinks({ groups }: { groups: NavGroup[] }) {
         <div key={i} className={`flex shrink-0 gap-1 lg:flex-col lg:gap-0.5 ${g.soCelular ? "lg:hidden" : ""}`}>
           {g.title && <p className="hidden px-2 pb-1 text-xs font-medium text-muted lg:block">{g.title}</p>}
           {g.links.map((l) => (
-            <ItemMenu key={l.href} href={l.href} label={l.label} on={active(l.href)} />
+            <ItemMenu key={l.href} href={l.href} label={l.label} on={active(l.href)} selo={l.selo} />
           ))}
         </div>
       ))}

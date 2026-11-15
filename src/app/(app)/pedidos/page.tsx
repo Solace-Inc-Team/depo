@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { ViewTransition } from "react";
-import { Plus, Search, ReceiptText } from "lucide-react";
+import { Plus, ReceiptText } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { countOrdersByStatus, listOrders } from "@/domain/queries";
 import { cancelarPixVencidos } from "@/domain/pix";
 import { Money, PageHeader, SiteBadge, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
 import { LiveNumber } from "@/components/live-number";
+import { CampoBusca } from "@/components/campo-busca";
 
 export const metadata = { title: "Pedidos" };
 
@@ -76,11 +77,9 @@ export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
 
       <form className="mb-4 flex flex-wrap items-center justify-between gap-3" role="search">
         {current && <input type="hidden" name="status" value={current} />}
-        <label className="relative w-full max-w-xs">
-          <span className="sr-only">Buscar pedido</span>
-          <Search size={15} strokeWidth={1.75} className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-muted" aria-hidden="true" />
-          <input name="q" defaultValue={q} placeholder="Cliente ou número do pedido" className="input pl-9" />
-        </label>
+        <div className="w-full max-w-xs">
+          <CampoBusca name="q" defaultValue={q} placeholder="Cliente ou número do pedido" rotulo="Buscar pedido" />
+        </div>
         <p className="text-[13px] text-muted">
           {orders.length} {orders.length === 1 ? "pedido" : "pedidos"}
         </p>

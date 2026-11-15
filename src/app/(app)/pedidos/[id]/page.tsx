@@ -15,6 +15,8 @@ import { CopyButton } from "@/components/copy-button";
 import { headers } from "next/headers";
 import { MessageCircle } from "lucide-react";
 import { Marcar } from "@/components/controles";
+import { TextoQueTroca } from "@/components/texto-que-troca";
+import { CheckSucesso } from "@/components/check-sucesso";
 
 export const metadata = { title: "Pedido" };
 
@@ -195,7 +197,7 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
 
           {pixOpen && (
             <section className="panel p-4">
-              <h2 className="h2 mb-1">{pix?.automatico ? "Pix aguardando pagamento" : "Pix a conferir"}</h2>
+              <h2 className="h2 mb-1">{pix?.automatico ? <TextoQueTroca texto="Pix aguardando pagamento" brilho /> : "Pix a conferir"}</h2>
               {o.status === "aguardando_pagamento" && <p className="mb-1 text-sm font-medium">Fora da fila de entrega até o Pix ser confirmado.</p>}
               <p className="mb-3 text-sm text-muted">
                 {pix?.automatico
@@ -213,7 +215,8 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
             </section>
           )}
           {o.paymentMethod === "pix" && o.pixConfirmedAt && (
-            <p className="rounded-md bg-ok-soft px-4 py-3 text-sm text-ok">
+            <p className="flex items-center gap-2.5 rounded-md bg-ok-soft px-4 py-3 text-sm text-ok">
+              <CheckSucesso size={20} />
               {o.pixConfirmedBy ? "Pix conferido" : "Pix confirmado pelo Mercado Pago"} em {fmtDateTime(o.pixConfirmedAt)}.
             </p>
           )}

@@ -27,10 +27,11 @@
 }
 
 /* o tema vem do atributo que o script do layout põe antes de desenhar a página:
-   a escolha da pessoa (claro ou escuro) ou, no automático, o tema do aparelho */
+   a escolha da pessoa (claro ou escuro) ou, no automático, o tema do aparelho. Sem o atributo vale o escuro:
+   no 404 de uma página dinâmica (link de acompanhamento errado) o Next não roda o script e a página saía clara */
 /* .faixa-escura e .pagina-escura: partes da página inicial que são sempre escuras, qualquer que seja o tema
    (a vitrine tem um visual só, ajustado uma vez; o sistema segue a escolha da pessoa) */
-:root[data-tema="escuro"],
+:root:not([data-tema="claro"]),
 .faixa-escura,
 .pagina-escura {
   --marca: #6d9dff;
@@ -511,31 +512,25 @@ details[open] > :not(summary) {
 .copiar-icone {
   grid-area: 1 / 1;
   transition:
-    opacity var(--dur) var(--ease-out),
-    scale var(--dur) var(--ease-chegada),
-    rotate var(--dur) var(--ease-chegada);
+    opacity 250ms ease-in-out,
+    scale 250ms ease-in-out,
+    filter 250ms ease-in-out;
 }
 .copiar-ok {
   opacity: 0;
-  scale: 0.5;
-  rotate: -45deg;
+  scale: 0.25;
+  filter: blur(2px);
 }
 .copiar[data-feito] .copiar-de {
   opacity: 0;
-  scale: 0.5;
-  rotate: 45deg;
+  scale: 0.25;
+  filter: blur(2px);
 }
 .copiar[data-feito] .copiar-ok {
   opacity: 1;
   scale: 1;
-  rotate: 0deg;
+  filter: blur(0);
   color: var(--ok);
-}
-.copiar-texto {
-  transition: opacity var(--dur) var(--ease-out);
-  @starting-style {
-    opacity: 0;
-  }
 }
 
 /* engrenagem: gira um pouco quando a mão chega e um quarto de volta com o menu aberto */
@@ -2464,7 +2459,7 @@ input[type="date"].input:hover::-webkit-calendar-picker-indicator {
     translate 160ms cubic-bezier(0.22, 1, 0.36, 1),
     width 160ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-:root[data-tema="escuro"] .dica,
+:root:not([data-tema="claro"]) .dica,
 .pagina-escura .dica {
   background: #222;
   color: #f0f0f0;
@@ -2679,18 +2674,18 @@ input[type="date"].input:hover::-webkit-calendar-picker-indicator {
 /* botões no escuro: sombra preta não aparece em fundo preto, e misturar o branco do botão com o fundo
    o deixava mais apagado ao passar o mouse. Aqui a luz é o que muda: borda de cima mais clara em repouso
    e, com o mouse, o botão vai para o branco puro com um halo claro em volta */
-:is(:root[data-tema="escuro"], .pagina-escura) .btn-primary:not([disabled]) {
+:is(:root:not([data-tema="claro"]), .pagina-escura) .btn-primary:not([disabled]) {
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.75),
     0 1px 2px rgb(0 0 0 / 0.5);
 }
 /* e a luz nasce onde o mouse está (--bx/--by, de LuzNoBotao): um ponto branco que acompanha o cursor,
    atrás do texto (isolation + z-index -1), aparecendo e sumindo devagar */
-:is(:root[data-tema="escuro"], .pagina-escura) .btn-primary:not([disabled]) {
+:is(:root:not([data-tema="claro"]), .pagina-escura) .btn-primary:not([disabled]) {
   isolation: isolate;
   overflow: hidden;
 }
-:is(:root[data-tema="escuro"], .pagina-escura) .btn-primary:not([disabled])::before {
+:is(:root:not([data-tema="claro"]), .pagina-escura) .btn-primary:not([disabled])::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -2702,10 +2697,10 @@ input[type="date"].input:hover::-webkit-calendar-picker-indicator {
   pointer-events: none;
 }
 @media (hover: hover) {
-  :is(:root[data-tema="escuro"], .pagina-escura) .btn-primary:not([disabled]):hover::before {
+  :is(:root:not([data-tema="claro"]), .pagina-escura) .btn-primary:not([disabled]):hover::before {
     opacity: 1;
   }
-  :is(:root[data-tema="escuro"], .pagina-escura) .btn-primary:not([disabled]):hover {
+  :is(:root:not([data-tema="claro"]), .pagina-escura) .btn-primary:not([disabled]):hover {
     /* o fundo fica na cor de repouso: quem muda é só a luz sob o cursor */
     background: var(--fg);
     border-color: #fff;
@@ -2714,7 +2709,7 @@ input[type="date"].input:hover::-webkit-calendar-picker-indicator {
       0 0 0 4px rgb(255 255 255 / 0.06),
       0 10px 30px -10px rgb(255 255 255 / 0.28);
   }
-  :is(:root[data-tema="escuro"], .pagina-escura) .btn:not(.btn-primary):hover {
+  :is(:root:not([data-tema="claro"]), .pagina-escura) .btn:not(.btn-primary):hover {
     border-color: color-mix(in srgb, var(--fg) 32%, var(--line));
   }
 }
@@ -2966,4 +2961,247 @@ html:has(.pagina-escura) body {
 /* teste lucide-animated: o traço dos ícones novos na mesma espessura dos outros do menu */
 .icone-animado svg {
   stroke-width: 1.75;
+}
+
+/* Text states swap do transitions.dev: o texto antigo sobe 4px desfocando e some, o novo vem de baixo (150ms cada) */
+.troca-texto {
+  display: inline-block;
+  transition:
+    translate 150ms ease-in-out,
+    filter 150ms ease-in-out,
+    opacity 150ms ease-in-out;
+}
+.troca-texto[data-fase="saindo"] {
+  translate: 0 -4px;
+  filter: blur(2px);
+  opacity: 0;
+}
+.troca-texto[data-fase="entrando"] {
+  translate: 0 4px;
+  filter: blur(2px);
+  opacity: 0;
+  transition: none;
+}
+/* Shimmer text do transitions.dev: a faixa clara atravessa o texto em 2s, sem parar, enquanto algo anda */
+.brilho {
+  position: relative;
+  /* como no original: o texto em cinza e a faixa clara por cima */
+  color: var(--muted);
+}
+.brilho::before {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(90deg, transparent 0%, transparent 40%, var(--brilho-cor, #fff) 50%, transparent 60%, transparent 100%);
+  background-size: 400% 100%;
+  background-position: 100% 0;
+  background-repeat: no-repeat;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  animation: brilho-passa 2000ms linear infinite;
+}
+:root[data-tema="claro"] .brilho {
+  --brilho-cor: #0d0d0d;
+}
+@keyframes brilho-passa {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: 0% 0;
+  }
+}
+
+/* Success check do transitions.dev: disco verde que chega girando de 80°, subindo e saindo do desfoque (500ms);
+   o traço se desenha 80ms depois. Aqui o deslocamento acompanha o tamanho (40px para 48px no original) */
+.check-sucesso {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: var(--check);
+  height: var(--check);
+  border-radius: 999px;
+  background: #35ba00;
+  box-shadow:
+    inset 0 0 0 1px rgb(0 0 0 / 0.05),
+    0 1px 1px 0 rgb(0 0 0 / 0.1),
+    0 1px 4px 0 rgb(0 0 0 / 0.08),
+    inset 0 -1px 1px 0 rgb(0 0 0 / 0.09);
+  animation:
+    check-aparece 500ms cubic-bezier(0.22, 1, 0.36, 1) both,
+    check-gira 500ms cubic-bezier(0.22, 1, 0.36, 1) both,
+    check-foca 500ms cubic-bezier(0.22, 1, 0.36, 1) both,
+    check-sobe 500ms cubic-bezier(0.34, 1.35, 0.64, 1) both;
+}
+.check-sucesso svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.check-sucesso path {
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+  animation: check-traco 500ms cubic-bezier(0.22, 1, 0.36, 1) 80ms forwards;
+}
+@keyframes check-aparece {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes check-gira {
+  from {
+    rotate: 80deg;
+  }
+}
+@keyframes check-foca {
+  from {
+    filter: blur(10px);
+  }
+}
+@keyframes check-sobe {
+  from {
+    translate: 0 calc(var(--check) * 0.83);
+  }
+}
+@keyframes check-traco {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .troca-texto {
+    transition: opacity 150ms;
+  }
+  .troca-texto[data-fase] {
+    translate: 0;
+    filter: none;
+  }
+  .brilho::before {
+    animation: none;
+    background: none;
+  }
+  .check-sucesso {
+    animation: check-aparece 300ms both;
+  }
+  .check-sucesso path {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+/* selo de Entregas no menu: "Notification badge" do transitions.dev. Entra deslizando de (-8px, 12px) em 260ms
+   e crescendo de 0 com mola em 500ms, saindo do desfoque; sai encolhendo e desfocando em 180ms */
+.selo-menu {
+  display: inline-flex;
+  pointer-events: none;
+}
+.selo-menu[data-aberto] {
+  animation: selo-desliza 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.selo-menu-num {
+  display: inline-grid;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  place-items: center;
+  padding: 0 0.375rem;
+  border-radius: 999px;
+  background: var(--marca);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 600;
+  line-height: 1;
+  scale: 0;
+  opacity: 0;
+  filter: blur(2px);
+  transition:
+    scale 180ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 180ms cubic-bezier(0.4, 0, 0.2, 1),
+    filter 180ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+:root:not([data-tema="claro"]) .selo-menu-num {
+  background: #1747c6;
+}
+.selo-menu[data-aberto] .selo-menu-num {
+  scale: 1;
+  opacity: 1;
+  filter: blur(0);
+  transition:
+    scale 500ms cubic-bezier(0.34, 1.36, 0.64, 1),
+    opacity 400ms cubic-bezier(0.34, 1.36, 0.64, 1),
+    filter 500ms cubic-bezier(0.34, 1.36, 0.64, 1);
+  @starting-style {
+    scale: 0;
+    opacity: 0;
+    filter: blur(2px);
+  }
+}
+@keyframes selo-desliza {
+  from {
+    translate: -8.2px 12.4px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .selo-menu[data-aberto] {
+    animation: none;
+  }
+}
+
+/* busca com o × do transitions.dev ("Input clear with dissolve"); o JS em campo-busca.tsx anima as camadas */
+.campo-busca input::-webkit-search-cancel-button {
+  display: none;
+}
+.campo-busca[data-limpando] input::placeholder {
+  color: transparent;
+}
+.campo-busca-espelho {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding-left: 2.25rem;
+  overflow: hidden;
+  font-size: 0.875rem;
+  white-space: pre;
+  pointer-events: none;
+}
+.campo-busca-falso {
+  color: var(--muted);
+  opacity: 0;
+}
+.campo-busca[data-limpando] .campo-busca-falso {
+  opacity: 0.9;
+}
+.campo-busca-brilho {
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  opacity: 0;
+  pointer-events: none;
+}
+.campo-busca-limpar {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  translate: 0 -50%;
+  color: var(--muted);
+  opacity: 0;
+  pointer-events: none;
+  cursor: pointer;
+  transition:
+    opacity 150ms ease,
+    color 120ms ease;
+}
+.campo-busca-limpar[data-visivel] {
+  opacity: 1;
+  pointer-events: auto;
+}
+.campo-busca-limpar:hover {
+  color: var(--fg);
 }

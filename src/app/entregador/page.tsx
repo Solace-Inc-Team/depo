@@ -12,6 +12,7 @@ import { Empty, Money, paymentLabel } from "@/components/ui";
 import { DeliverButton } from "./deliver-button";
 import { DeliveryExceptions } from "@/components/delivery-forms";
 import { LiveNumber } from "@/components/live-number";
+import { TextoQueTroca } from "@/components/texto-que-troca";
 
 export const metadata = { title: "Minhas entregas" };
 
@@ -128,6 +129,7 @@ export default async function Entregador() {
                             <summary className="btn tap cursor-pointer list-none">Mostrar QR do Pix para o cliente</summary>
                             <div className="mt-2">
                               <PixBox code={pixes.get(o.id)!.codigo} size={200} />
+                              <p className="mt-2 text-[13px]"><TextoQueTroca texto="Esperando o cliente pagar" brilho /></p>
                             </div>
                           </details>
                         )}

@@ -12,6 +12,7 @@ import { PageTransition } from "@/components/page-transition";
 import { SeletorFilial } from "@/components/seletor-filial";
 import { MenuConfig } from "@/components/menu-config";
 import { Dicas } from "@/components/dicas";
+import { countOrdersByStatus } from "@/domain/queries";
 import { secoesConfig } from "./configuracoes/secoes";
 import { Suspense } from "react";
 import { dataBR, situacaoAssinatura } from "@/lib/plano";
@@ -50,6 +51,9 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         }
       : null;
 
+  // pedidos esperando saída: o selo no item Entregas (o layout volta a contar a cada ação e a cada atualização da tela)
+  const fila = (await countOrdersByStatus(user.tenantId, user.branchId)).aberto ?? 0;
+
   const groups: NavGroup[] = [
     {
       links: [
@@ -61,7 +65,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       title: "Operação",
       links: [
         { href: "/pedidos", label: "Pedidos" },
-        { href: "/entregas", label: "Entregas" },
+        { href: "/entregas", label: "Entregas", selo: fila },
         { href: "/caixa", label: "Caixa e acertos" },
         { href: "/estoque", label: "Estoque" },
         { href: "/clientes", label: "Clientes" },
