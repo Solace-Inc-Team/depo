@@ -19,6 +19,8 @@ import { Peca } from "./peca";
 export const metadata = {
   title: { absolute: "depo: gestão para revendas de água e gás" },
   description: "Pedido, entrega, cascos e acerto de caixa num lugar só, para revendas de água e gás.",
+  // a vitrine abre em "/" para quem não está logado e em /inicio para quem está: os buscadores contam uma só
+  alternates: { canonical: "/" },
 };
 
 const titulo = ["Onde está cada casco.", "Quanto cada entregador te deve."].map((l) => l.split(" "));
@@ -71,7 +73,7 @@ export default function Inicio() {
     <div className="pagina-escura overflow-x-clip">
       <header className="site-header sticky top-0 z-20 border-b">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <Link href="/" aria-label="depo, início" className="alvo">
+          <Link href="/inicio" aria-label="depo, início" className="alvo">
             <Logo animar="entrada" />
           </Link>
           <nav className="flex items-center gap-6 text-[13px] text-muted">
