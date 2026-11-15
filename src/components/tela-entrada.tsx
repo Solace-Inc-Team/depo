@@ -14,7 +14,7 @@ export function TelaEntrada({ children }: { children: ReactNode }) {
       <div aria-hidden="true" className="topo-luz absolute inset-0 -z-10" />
       {/* luz branca puxada para o azul da marca; fraca o bastante para o formulário continuar legível */}
       <div aria-hidden="true" className="absolute inset-0 -z-10">
-        <LightRays raysColor="#cfdcff" intensity={0.85} opacity={0.8} mouseInfluence={0.06} cursorShadow={false} clickPulse={false} />
+        <LightRays raysColor="#cfdcff" intensity={0.85} opacity={0.8} followMouse={false} cursorShadow={false} clickPulse={false} />
       </div>
       <div className="flex w-full flex-1 items-center justify-center py-8">
         <div className="stagger w-full max-w-[22rem]">
