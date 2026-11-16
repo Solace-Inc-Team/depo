@@ -157,6 +157,12 @@ export function PortalForm({
           </div>
         </section>
 
+        {/* o fim da página também tem fios por trás (inclinados ao contrário, para não repetir o de cima): o pagamento
+            e o botão de pedir ficam em destaque como os produtos, em vez de terminar num bloco escuro */}
+        <div className="relative isolate space-y-6">
+        <div aria-hidden="true" className="fundo-fios">
+          <Threads color={[0.29, 0.5, 1]} accentColor={undefined} lineCount={60} amplitude={1.4} distance={0.35} speed={0.5} angle={-25} seed={7} />
+        </div>
         <section className="panel space-y-3 p-4">
           <h2 className="h2">Pagamento</h2>
           <div className="grid gap-2">
@@ -206,6 +212,7 @@ export function PortalForm({
           <Aparece quando={!items.length}>
             <p className="pt-2 text-center text-[13px] text-muted">Escolha ao menos um produto acima.</p>
           </Aparece>
+        </div>
         </div>
       </fieldset>
 
