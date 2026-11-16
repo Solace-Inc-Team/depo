@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/auth";
 import { logout } from "@/app/actions";
 import { MarcaDaSessao } from "@/components/logo";
 import { NavLinks, type NavGroup } from "@/components/nav-links";
+import { NavInferior } from "@/components/nav-inferior";
 import { roleLabel } from "@/components/ui";
 import { PageTransition } from "@/components/page-transition";
 import { SeletorFilial } from "@/components/seletor-filial";
@@ -46,6 +47,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
                   : teste
                     ? `Faltam ${sit.dias} dias`
                     : `Vence em ${sit.dias} dias`,
+          // no topo do celular cabe pouco: o essencial do selo numa pílula
+          curta: sit.dias < 0 ? (teste ? "Teste acabou" : "Venceu") : sit.dias <= 1 ? (sit.dias === 0 ? "Vence hoje" : "Vence amanhã") : teste ? `Teste: ${sit.dias} dias` : `Vence em ${sit.dias} dias`,
           acao: teste ? "Assinar" : "Pagar",
           alerta: sit.dias <= 1,
         }
@@ -87,7 +90,6 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           : []),
       ],
     },
-    { soCelular: true, links: [{ href: "/ajuda", label: "Ajuda" }] },
   ];
 
   return (
@@ -96,19 +98,19 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-3 lg:px-5 lg:pt-5">
           <MarcaDaSessao />
           {/* o tema fica no alto nas duas larguras; Sair aqui só no celular (no computador está no rodapé) */}
-          <Dicas lado="baixo" className="flex items-center gap-1">
-            {/* no celular e no tablet não há rodapé lateral: quem está logado aparece aqui, e o toque leva a trocar a senha */}
+          {/* no celular e no tablet a conta, a engrenagem, o tema e o Sair moram na gaveta "Mais" da barra de baixo:
+              o topo fica só com a marca e o selo do plano, e os números do dia sobem na tela */}
+          {selo && (
             <Link
-              href="/senha"
-              aria-label={`${user.name}, ${roleLabel[user.role]}. Trocar senha`}
-              className="mr-1 flex min-h-11 items-center gap-2 rounded-md px-1.5 hover:bg-subtle lg:hidden"
+              href="/assinatura"
+              className={`flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-[12.5px] font-medium lg:hidden ${selo.alerta ? "border-warn-fg/40 text-warn-fg" : "border-line"}`}
             >
-              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-subtle text-[11px] font-semibold">{initials(user.name)}</span>
-              <span className="hidden leading-tight min-[360px]:block">
-                <span className="block max-w-[7rem] truncate text-[13px] font-medium">{user.name.split(" ")[0]}</span>
-                <span className="block text-[11.5px] text-muted">{roleLabel[user.role]}</span>
-              </span>
+              <CreditCard size={14} strokeWidth={1.75} aria-hidden="true" className={selo.alerta ? "" : "text-accent"} />
+              {selo.curta}
             </Link>
+          )}
+          {/* a janela das Configurações fica montada também no celular (a gaveta abre pelo endereço ?config); só o botão some */}
+          <Dicas lado="baixo" className="flex items-center gap-1">
             {/* configurações do dono (o que se ajusta uma vez): numa engrenagem, fora do menu do dia a dia */}
             {user.role === "dono" && (
               <Suspense>
@@ -120,14 +122,11 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
                       <p className="text-[11.5px] text-muted">{user.pagoAte ? "Plano mensal" : "Sem mensalidade"}</p>
                     </>
                   }
-                  className="size-11 lg:size-8"
+                  className="size-8 max-lg:hidden"
                 />
               </Suspense>
             )}
-            <TemaBotao className="size-11 lg:size-8" />
-            <form action={logout} className="lg:hidden">
-              <button className="btn btn-sm tap">Sair</button>
-            </form>
+            <TemaBotao className="size-8 max-lg:hidden" />
           </Dicas>
         </div>
         {user.branches.length > 1 && user.role === "dono" ? (
@@ -145,7 +144,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         {selo && (
           <Link
             href="/assinatura"
-            className={`mx-2.5 mb-3 flex items-center gap-3 rounded-lg border px-3 py-2.5 hover:bg-subtle lg:mb-4 ${selo.alerta ? "border-warn-fg/40" : "border-line"}`}
+            className={`mx-2.5 mb-4 hidden items-center gap-3 rounded-lg border px-3 py-2.5 hover:bg-subtle lg:flex ${selo.alerta ? "border-warn-fg/40" : "border-line"}`}
           >
             <CreditCard size={16} strokeWidth={1.75} aria-hidden="true" className={`shrink-0 ${selo.alerta ? "text-warn-fg" : "text-accent"}`} />
             <span className="min-w-0 flex-1 leading-tight">
@@ -155,7 +154,10 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             <span className="shrink-0 text-[13px] font-medium text-accent">{selo.acao}</span>
           </Link>
         )}
-        <NavLinks groups={groups} />
+        {/* o menu lateral é do computador; no celular e no tablet a navegação é a barra de baixo (NavInferior) */}
+        <div className="hidden lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+          <NavLinks groups={groups} />
+        </div>
         <div className="mt-auto hidden shrink-0 items-center gap-2.5 border-t border-line px-4 py-3 lg:flex">
           <span className="grid size-8 shrink-0 place-items-center rounded-full bg-subtle text-xs font-semibold">
             {initials(user.name)}
@@ -180,9 +182,26 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           </Dicas>
         </div>
       </aside>
-      <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-10 lg:py-10">
+      {/* embaixo, espaço para a barra de navegação do celular e para a barra de gestos do iPhone */}
+      <main className="main-app mx-auto w-full max-w-6xl px-4 pt-6 lg:px-10 lg:py-10">
         <PageTransition>{children}</PageTransition>
       </main>
+      <NavInferior
+        fila={fila}
+        mais={[
+          { titulo: "Operação", links: groups[1].links.filter((l) => !["/pedidos", "/entregas"].includes(l.href)) },
+          { titulo: "Gestão", links: groups[2].links },
+        ]}
+        usuario={{ iniciais: initials(user.name), nome: user.name, papel: roleLabel[user.role], empresa: user.branches.length > 1 ? `${user.tenantName}, ${user.branchName}` : user.tenantName }}
+        config={user.role === "dono"}
+        sair={
+          <form action={logout}>
+            <button className="gaveta-mais-linha w-full text-danger">
+              <LogOut size={18} strokeWidth={1.75} aria-hidden="true" /> Sair
+            </button>
+          </form>
+        }
+      />
     </div>
   );
 }

@@ -47,7 +47,7 @@ export function PageHeader({ title, description, children }: { title: string; de
         <h1 className="h1">{title}</h1>
         {description && <p className="mt-1 max-w-2xl text-muted">{description}</p>}
       </div>
-      {children && <div className="flex flex-wrap gap-2">{children}</div>}
+      {children && <div className="acoes-topo flex flex-wrap gap-2">{children}</div>}
     </div>
   );
 }

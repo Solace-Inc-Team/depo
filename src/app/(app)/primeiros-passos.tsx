@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
-import { Check } from "lucide-react";
+import { useState } from "react";
+import { Check, ChevronDown } from "lucide-react";
 import { PLANO, dataBR } from "@/lib/plano";
 import { formatBRL } from "@/lib/money";
 
@@ -19,6 +22,8 @@ const passos: { chave: Chave; titulo: string; texto: string; href: string; acao:
 ];
 
 export function PrimeirosPassos({ feito, testeAte }: { feito: Feito; testeAte?: string | null }) {
+  // no celular aparece só o passo da vez: a lista inteira empurrava os números do dia para fora da tela
+  const [todos, setTodos] = useState(false);
   const prontos = passos.filter((p) => feito[p.chave]).length;
   if (prontos === passos.length) return null;
   const proximo = passos.find((p) => !feito[p.chave])!;
@@ -30,7 +35,8 @@ export function PrimeirosPassos({ feito, testeAte }: { feito: Feito; testeAte?: 
         <div className="min-w-0">
           <h2 id="primeiros-passos" className="h2">Primeiros passos</h2>
           {testeAte && (
-            <p className="mt-0.5 text-[13px] text-muted">
+            // no celular o prazo já está na pílula do topo
+            <p className="mt-0.5 text-[13px] text-muted max-sm:hidden">
               Teste grátis até {dataBR(testeAte)}. Depois, {formatBRL(PLANO.mensalCents)} por mês.{" "}
               <Link href="/assinatura" className="alvo font-medium text-fg hover:underline">Ver o plano</Link>
             </p>
@@ -49,7 +55,10 @@ export function PrimeirosPassos({ feito, testeAte }: { feito: Feito; testeAte?: 
           const ok = feito[p.chave];
           const atual = passo === proximo;
           return (
-            <li key={passo.chave} className={`flex items-start gap-3 border-b border-line px-4 py-3 last:border-0 ${atual ? "bg-subtle/60" : ""}`}>
+            <li
+              key={passo.chave}
+              className={`flex items-start gap-3 border-b border-line px-4 py-3 last:border-0 ${atual ? "bg-subtle/60" : todos ? "" : "max-sm:hidden"}`}
+            >
               <span
                 aria-hidden="true"
                 className={`num mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-[12px] font-semibold ${
@@ -88,6 +97,15 @@ export function PrimeirosPassos({ feito, testeAte }: { feito: Feito; testeAte?: 
           );
         })}
       </ol>
+      <button
+        type="button"
+        aria-expanded={todos}
+        onClick={() => setTodos((t) => !t)}
+        className="flex min-h-11 w-full items-center justify-center gap-1.5 border-t border-line text-[13px] text-muted sm:hidden"
+      >
+        {todos ? "Mostrar só o próximo passo" : `Ver os ${passos.length} passos`}
+        <ChevronDown size={15} strokeWidth={1.75} aria-hidden="true" className={`transition-transform duration-200 ${todos ? "rotate-180" : ""}`} />
+      </button>
     </section>
   );
 }

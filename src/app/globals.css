@@ -3428,3 +3428,203 @@ html:has(.pagina-escura) body {
     filter: none !important;
   }
 }
+
+/* navegação do celular e do tablet -----------------------------------------------------------------------
+   Barra fixa no pé da tela (onde o polegar alcança), como a do Slack no iPhone: quatro destinos e "Mais".
+   O fundo é o da página levemente translúcido, com a borda de cima fina: some no visual sem sumir no uso. */
+@media (max-width: 1023px) {
+  .main-app {
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom));
+  }
+  /* avisos (toasts) sobem acima da barra */
+  body:has(.nav-inferior) .pilha-avisos {
+    bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
+  /* teclado aberto num campo da tela: a barra sai, para o campo e o teclado ficarem com a tela */
+  body:has(main :is(input:not([type="checkbox"], [type="radio"], [type="hidden"]), textarea, select):focus) .nav-inferior {
+    display: none;
+  }
+}
+/* só abaixo de 1024 px: no computador a navegação é o menu lateral (a regra fora de camada venceria o lg:hidden) */
+.nav-inferior {
+  display: none;
+}
+@media (max-width: 1023px) {
+  .nav-inferior {
+    display: grid;
+  }
+}
+.nav-inferior {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 30;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  padding: 5px 6px max(6px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+}
+/* no novo pedido (celular) o pé da tela é da barra do carrinho */
+@media (max-width: 639px) {
+  .nav-inferior[data-tela="novo"] {
+    display: none;
+  }
+}
+.nav-inferior-aba,
+.nav-inferior-novo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 3.25rem;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  color: var(--muted);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    color var(--dur-fast),
+    scale 140ms var(--ease-out);
+}
+.nav-inferior-aba[data-on] {
+  color: var(--fg);
+}
+.nav-inferior-aba:active,
+.nav-inferior-novo:active {
+  scale: 0.93;
+}
+.nav-inferior-novo {
+  color: var(--fg);
+}
+/* a ação mais repetida do balcão: a única peça cheia da barra */
+.nav-inferior-novo-botao {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  background: var(--fg);
+  color: var(--bg);
+}
+.nav-inferior-selo {
+  position: absolute;
+  top: -5px;
+  right: -10px;
+  display: grid;
+  place-items: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--marca);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  box-shadow: 0 0 0 2px var(--bg);
+}
+
+/* gaveta "Mais": as outras telas em blocos de toque, depois a conta */
+.gaveta-mais .janela-cartao {
+  max-height: 88dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.gaveta-alca {
+  display: block;
+  width: 2.25rem;
+  height: 4px;
+  margin: -0.5rem auto 1rem;
+  border-radius: 999px;
+  background: var(--line);
+}
+@media (min-width: 640px) {
+  .gaveta-alca {
+    display: none;
+  }
+}
+.gaveta-mais-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 4.75rem;
+  padding: 0.6rem 0.4rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--subtle);
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--fg);
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    border-color var(--dur-fast),
+    scale 140ms var(--ease-out);
+}
+.gaveta-mais-item svg {
+  color: var(--muted);
+}
+.gaveta-mais-item[data-on] {
+  border-color: color-mix(in srgb, var(--marca) 70%, transparent);
+}
+.gaveta-mais-item[data-on] svg {
+  color: var(--marca);
+}
+.gaveta-mais-item:active {
+  scale: 0.96;
+}
+.gaveta-mais-linha {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 3rem;
+  padding: 0 0.875rem;
+  font-size: 14px;
+  -webkit-tap-highlight-color: transparent;
+}
+a.gaveta-mais-linha:active,
+button.gaveta-mais-linha:active {
+  background: var(--subtle);
+}
+.gaveta-mais-linha svg {
+  color: var(--muted);
+}
+.gaveta-mais-linha.text-danger svg {
+  color: var(--danger);
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-inferior-aba,
+  .nav-inferior-novo,
+  .gaveta-mais-item {
+    transition: none;
+  }
+}
+
+/* ações do topo da tela no celular: com três ou mais, viram uma grade de duas colunas na largura toda,
+   em vez de quebrar em linhas de tamanhos diferentes (Estoque, Relatórios) */
+@media (max-width: 639px) {
+  .acoes-topo:has(> :nth-child(3)) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+  .acoes-topo:has(> :nth-child(3)) > .btn {
+    justify-content: center;
+    width: 100%;
+    /* nome longo ("Exportar todos os dados") quebra dentro do botão em vez de vazar */
+    height: auto;
+    min-height: 2.75rem;
+    padding-block: 0.5rem;
+    white-space: normal;
+    text-align: center;
+  }
+  /* número ímpar de ações: a última ocupa a linha inteira */
+  .acoes-topo:has(> :nth-child(3)) > .btn:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+}
