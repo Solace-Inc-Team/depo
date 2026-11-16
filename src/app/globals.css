@@ -1826,6 +1826,29 @@ body[data-confirmando] .deliver-btn {
     width: 100%;
   }
 }
+/* ao abrir uma seção, as linhas chegam uma depois da outra, como as telas do sistema */
+.config-secao .ajuste-lista > * {
+  animation: ajuste-entra 360ms var(--ease-out) both;
+}
+.config-secao .ajuste-lista > :nth-child(2) { animation-delay: 45ms; }
+.config-secao .ajuste-lista > :nth-child(3) { animation-delay: 90ms; }
+.config-secao .ajuste-lista > :nth-child(4) { animation-delay: 135ms; }
+.config-secao .ajuste-lista > :nth-child(n + 5) { animation-delay: 180ms; }
+/* o segundo cartão da seção vem depois do primeiro */
+.config-secao :is(.ajuste-grupo, form) + :is(.ajuste-grupo, form) .ajuste-lista > * {
+  animation-delay: 140ms;
+}
+@keyframes ajuste-entra {
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .config-secao .ajuste-lista > * {
+    animation: none;
+  }
+}
 /* número com a unidade dentro do campo */
 .campo-unidade {
   position: relative;
@@ -2311,6 +2334,8 @@ input[type="date"].input:hover::-webkit-calendar-picker-indicator {
 .divisao > span {
   transform-origin: left;
   animation: divisao-trecho 520ms var(--ease-chegada) calc(150ms + var(--i, 0) * 110ms) both;
+  /* o painel se atualiza sozinho: quando um valor muda, o trecho desliza até o tamanho novo em vez de pular */
+  transition: flex-grow 600ms var(--ease-out);
 }
 @keyframes divisao-trecho {
   from {
@@ -2321,6 +2346,7 @@ input[type="date"].input:hover::-webkit-calendar-picker-indicator {
 @media (prefers-reduced-motion: reduce) {
   .divisao > span {
     animation: none;
+    transition: none;
   }
 }
 

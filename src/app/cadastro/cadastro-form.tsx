@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useLayoutEffect, useRef, useState, useTransition } from "react";
 import { ArrowLeft, ArrowRight, Droplet, Eye, EyeOff, Flame } from "lucide-react";
 import { cadastrarAction } from "@/app/actions";
-import { validarCampos } from "@/components/action-form";
+import { tremerCampo, validarCampos } from "@/components/action-form";
 import { Aparece } from "@/components/saida";
 import { Marcar } from "@/components/controles";
 
@@ -71,6 +71,8 @@ export function CadastroForm() {
           const confirmar = f.elements.namedItem("confirm") as HTMLInputElement;
           if (confirmar.value !== (f.elements.namedItem("password") as HTMLInputElement).value) {
             setErro({ geral: "As duas senhas não são iguais. Digite de novo." });
+            // treme como os outros campos com erro, e já fica selecionado para redigitar
+            tremerCampo(confirmar);
             confirmar.select();
             return;
           }

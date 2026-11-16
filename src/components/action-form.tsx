@@ -30,15 +30,20 @@ function avisoDoCampo(campo: Campo) {
 }
 
 /** Primeiro campo inválido do formulário: marca, faz tremer, põe o foco e devolve a mensagem. Sem erro, null. */
-export function validarCampos(form: HTMLFormElement): string | null {
-  const campo = form.querySelector<Campo>(":invalid:not(fieldset)");
-  if (!campo) return null;
+/** Marca o campo como errado, faz tremer e põe o foco; a marca sai quando a pessoa digita de novo. */
+export function tremerCampo(campo: Campo) {
   campo.setAttribute("aria-invalid", "true");
   campo.classList.remove("campo-treme");
   void campo.offsetWidth;
   campo.classList.add("campo-treme");
   campo.focus();
   campo.addEventListener("input", () => campo.removeAttribute("aria-invalid"), { once: true });
+}
+
+export function validarCampos(form: HTMLFormElement): string | null {
+  const campo = form.querySelector<Campo>(":invalid:not(fieldset)");
+  if (!campo) return null;
+  tremerCampo(campo);
   // a mensagem de erro rola a tela até ela; depois disso a tela volta para o campo que falta
   setTimeout(() => campo.scrollIntoView({ block: "center", behavior: "smooth" }), 80);
   return avisoDoCampo(campo);
