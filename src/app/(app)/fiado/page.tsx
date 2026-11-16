@@ -31,9 +31,10 @@ export default async function Fiado() {
       </section>
       )}
 
+      {/* no celular cada devedor vira um bloco (como o Estoque): a tabela larga cortava as colunas da direita */}
       <div className="panel overflow-x-auto">
         {debtors.length ? (
-          <table className="table min-w-[40rem]">
+          <table className="table tabela-pilha rotulada sm:min-w-[40rem]">
             <thead>
               <tr>
                 <th>Cliente</th>
@@ -52,12 +53,12 @@ export default async function Fiado() {
                       <Link href={`/clientes/${d.id}`} className="font-medium hover:underline">{d.name}</Link>
                       {d.phone && <p className="text-[13px] text-muted">{d.phone}</p>}
                     </td>
-                    <td className={age > 30 ? "font-medium text-warn-fg" : "text-muted"}>
+                    <td data-rotulo="Deve desde" className={age > 30 ? "font-medium text-warn-fg" : "text-muted"}>
                       {age === 0 ? "hoje" : `há ${age} ${age === 1 ? "dia" : "dias"}`}
                     </td>
-                    <td className="text-muted">{d.last_payment ? fmtDateTime(new Date(d.last_payment)) : "nunca"}</td>
-                    <td className="text-right font-medium"><Money cents={d.owed} /></td>
-                    <td className="text-right">
+                    <td data-rotulo="Último pagamento" className="text-muted">{d.last_payment ? fmtDateTime(new Date(d.last_payment)) : "nunca"}</td>
+                    <td data-rotulo="Saldo" className="text-right font-medium"><Money cents={d.owed} /></td>
+                    <td className="text-right max-sm:pt-2">
                       <Link href={`/clientes/${d.id}#receber`} className="btn h-8 text-[13px]">Receber</Link>
                     </td>
                   </tr>

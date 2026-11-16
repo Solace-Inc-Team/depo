@@ -23,7 +23,6 @@ function Fields({ p = {}, rotulos = true }: { p?: P; rotulos?: boolean }) {
       <div className="w-32">
         <label className={rotulo} htmlFor={`p-${k}`}>Preço</label>
         <input id={`p-${k}`} name="price" required inputMode="decimal" data-mascara="dinheiro" defaultValue={p.priceCents !== undefined ? centsToInput(p.priceCents) : ""} className="input" />
-        {p.precoSugerido && <p className="mt-1 text-[12px] text-warn-fg">Preço sugerido</p>}
       </div>
       <div className="w-32">
         <label className={rotulo} htmlFor={`c-${k}`}>Preço do vasilhame</label>
@@ -61,7 +60,13 @@ export default async function Produtos() {
               <Alternar name="active" defaultChecked={p.active} /> À venda
             </label>
             {/* preço que veio com o cadastro: se já está certo, um clique confirma (salvar tira a marca) */}
-            {p.precoSugerido && <button className="btn btn-sm tap">Preço certo</button>}
+            {/* o aviso fica junto do botão: embaixo do preço ele empurrava só aquela coluna e desalinhava a linha */}
+            {p.precoSugerido && (
+              <span className="flex min-h-11 items-center gap-2 lg:min-h-9">
+                <span className="text-[12px] whitespace-nowrap text-warn-fg">Preço sugerido</span>
+                <button className="btn btn-sm tap">Preço certo</button>
+              </span>
+            )}
           </ActionForm>
         ))}
       </section>
