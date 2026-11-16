@@ -3730,3 +3730,32 @@ button.gaveta-mais-linha:active {
     overflow: visible;
   }
 }
+
+/* página de pedir do cliente: cada produto é um cartão, e o escolhido fica com a borda azul */
+.cartao-produto {
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 10px 30px -14px rgb(0 0 0 / 0.55);
+  transition: border-color 250ms var(--ease-out), box-shadow 250ms var(--ease-out);
+}
+.cartao-produto[data-on] {
+  border-color: color-mix(in srgb, var(--marca) 80%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--marca) 22%, transparent), 0 10px 30px -14px rgb(0 0 0 / 0.55);
+}
+/* os fios atrás dos cartões: a tela toda de largura, um pouco acima e abaixo da lista, sumindo nas pontas */
+.fundo-fios {
+  position: absolute;
+  z-index: -1;
+  top: -8.75rem;
+  bottom: -8.75rem;
+  left: calc(50% - 50vw);
+  width: 100vw;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(transparent, #000 18%, #000 75%, transparent);
+  mask-image: linear-gradient(transparent, #000 18%, #000 75%, transparent);
+}
+:root[data-tema="claro"] .fundo-fios {
+  opacity: 0.7;
+}

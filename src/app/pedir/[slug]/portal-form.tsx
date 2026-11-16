@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import Link from "next/link";
 import QRCode from "qrcode";
 import { ArrowRight, CircleAlert } from "lucide-react";
@@ -12,6 +12,8 @@ import { validarCampos } from "@/components/action-form";
 import type { PortalResult } from "@/app/actions";
 import { Aparece, useSaida } from "@/components/saida";
 import { Marcar } from "@/components/controles";
+import Threads from "@/components/reactbits/Threads";
+import { temaEscuro } from "@/lib/tema";
 
 type Product = { id: string; name: string; priceCents: number; returnable: boolean; containerPriceCents: number; disponivel: number };
 
@@ -35,6 +37,8 @@ export function PortalForm({
   const [payment, setPayment] = useState<(typeof payments)[number][0]>(pixEnabled ? "pix" : "dinheiro");
   const [result, setResult] = useState<PortalResult>();
   const [pending, start] = useTransition();
+  // no tema claro o azul claro dos fios virava cinza sobre o branco: lá eles usam o azul da marca
+  const escuro = useSyncExternalStore(temaEscuro.assinar, temaEscuro.agora, () => true);
   const errorRef = useRef<HTMLParagraphElement>(null);
 
   useEffect(() => {
@@ -90,15 +94,20 @@ export function PortalForm({
       <input name="site" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 opacity-0" />
 
       <fieldset disabled={pending} className="space-y-6">
-        <section className="panel">
-          <h2 className="h2 border-b border-line px-4 py-3">Produtos</h2>
-          <ul>
+        {/* cada produto num cartão, com fios azuis passando por trás: o fundo aparece entre os cartões e deixa claro
+            que são eles que se tocam */}
+        <section className="relative isolate">
+          <div aria-hidden="true" className="fundo-fios">
+            <Threads color={escuro ? [0.29, 0.5, 1] : [0.09, 0.28, 0.78]} accentColor={undefined} lineCount={60} amplitude={1.4} distance={0.35} speed={0.5} />
+          </div>
+          <h2 className="h2 px-1 pb-2.5">Produtos</h2>
+          <ul className="space-y-3">
             {products.map((p) => {
               const n = qty[p.id] ?? 0;
               const acabou = p.disponivel === 0;
               const noMaximo = !acabou && n >= p.disponivel && p.disponivel < 20;
               return (
-                <li key={p.id} className="border-b border-line px-4 py-3 last:border-0">
+                <li key={p.id} className="cartao-produto" data-on={n > 0 || undefined}>
                   <div className={`flex items-center gap-3 ${acabou ? "opacity-55" : ""}`}>
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold">{p.name}</p>

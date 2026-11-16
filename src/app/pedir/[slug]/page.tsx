@@ -20,6 +20,8 @@ export default async function Pedir({ params, searchParams }: PageProps<"/pedir/
   const products = await portalProducts(t.id, t.branchId);
 
   return (
+    // os fios do fundo vão de ponta a ponta da tela: o clip impede a rolagem de lado
+    <div className="overflow-x-clip">
     <main className="stagger mx-auto min-h-screen max-w-lg px-4 py-8">
       <p className="text-[13px] text-muted">Pedido pelo site</p>
       <h1 className="h1">{t.name}</h1>
@@ -36,5 +38,6 @@ export default async function Pedir({ params, searchParams }: PageProps<"/pedir/
         <Link href="/privacidade" className="underline">política de privacidade</Link>.
       </p>
     </main>
+    </div>
   );
 }
