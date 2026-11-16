@@ -3703,6 +3703,10 @@ button.gaveta-mais-linha:active {
 .pagina .barra-pedido.barra-pedido {
   animation: barra-sobe var(--dur-slow) var(--ease-chegada) both;
 }
+/* e desce ao sair: com a regra de cima mais forte, a barra (carrinho, pedidos marcados) sumia seca */
+.pagina .barra-pedido.barra-pedido[data-saindo] {
+  animation: barra-desce var(--dur) ease-in both;
+}
 /* o esqueleto de carregamento só aparece se a tela demorar: em troca rápida de aba ele piscava escuro */
 .esqueleto-pagina {
   animation: fade-in 200ms ease 180ms backwards;
@@ -3720,6 +3724,7 @@ button.gaveta-mais-linha:active {
     animation: none;
   }
   .pagina .barra-pedido.barra-pedido,
+  .pagina .barra-pedido.barra-pedido[data-saindo],
   .esqueleto-pagina {
     animation: none;
   }
@@ -3796,6 +3801,15 @@ body:has(.saida-grupo) .main-app {
     visibility: hidden;
     pointer-events: none;
   }
+}
+
+/* pedido marcado para sair junto: a saída do próprio cartão apaga, quem manda agora é a barra do pé */
+.saida-unica {
+  transition: opacity var(--dur) var(--ease-out);
+}
+li:has(input[form="saida-grupo"]:checked) .saida-unica {
+  opacity: 0.35;
+  pointer-events: none;
 }
 
 /* pedido já entregue na viagem: fica na lista até o acerto da volta, mais apagado que os que estão na rua */

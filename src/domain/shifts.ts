@@ -126,7 +126,8 @@ export async function settleTrip(ctx: Ctx, shiftId: string, tripId: string, coun
         shiftId: shift.id,
         kind: "repasse",
         amountCents: countedCashCents,
-        note: [`${entregues} ${entregues === 1 ? "entrega" : "entregas"}`, notes.trim()].filter(Boolean).join(". "),
+        // "1 entrega. Faltou troco": a observação começa com maiúscula depois do ponto
+        note: [`${entregues} ${entregues === 1 ? "entrega" : "entregas"}`, notes.trim().replace(/^./, (c) => c.toUpperCase())].filter(Boolean).join(". "),
         tripId,
         createdBy: ctx.userId,
       })

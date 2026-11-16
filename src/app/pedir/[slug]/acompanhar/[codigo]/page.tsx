@@ -51,8 +51,9 @@ export default async function Acompanhar({ params }: PageProps<"/pedir/[slug]/ac
         : aPagar
           ? "Falta pagar o Pix"
           : "Recebido, a loja está separando";
-  // Pix que ainda não caiu: o cliente pode pagar daqui mesmo
-  const pix = p.paymentMethod === "pix" && !p.pixConfirmedAt && !cancelado ? await pixDoPedido(loja.id, achado.pedidoId) : null;
+  // Pix que ainda não caiu: o cliente pode pagar daqui mesmo. Entregue não: o pagamento já foi acertado na porta
+  // (o Pix do pedido feito por telefone não passa pela conferência), e o QR deixava o cliente pagar de novo
+  const pix = p.paymentMethod === "pix" && !p.pixConfirmedAt && !cancelado && !entregue ? await pixDoPedido(loja.id, achado.pedidoId) : null;
 
   const etapas = [
     { nome: "Pedido recebido", hora: p.createdAt, feita: true },

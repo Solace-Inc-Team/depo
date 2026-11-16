@@ -55,6 +55,8 @@ test("nota: parte sem dado sai da conta e as outras dividem o peso", () => {
   const { entregadores } = avaliar([m("a", { viagemMin: 0, viagemEntregas: 0 })]);
   assert.equal(entregadores[0].partes.rapidez, null);
   assert.equal(entregadores[0].nota, 9.1);
+  assert.equal(entregadores[0].parcial, true);
+  assert.equal(avaliar([m("b")]).entregadores[0].parcial, false);
   assert.equal(entregadores[0].minPorEntrega, null);
 });
 

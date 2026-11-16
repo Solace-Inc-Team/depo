@@ -20,6 +20,13 @@ import { SaidaEntregador } from "./saida";
 export const metadata = { title: "Entregas" };
 
 const minutesSince = (d: Date | null) => (d ? Math.floor((Date.now() - d.getTime()) / 60000) : 0);
+// o cabeçalho de cada entregador e o rodapé do acerto deslizam junto com os cartões: sem isso, depois de um acerto
+// o cabeçalho pulava na hora e os cartões de baixo desciam sozinhos, longe dele e por fora da borda do painel
+const Desliza = ({ nome, children }: { nome: string; children: React.ReactElement }) => (
+  <ViewTransition name={nome} update="move" enter="item-in" exit="item-out" default="none">
+    {children}
+  </ViewTransition>
+);
 // o mesmo nome na fila e na rua: quando o pedido sai, o cartão desliza de uma coluna para a outra
 const Card = ({ id, children }: { id: string; children: React.ReactElement }) => (
   <ViewTransition name={`pedido-${id}`} share="morph" update="move" enter="item-in" exit="item-out" default="none">
@@ -130,7 +137,10 @@ export default async function Entregas() {
                   <li className={`border-b border-line px-4 py-3 last:border-0 ${minutesSince(o.createdAt) < 1 ? "row-new" : ""}`}>
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                       {podeJuntar && (
-                        <Marcar form={FORM_GRUPO} name="orderId" value={o.id} aria-label={`Marcar o pedido #${o.number} para sair junto`} className="shrink-0 self-center" />
+                        // o rótulo em volta dá ao toque 44 px, sem aumentar a caixa
+                        <label className="-my-[13px] -ml-[13px] flex shrink-0 cursor-pointer self-center p-[13px]">
+                          <Marcar form={FORM_GRUPO} name="orderId" value={o.id} aria-label={`Marcar o pedido #${o.number} para sair junto`} />
+                        </label>
                       )}
                       <Link href={`/pedidos/${o.id}`} className="alvo mr-auto font-semibold hover:text-accent">
                         <span className="num text-muted">#{o.number}</span> {o.customerName ?? "Cliente"}
@@ -146,7 +156,7 @@ export default async function Entregas() {
                     {o.occurrence && <p className="mt-1 text-sm font-medium text-warn-fg">Voltou da rua: {o.occurrence}</p>}
                     {/* flex-wrap: o aviso de "escolha o entregador" desce para a linha de baixo em vez de espremer a lista */}
                     {onShift.length > 0 && (
-                      <ActionForm action={dispatchAction} className="mt-2 flex flex-wrap gap-2">
+                      <ActionForm action={dispatchAction} className="saida-unica mt-2 flex flex-wrap gap-2">
                         <input type="hidden" name="orderId" value={o.id} />
                         <SaidaEntregador id={`d-${o.id}`} entregadores={onShift.map((d) => ({ id: d.id, name: d.name }))} sugerido={sugestoes.get(o.id)?.entregadorId ?? ""} />
                       </ActionForm>
@@ -187,6 +197,7 @@ export default async function Entregas() {
               return (
                 <div key={d.id} className="border-b border-line last:border-0">
                   {/* com pedidos, o nome é cabeçalho do grupo; livre, é uma linha comum: está pronto para sair */}
+                  <Desliza nome={`entregador-${d.id}`}>
                   <p className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 text-[13px] font-medium ${daViagem.length ? "bg-subtle py-2" : "py-3"}`}>
                     <span>{d.name}</span>
                     {daViagem.length ? (
@@ -207,12 +218,13 @@ export default async function Entregas() {
                       </span>
                     )}
                   </p>
+                  </Desliza>
                   {daViagem.map((o) => (
                     <Card key={o.id} id={o.id}>
                       {o.status === "entregue" ? (
                         // entregue: fica aqui, apagado, até o acerto da volta
-                        <div className="viagem-entregue flex flex-wrap items-baseline justify-between gap-x-3 border-b border-line/60 px-4 py-2.5 last:border-0">
-                          <Link href={`/pedidos/${o.id}`} className="flex min-w-0 items-center gap-1.5 hover:text-fg">
+                        <div className="viagem-entregue flex flex-wrap items-center justify-between gap-x-3 border-b border-line/60 px-4 py-2.5 last:border-0">
+                          <Link href={`/pedidos/${o.id}`} className="-my-3 flex min-w-0 items-center gap-1.5 py-3 hover:text-fg">
                             <Check size={14} strokeWidth={2} className="shrink-0 self-center text-ok" aria-hidden="true" />
                             <span className="min-w-0">
                               <span className="num">#{o.number}</span> {o.customerName ?? "Cliente"}
@@ -244,9 +256,10 @@ export default async function Entregas() {
                   ))}
                   {/* ele voltou à loja: confere o dinheiro das entregas desta viagem */}
                   {confere && entregues.length > 0 && tripId && (
+                    <Desliza nome={`volta-${d.id}`}>
                     <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-line/60 px-4 py-3">
                       <p className="text-[13px] text-muted">
-                        Em dinheiro nesta volta: <Money cents={esperado} className="font-semibold text-fg" />
+                        {esperado > 0 ? <>Em dinheiro nesta volta: <Money cents={esperado} className="font-semibold text-fg" /></> : "Nada em dinheiro nesta volta"}
                       </p>
                       <JanelaAcao label="Acertar a volta" titulo={`Acerto da volta de ${d.name.split(" ")[0]}`} primario>
                         <ActionForm action={settleTripAction} className="space-y-4">
@@ -264,21 +277,29 @@ export default async function Entregas() {
                               </li>
                             ))}
                           </ul>
-                          <p className="flex items-baseline justify-between gap-3 text-sm">
-                            Deve entregar em dinheiro <Money cents={esperado} className="text-base font-semibold" />
-                          </p>
-                          <div>
-                            <label className="label" htmlFor={`volta-${tripId}`}>Quanto ele entregou</label>
-                            <input id={`volta-${tripId}`} name="counted" inputMode="decimal" data-mascara="dinheiro" required maxLength={12} className="input num" placeholder="0,00" />
-                          </div>
-                          <div>
-                            <label className="label" htmlFor={`volta-obs-${tripId}`}>Observação (se o valor não bater)</label>
-                            <input id={`volta-obs-${tripId}`} name="notes" maxLength={160} className="input" />
-                          </div>
+                          {esperado > 0 ? (
+                            <>
+                              <p className="flex items-baseline justify-between gap-3 text-sm">
+                                Deve entregar em dinheiro <Money cents={esperado} className="text-base font-semibold" />
+                              </p>
+                              <div>
+                                <label className="label" htmlFor={`volta-${tripId}`}>Quanto ele entregou</label>
+                                <input id={`volta-${tripId}`} name="counted" inputMode="decimal" data-mascara="dinheiro" required maxLength={12} className="input num" placeholder="0,00" />
+                              </div>
+                              <div>
+                                <label className="label" htmlFor={`volta-obs-${tripId}`}>Observação (se o valor não bater)</label>
+                                <input id={`volta-obs-${tripId}`} name="notes" maxLength={160} className="input" />
+                              </div>
+                            </>
+                          ) : (
+                            // só Pix, cartão ou fiado: não há dinheiro para contar, a volta só fecha (e marca a hora da chegada)
+                            <input type="hidden" name="counted" value="0" />
+                          )}
                           <button className="btn btn-primary w-full">Fechar a volta</button>
                         </ActionForm>
                       </JanelaAcao>
                     </div>
+                    </Desliza>
                   )}
                 </div>
               );
@@ -288,7 +309,8 @@ export default async function Entregas() {
           )}
         </section>
       </div>
-      {podeJuntar && <SaidaEmGrupo entregadores={onShift.map((d) => ({ id: d.id, name: d.name }))} />}
+      {/* com um entregador só em turno, a barra já vem com ele */}
+      {podeJuntar && <SaidaEmGrupo entregadores={onShift.map((d) => ({ id: d.id, name: d.name }))} sugerido={onShift.length === 1 ? onShift[0].id : ""} />}
     </>
   );
 }

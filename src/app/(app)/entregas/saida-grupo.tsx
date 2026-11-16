@@ -12,7 +12,7 @@ export const FORM_GRUPO = "saida-grupo";
  * Vários pedidos na moto: marca na fila e saem juntos, numa viagem só. As caixas ficam nos cartões e entram
  * neste formulário pelo atributo form; a barra sobe quando há algo marcado e desce quando tudo saiu.
  */
-export function SaidaEmGrupo({ entregadores }: { entregadores: { id: string; name: string }[] }) {
+export function SaidaEmGrupo({ entregadores, sugerido }: { entregadores: { id: string; name: string }[]; sugerido: string }) {
   const [marcados, setMarcados] = useState(0);
   useEffect(() => {
     const contar = () => setMarcados(document.querySelectorAll(`input[form="${FORM_GRUPO}"]:checked`).length);
@@ -42,7 +42,7 @@ export function SaidaEmGrupo({ entregadores }: { entregadores: { id: string; nam
           Desmarcar
         </button>
         <div className="flex w-full gap-2 sm:w-auto">
-          <SaidaEntregador id="d-grupo" entregadores={entregadores} sugerido="" />
+          <SaidaEntregador id="d-grupo" entregadores={entregadores} sugerido={sugerido} />
         </div>
       </ActionForm>
     </div>

@@ -29,6 +29,8 @@ export type Metricas = {
 export type Avaliacao = Metricas & {
   /** null: menos de MINIMO_ENTREGAS entregas, ainda em avaliação */
   nota: number | null;
+  /** alguma parte ficou sem dado: a nota vale só pelas outras */
+  parcial: boolean;
   partes: { rapidez: number | null; acerto: number | null; produtividade: number | null };
   minPorEntrega: number | null;
   minParaVoltar: number | null;
@@ -63,6 +65,7 @@ export function avaliar(lista: Metricas[]) {
         return {
           ...m,
           nota,
+          parcial: nota !== null && usadas.length < 3,
           partes: {
             rapidez: partes.rapidez === null ? null : umaCasa(partes.rapidez),
             acerto: partes.acerto === null ? null : umaCasa(partes.acerto),

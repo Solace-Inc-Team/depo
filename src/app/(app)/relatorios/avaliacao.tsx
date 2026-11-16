@@ -39,11 +39,13 @@ function Linha({ e, equipeMin, equipeRitmo }: { e: Avaliacao; equipeMin: number 
             </span>
           </span>
           {e.nota === null ? (
-            <span className="text-[13px] text-muted">Em avaliação</span>
+            <span className="text-right text-[13px] text-muted">Em avaliação<span className="block">{MINIMO_ENTREGAS - e.entregas === 1 ? "falta 1 entrega" : `faltam ${MINIMO_ENTREGAS - e.entregas} entregas`}</span></span>
           ) : (
             <span className="num text-right">
-              <span className={`text-xl font-semibold ${cor(e.nota)}`}>{umaCasa(e.nota)}</span>
+              {/* nota parcial (faltou uma parte) não ganha cor: verde dizia "ótimo" sem medir tudo */}
+              <span className={`text-xl font-semibold ${e.parcial ? "text-fg" : cor(e.nota)}`}>{umaCasa(e.nota)}</span>
               <span className="text-[13px] text-muted">/10</span>
+              {e.parcial && <span className="block text-[13px] text-muted">parcial</span>}
             </span>
           )}
           <ChevronDown size={16} strokeWidth={1.75} className="nota-seta shrink-0 text-muted" aria-hidden="true" />
@@ -51,7 +53,7 @@ function Linha({ e, equipeMin, equipeRitmo }: { e: Avaliacao; equipeMin: number 
         <div className="grid gap-3 px-4 pb-4 sm:grid-cols-3">
           <Parte titulo="Rapidez" peso="45%" nota={e.partes.rapidez}>
             {e.minPorEntrega === null ? (
-              "Nenhuma volta acertada no período."
+              "Sem acerto da volta no período: o tempo da viagem só é medido nele."
             ) : (
               <>
                 {min(e.minPorEntrega)} por entrega, da saída até o acerto da volta
@@ -65,7 +67,7 @@ function Linha({ e, equipeMin, equipeRitmo }: { e: Avaliacao; equipeMin: number 
           <Parte titulo="Dinheiro certo" peso="35%" nota={e.partes.acerto}>
             {e.acertos === 0
               ? "Nenhum acerto no período."
-              : `${e.acertos - e.acertosComFalta} de ${e.acertos} ${e.acertos === 1 ? "acerto" : "acertos"} sem falta de dinheiro.`}
+              : `${e.acertos - e.acertosComFalta} de ${e.acertos} ${e.acertos === 1 ? "acerto" : "acertos"} sem falta de dinheiro (voltas e fim de turno).`}
           </Parte>
           <Parte titulo="Produtividade" peso="20%" nota={e.partes.produtividade}>
             {e.entregasPorHora === null ? (
@@ -111,8 +113,7 @@ export async function AvaliacaoEntregadores({ tenantId, filial }: { tenantId: st
         ))}
       </ul>
       <p className="border-t border-line px-4 py-3 text-[13px] text-muted">
-        Comparada com a equipe, a partir de {MINIMO_ENTREGAS} entregas. Faça o acerto da volta assim que o entregador chegar: é
-        ele que marca o fim da viagem.
+        Faça o acerto da volta assim que o entregador chegar: o acerto marca o fim da viagem.
       </p>
     </section>
   );
