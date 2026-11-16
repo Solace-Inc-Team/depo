@@ -4,17 +4,27 @@ import { getUser } from "@/lib/auth";
 import { login } from "@/app/actions";
 import { ActionForm } from "@/components/action-form";
 import { TelaEntrada } from "@/components/tela-entrada";
+import { caminhoSeguro } from "@/lib/caminho";
 
 export const metadata = { title: { absolute: "Entrar no depo" } };
 
-export default async function LoginPage() {
+export default async function LoginPage({ searchParams }: PageProps<"/login">) {
+  const sp = await searchParams;
+  // a tela em que a pessoa estava quando a sessão venceu (ou o link que abriu sem estar logada)
+  const next = caminhoSeguro(sp.next);
   const user = await getUser();
-  if (user) redirect(user.platformAdmin ? "/admin" : user.role === "entregador" ? "/entregador" : "/");
+  if (user) redirect(next ?? (user.platformAdmin ? "/admin" : user.role === "entregador" ? "/entregador" : "/"));
   return (
     <TelaEntrada>
       <h1 className="mt-7 text-center text-[1.75rem] leading-tight font-semibold tracking-[-0.03em]">Entrar</h1>
       <p className="mt-1.5 text-center text-muted">Acesse o sistema da sua revenda.</p>
-      <ActionForm action={login} className="mt-8 space-y-4">
+      {sp.expirou && (
+        <p role="status" className="mt-6 rounded-lg border border-warn-fg/40 bg-warn-soft px-3 py-2.5 text-center text-[13px] text-warn-fg">
+          Sua sessão expirou. Entre de novo para continuar.
+        </p>
+      )}
+      <ActionForm action={login} className={sp.expirou ? "mt-4 space-y-4" : "mt-8 space-y-4"}>
+        {next && <input type="hidden" name="next" value={next} />}
         <div>
           <label className="label" htmlFor="email">E-mail</label>
           <input id="email" name="email" type="email" autoComplete="username" required className="input h-11" />

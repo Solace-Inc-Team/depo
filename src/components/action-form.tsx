@@ -53,6 +53,14 @@ export const toast = (message: string) => window.dispatchEvent(new CustomEvent(T
 
 // onSubmit manual em vez de action={...}: o React limpa o form depois da action, e em caso de erro
 // a gente quer manter o que foi digitado
+// o texto da confirmação com o que foi digitado: "Receber R$ {amount}?" vira "Receber R$ 84,00?"
+const preencher = (texto: string, form: HTMLFormElement) =>
+  texto.replace(/\{(\w+)\}/g, (_, nome: string) => {
+    const el = form.elements.namedItem(nome);
+    if (el instanceof HTMLSelectElement) return el.selectedOptions[0]?.text ?? "";
+    return el instanceof HTMLInputElement ? el.value.trim() : "";
+  });
+
 export function ActionForm({
   action,
   children,
@@ -65,6 +73,7 @@ export function ActionForm({
   children: ReactNode;
   className?: string;
   reset?: boolean;
+  /** pergunta antes de enviar; {campo} vira o que está no campo de mesmo name (no select, o nome da opção) */
   confirm?: string;
   /** salva sozinho quando um campo muda (ao sair do campo, ou ao marcar a caixa), sem botão */
   salvaAoMudar?: boolean;
@@ -121,7 +130,7 @@ export function ActionForm({
         // ação sem volta: pergunta na janela do sistema, com o nome do botão clicado no botão de confirmar
         if (
           confirm &&
-          !(await confirmar(confirm, { rotulo: button?.textContent?.trim(), perigo: button?.classList.contains("btn-danger") }))
+          !(await confirmar(preencher(confirm, form), { rotulo: button?.textContent?.trim(), perigo: button?.classList.contains("btn-danger") }))
         )
           return;
         const fd = new FormData(form);

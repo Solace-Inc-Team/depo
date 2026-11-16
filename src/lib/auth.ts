@@ -1,6 +1,6 @@
 import "server-only";
 import { cache } from "react";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { createHash, randomBytes } from "node:crypto";
 import { and, asc, desc, eq, gt, lt } from "drizzle-orm";
@@ -10,6 +10,7 @@ import type { Ctx, Role } from "./ctx";
 import { TERMS_VERSION } from "./legal";
 import { situacaoAssinatura } from "./plano";
 import { todayISO } from "./period";
+import { caminhoSeguro } from "./caminho";
 
 const COOKIE = "sessao";
 /** filial que o dono escolheu ver; a equipe ignora, fica sempre na sua */
@@ -138,8 +139,13 @@ export const pendingTerms = (u: SessionUser) => u.role === "dono" && !u.platform
 export async function requireUser(...roles: Role[]): Promise<SessionUser> {
   const user = await getUser();
   if (user) await renovarSessao();
-  // com um cookie velho no navegador, passa antes por /login/sair para apagá-lo
-  if (!user) redirect((await cookies()).has(COOKIE) ? "/login/sair" : "/login");
+  if (!user) {
+    // depois de entrar, volta para a tela em que estava (o proxy anota o endereço). Com um cookie velho no
+    // navegador, a sessão venceu: passa antes por /login/sair, que apaga o cookie e avisa no login
+    const caminho = caminhoSeguro((await headers()).get("x-caminho"));
+    const next = caminho && caminho !== "/" ? `?next=${encodeURIComponent(caminho)}` : "";
+    redirect(((await cookies()).has(COOKIE) ? "/login/sair" : "/login") + next);
+  }
   if (pendingTerms(user)) redirect("/aceite");
   // venceu e passou da tolerância: o sistema pausa até pagar (os dados ficam)
   if (!user.platformAdmin && situacaoAssinatura(user.pagoAte, todayISO())?.bloqueado) redirect("/assinatura");

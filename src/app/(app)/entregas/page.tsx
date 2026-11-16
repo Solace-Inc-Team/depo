@@ -11,6 +11,7 @@ import { ResultadoRua } from "@/components/resultado-rua";
 import { Printer } from "lucide-react";
 import { formatBRL } from "@/lib/money";
 import { sugerirEntregadores } from "@/lib/sugestao";
+import { SaidaEntregador } from "./saida";
 
 export const metadata = { title: "Entregas" };
 
@@ -135,12 +136,7 @@ export default async function Entregas() {
                     {onShift.length > 0 && (
                       <ActionForm action={dispatchAction} className="mt-2 flex flex-wrap gap-2">
                         <input type="hidden" name="orderId" value={o.id} />
-                        <label className="sr-only" htmlFor={`d-${o.id}`}>Entregador</label>
-                        <select id={`d-${o.id}`} name="driverId" className="input min-w-40 flex-1" required defaultValue={sugestoes.get(o.id)?.entregadorId ?? ""}>
-                          <option value="" disabled>Entregador</option>
-                          {onShift.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
-                        </select>
-                        <button className="btn btn-primary">Saiu para entrega</button>
+                        <SaidaEntregador id={`d-${o.id}`} entregadores={onShift.map((d) => ({ id: d.id, name: d.name }))} sugerido={sugestoes.get(o.id)?.entregadorId ?? ""} />
                       </ActionForm>
                     )}
                     {/* o porquê da sugestão só quando não é óbvio: o entregador já vai para o mesmo bairro */}

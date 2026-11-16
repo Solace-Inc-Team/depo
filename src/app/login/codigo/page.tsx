@@ -5,10 +5,12 @@ import { getPendingMfa } from "@/lib/auth";
 import { verifyMfaAction } from "@/app/actions";
 import { ActionForm } from "@/components/action-form";
 import { MarcaDaSessao } from "@/components/logo";
+import { caminhoSeguro } from "@/lib/caminho";
 
 export const metadata = { title: "Código de verificação" };
 
-export default async function Codigo() {
+export default async function Codigo({ searchParams }: PageProps<"/login/codigo">) {
+  const next = caminhoSeguro((await searchParams).next);
   if (!(await getPendingMfa())) redirect("/login");
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-6 py-16">
@@ -18,6 +20,7 @@ export default async function Codigo() {
         <h1 className="mt-3 text-[1.75rem] leading-tight font-semibold tracking-[-0.03em]">Código de verificação</h1>
         <p className="mt-1.5 text-muted">Abra o app autenticador e digite o código de 6 dígitos do depo.</p>
         <ActionForm action={verifyMfaAction} className="mt-8 space-y-4">
+          {next && <input type="hidden" name="next" value={next} />}
           <div>
             <label className="label" htmlFor="code">Código</label>
             <input

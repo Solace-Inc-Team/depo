@@ -10,6 +10,7 @@ import { PageHeader, fmtQuando } from "@/components/ui";
 import { NivelVasilhame } from "@/components/nivel-vasilhame";
 import { comodatoPorProduto } from "@/domain/comodato";
 import { listFiliais } from "@/domain/filiais";
+import { juntarTransferencias } from "@/lib/movimentos";
 
 export const metadata = { title: "Estoque" };
 
@@ -188,15 +189,16 @@ export default async function Estoque() {
             <tr><th>Quando</th><th>Produto</th><th>Onde</th><th className="text-right">Qtd.</th><th>Motivo</th><th>Por</th></tr>
           </thead>
           <tbody>
-            {moves.map((m) => (
+            {juntarTransferencias(moves).map((m) => (
               <tr key={m.id}>
                 <td className="whitespace-nowrap">{fmtQuando(m.createdAt)}</td>
                 <td>{m.productName}, {stateLabel[m.state]}</td>
-                <td>{m.driverName ?? "Loja"}</td>
-                <td className={`num text-right font-semibold ${m.quantity < 0 ? "text-danger" : "text-ok"}`}>
-                  {m.quantity > 0 ? `+${m.quantity}` : m.quantity}
+                {/* saída de pedido, volta no acerto, troca de entregador: um lugar para o outro, numa linha só */}
+                <td>{m.de ? `${m.de} → ${m.para}` : (m.driverName ?? "Loja")}</td>
+                <td className={`num text-right font-semibold ${m.de ? "" : m.quantity < 0 ? "text-danger" : "text-ok"}`}>
+                  {m.de || m.quantity <= 0 ? m.quantity : `+${m.quantity}`}
                 </td>
-                <td>{m.reason}</td>
+                <td>{m.reason.charAt(0).toUpperCase() + m.reason.slice(1)}</td>
                 <td className="text-muted">{m.userName}</td>
               </tr>
             ))}

@@ -83,6 +83,9 @@ test("fiado: venda no balcão vira dívida e o pagamento quita", async ({ page }
   await page.getByRole("link", { name: "Cláudia Martins" }).click();
   await expect(page.getByText("Saldo devedor")).toBeVisible();
   await page.getByRole("button", { name: "Registrar", exact: true }).click();
+  // receber mexe no caixa: pergunta antes, com o valor e o nome
+  const janela = page.getByRole("dialog", { name: /Receber R\$ [\d.,]+ de Cláudia Martins \(Dinheiro\)\?/ });
+  await janela.getByRole("button", { name: "Registrar" }).click();
   await expect(page.getByText("Tudo pago")).toBeVisible();
 });
 
@@ -125,12 +128,12 @@ test("portal no Pix: o pedido só entra na fila depois que a loja confirma o pag
   const esperando = page.getByRole("listitem").filter({ hasText: "Cliente do Pix" });
   await expect(page.getByRole("heading", { name: /Esperando o Pix/ })).toBeVisible();
   // fora da fila: não há como mandar para entrega antes de pagar
-  await expect(esperando.getByRole("button", { name: "Saiu para entrega" })).toHaveCount(0);
+  await expect(esperando.getByRole("button", { name: /^Saiu (com|para)/ })).toHaveCount(0);
   await esperando.getByRole("button", { name: "Recebi o Pix" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Recebi o Pix" }).click();
   await expect(page.getByRole("heading", { name: /Esperando o Pix/ })).toHaveCount(0);
   const naFila = page.getByRole("listitem").filter({ hasText: "Cliente do Pix" });
-  await expect(naFila.getByRole("button", { name: "Saiu para entrega" })).toBeVisible();
+  await expect(naFila.getByRole("button", { name: /^Saiu (com|para)/ })).toBeVisible();
 });
 
 test("cada perfil só entra no que é seu", async ({ page }) => {

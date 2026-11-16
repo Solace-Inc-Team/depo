@@ -9,6 +9,7 @@ import { users, tenants, sessions } from "@/db/schema";
 import { getUser, pendingTerms, requireUser, requireAdmin, createSession, destroySession, getPendingMfa, completeMfa } from "@/lib/auth";
 import { attempt, isBlocked, recordFailure, clearFailures, BLOCKED_MESSAGE, IP_MAX_FAILURES } from "@/lib/rate-limit";
 import { newTotpSecret, verifyTotp } from "@/lib/totp";
+import { caminhoSeguro } from "@/lib/caminho";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { DomainError } from "@/lib/ctx";
 import { formatBRL, parseBRL } from "@/lib/money";
@@ -107,12 +108,14 @@ export async function login(fd: FormData): Promise<ActionState> {
   }
   await clearFailures(key);
   if (!u.tenantActive) return { error: "O acesso desta empresa está suspenso. Fale com a Solace." };
+  // a tela de antes do login (sessão vencida ou link aberto sem estar logado); sem ela, a tela inicial do papel
+  const next = caminhoSeguro(str(fd, "next"));
   if (u.user.totpEnabled) {
     await createSession(u.user.id, true);
-    redirect("/login/codigo");
+    redirect(`/login/codigo${next ? `?next=${encodeURIComponent(next)}` : ""}`);
   }
   await createSession(u.user.id);
-  redirect(homeFor(u.user));
+  redirect(next ?? homeFor(u.user));
 }
 
 /** Pix da mensalidade. Sem requireUser: com o acesso pausado, é justamente aqui que o dono precisa chegar. */
@@ -156,7 +159,7 @@ export async function verifyMfaAction(fd: FormData): Promise<ActionState> {
   if (!verifyTotp(pending.secret, str(fd, "code"))) return { error: "Código inválido. Confira o app autenticador e tente de novo." };
   await clearFailures(key);
   await completeMfa(pending.sessionId, pending.userId);
-  redirect(homeFor(pending));
+  redirect(caminhoSeguro(str(fd, "next")) ?? homeFor(pending));
 }
 
 export async function logout() {

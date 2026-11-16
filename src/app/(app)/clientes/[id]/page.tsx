@@ -100,7 +100,7 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                 <Money cents={st.owed} className={`text-2xl font-semibold tracking-[-0.03em] ${st.owed > 0 ? "text-danger" : ""}`} />
               </div>
               {st.owed > 0 && (
-                <ActionForm key={st.owed} action={receivePaymentAction} className="grid gap-3 border-b border-line p-4 sm:grid-cols-2 sm:items-end">
+                <ActionForm key={st.owed} action={receivePaymentAction} confirm={`Receber R$ {amount} de ${c.name} ({method})?`} className="grid gap-3 border-b border-line p-4 sm:grid-cols-2 sm:items-end">
                   <input type="hidden" name="customerId" value={c.id} />
                   <div>
                     <label className="label" htmlFor="amount">Valor recebido</label>
