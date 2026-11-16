@@ -1624,6 +1624,17 @@ body[data-confirmando] .deliver-btn {
 .janela[data-assentou]::backdrop {
   animation: none;
 }
+/* troca de tema com janela aberta: o Safari deixa o fundo da janela (::backdrop) fora da imagem da troca, e o topo
+   aparecia nítido e claro. Durante a troca o escurecido vira uma sombra do próprio cartão, que entra na imagem */
+html[data-trocando-tema] .janela[open]::backdrop {
+  background: transparent;
+  backdrop-filter: none;
+}
+html[data-trocando-tema] .janela[open] .janela-cartao {
+  box-shadow:
+    0 0 0 100vmax rgb(0 0 0 / 0.38),
+    0 30px 80px -20px rgb(0 0 0 / 0.45);
+}
 .janela[data-saindo]::backdrop {
   animation: fade-out 170ms ease-in both;
 }
