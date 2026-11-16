@@ -12,7 +12,6 @@ import { validarCampos } from "@/components/action-form";
 import type { PortalResult } from "@/app/actions";
 import { Aparece, useSaida } from "@/components/saida";
 import { Marcar } from "@/components/controles";
-import Threads from "@/components/reactbits/Threads";
 
 type Product = { id: string; name: string; priceCents: number; returnable: boolean; containerPriceCents: number; disponivel: number };
 
@@ -91,14 +90,10 @@ export function PortalForm({
       <input name="site" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 opacity-0" />
 
       <fieldset disabled={pending} className="space-y-6">
-        {/* cada produto num cartão, com fios azuis passando por trás: o fundo aparece entre os cartões e deixa claro
-            que são eles que se tocam */}
-        <section className="relative isolate">
-          <div aria-hidden="true" className="fundo-fios">
-            <Threads color={[0.29, 0.5, 1]} accentColor={undefined} lineCount={60} amplitude={1.4} distance={0.35} speed={0.5} />
-          </div>
+        {/* cada produto num cartão: o fundo (fios, fixo na tela) aparece entre eles e deixa claro que são eles que se tocam */}
+        <section>
           <h2 className="h2 px-1 pb-2.5">Produtos</h2>
-          <ul className="space-y-3">
+          <ul className="space-y-4">
             {products.map((p) => {
               const n = qty[p.id] ?? 0;
               const acabou = p.disponivel === 0;
@@ -157,12 +152,6 @@ export function PortalForm({
           </div>
         </section>
 
-        {/* o fim da página também tem fios por trás (inclinados ao contrário, para não repetir o de cima): o pagamento
-            e o botão de pedir ficam em destaque como os produtos, em vez de terminar num bloco escuro */}
-        <div className="relative isolate space-y-6">
-        <div aria-hidden="true" className="fundo-fios">
-          <Threads color={[0.29, 0.5, 1]} accentColor={undefined} lineCount={60} amplitude={1.4} distance={0.35} speed={0.5} angle={-25} seed={7} />
-        </div>
         <section className="panel space-y-3 p-4">
           <h2 className="h2">Pagamento</h2>
           <div className="grid gap-2">
@@ -212,7 +201,6 @@ export function PortalForm({
           <Aparece quando={!items.length}>
             <p className="pt-2 text-center text-[13px] text-muted">Escolha ao menos um produto acima.</p>
           </Aparece>
-        </div>
         </div>
       </fieldset>
 

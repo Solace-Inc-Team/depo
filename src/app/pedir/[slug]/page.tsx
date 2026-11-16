@@ -5,6 +5,7 @@ import { portalProducts, portalTenant } from "@/domain/portal";
 import { portalOrderAction } from "@/app/actions";
 import { PortalForm } from "./portal-form";
 import { ContatoLoja } from "./contato-loja";
+import Threads from "@/components/reactbits/Threads";
 
 export async function generateMetadata({ params }: PageProps<"/pedir/[slug]">): Promise<Metadata> {
   const t = await portalTenant((await params).slug);
@@ -21,9 +22,13 @@ export default async function Pedir({ params, searchParams }: PageProps<"/pedir/
 
   return (
     // a página do cliente é sempre escura, como a vitrine: o tema escolhido no sistema naquele aparelho não vale aqui.
-    // Os fios do fundo vão de ponta a ponta da tela: o clip impede a rolagem de lado
-    <div className="pagina-escura overflow-x-clip">
-    <main className="stagger mx-auto min-h-screen max-w-lg px-4 py-8">
+    // Os fios ficam num fundo só, fixo na tela: a página rola por cima e sempre há fios atrás do que se vê
+    // (presos a cada seção, o meio ficava vazio e repetir o efeito parecia remendo)
+    <div className="pagina-escura isolate">
+      <div aria-hidden="true" className="fundo-tela">
+        <Threads color={[0.4, 0.6, 1]} accentColor={undefined} lineCount={90} amplitude={1.4} distance={0.5} thickness={0.8} brightness={2} speed={0.5} />
+      </div>
+    <main className="stagger mx-auto min-h-screen max-w-lg px-5 py-8">
       <p className="text-[13px] text-muted">Pedido pelo site</p>
       <h1 className="h1">{t.name}</h1>
       {t.branchName && <p className="mt-0.5 font-medium">{t.branchName}</p>}

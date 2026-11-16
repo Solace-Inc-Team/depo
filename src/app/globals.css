@@ -3744,27 +3744,10 @@ button.gaveta-mais-linha:active {
   border-color: color-mix(in srgb, var(--marca) 80%, transparent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--marca) 22%, transparent), 0 10px 30px -14px rgb(0 0 0 / 0.55);
 }
-/* os fios atrás dos cartões: a tela toda de largura, um pouco acima e abaixo da lista, sumindo nas pontas */
-.fundo-fios {
-  position: absolute;
+/* os fios atrás da página do cliente: fixos na tela, a página rola por cima */
+.fundo-tela {
+  position: fixed;
+  inset: 0;
   z-index: -1;
-  top: -8.75rem;
-  bottom: -8.75rem;
-  left: calc(50% - 50vw);
-  width: 100vw;
   pointer-events: none;
-  -webkit-mask-image: linear-gradient(transparent, #000 18%, #000 75%, transparent);
-  mask-image: linear-gradient(transparent, #000 18%, #000 75%, transparent);
-}
-/* tela larga: o desenho dos fios depende da proporção; espalhado pela largura toda, a onda ia para a direita e
-   deixava a lista sem fundo. Fica numa faixa em volta da coluna, com o mesmo desenho do celular, sumindo dos lados */
-@media (min-width: 44rem) {
-  .fundo-fios {
-    left: calc(50% - 22rem);
-    width: 44rem;
-    -webkit-mask-image: linear-gradient(transparent, #000 18%, #000 75%, transparent), linear-gradient(to right, transparent, #000 18%, #000 82%, transparent);
-    -webkit-mask-composite: source-in;
-    mask-image: linear-gradient(transparent, #000 18%, #000 75%, transparent), linear-gradient(to right, transparent, #000 18%, #000 82%, transparent);
-    mask-composite: intersect;
-  }
 }
