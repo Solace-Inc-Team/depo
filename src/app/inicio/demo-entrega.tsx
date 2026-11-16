@@ -1,8 +1,9 @@
 "use client";
 
-import { Badge, Bar, Button, Collapse, Count, Phone, Roll, Stage, States, Window, type Act } from "@/vendor/stageshow";
+import { Bar, Button, Collapse, Count, Phone, Roll, Stage, States, Window, type Act } from "@/vendor/stageshow";
 import { LayoutDashboard, MapPin, Package, Truck, Users, Wallet } from "lucide-react";
 import { brl, useEscuro } from "./palco";
+import { Logo } from "@/components/logo";
 import "./demo-entrega.css";
 
 // O hero da página: o entregador confirma no celular e o painel da loja muda sozinho.
@@ -64,9 +65,11 @@ const NAV = [
 
 function Status({ entregue }: { entregue: boolean }) {
   return (
-    <Badge tone={entregue ? "success" : "accent"} className="de-status">
+    // a mesma etiqueta do sistema (bolinha e contorno, components/ui StatusBadge): a demonstração mostra o produto como ele é
+    <span className="de-status inline-flex items-center gap-1.5 rounded-full border border-line px-2 py-0.5 text-xs font-medium whitespace-nowrap">
+      <span aria-hidden="true" className={`size-1.5 rounded-full transition-colors duration-300 ${entregue ? "bg-ok" : "pulse-dot bg-accent"}`} />
       <Roll variant="fade">{entregue ? "Entregue" : "Em rota"}</Roll>
-    </Badge>
+    </span>
   );
 }
 
@@ -141,7 +144,9 @@ export function DemoEntrega({ escuro = false }: { escuro?: boolean }) {
               lights="grey"
               sidebar={
                 layout === "wide" ? <nav className="de-nav">
-                  <span className="de-marca">depo</span>
+                  <span className="de-marca">
+                    <Logo size={20} animar={false} />
+                  </span>
                   {NAV.map(({ icon: I, nome, w }, i) => (
                     <span key={i} className="de-nav__item" data-on={i === 0 || undefined}>
                       <I size={16} strokeWidth={1.9} aria-hidden="true" />

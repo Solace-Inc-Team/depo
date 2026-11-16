@@ -141,6 +141,9 @@
 
 .de .de-status {
   justify-self: start;
+  /* a linha da tabela é apagada; a etiqueta tem o texto claro como no sistema */
+  color: var(--ss-text-strong);
+  border-color: var(--ss-border, var(--line));
 }
 
 .de .de-linha__valor {

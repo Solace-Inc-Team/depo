@@ -86,10 +86,8 @@ export default function Inicio() {
         <section className="topo-novo relative isolate pt-20 sm:pt-28">
           <div aria-hidden="true" className="topo-luz absolute inset-0 -z-10" />
           <div className="mx-auto max-w-6xl px-4 text-center sm:px-6">
-            <p style={atraso(0)} className="hero-in inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-[12px] text-muted">
-              <span className="size-1.5 rounded-full bg-ok" />
-              Para revendas de água e gás
-            </p>
+            {/* o mesmo rótulo das seções (Capitulo), sem caixa nem bolinha: o verde aqui parecia status de sistema */}
+            <p style={atraso(0)} className="hero-in text-[13px] font-medium text-accent">Para revendas de água e gás</p>
             <h1 className="mx-auto mt-6 max-w-[16ch] text-[2.5rem] leading-[1.04] font-semibold tracking-[-0.045em] text-balance sm:max-w-none sm:text-[3.25rem] lg:text-[4.25rem]">
               {titulo.map((linha, l) => (
                 <span key={l} className="block">
@@ -138,7 +136,7 @@ export default function Inicio() {
 
         {/* capítulo 1, o maior: a entrega acontecendo nas duas pontas, celular e loja. É a virada da página:
             uma faixa sempre escura, de ponta a ponta, com a demonstração acesa no meio; o rótulo vem no âmbar do gás */}
-        <section id="rua" style={{ "--luz": "color-mix(in srgb, var(--marca) 75%, var(--chama))" } as React.CSSProperties} className="faixa-escura mt-32 scroll-mt-14 py-28 sm:mt-36 sm:py-36">
+        <section id="rua" style={{ "--luz": "color-mix(in srgb, var(--marca) 75%, var(--chama))" } as React.CSSProperties} className="faixa-escura mt-16 scroll-mt-14 pt-24 pb-12 sm:mt-20 sm:pt-28 sm:pb-16">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <Capitulo
             tom="text-chama"
