@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useSyncExternalStore, type ReactNode } from "react";
 import { Monitor, Moon, Sun } from "lucide-react";
 import { aplicar, lerEscolha, temaEscuro, type Escolha } from "@/lib/tema";
 
@@ -14,7 +14,8 @@ const info = {
 };
 
 /** Um botão que alterna escuro e claro. O título diz o atual; o clique passa ao outro. */
-export function TemaBotao({ className = "" }: { className?: string }) {
+/** Com children, a linha inteira é o botão (a gaveta do celular): o nome à esquerda, o ícone à direita. */
+export function TemaBotao({ className = "", children }: { className?: string; children?: ReactNode }) {
   // no servidor é o escuro padrão; no navegador lê a escolha guardada e acompanha qualquer troca de tema
   const escolha = useSyncExternalStore(temaEscuro.assinar, lerEscolha, () => "escuro" as Escolha);
   // quem ainda está no automático vai para o oposto do que está vendo
@@ -27,11 +28,12 @@ export function TemaBotao({ className = "" }: { className?: string }) {
       aria-label={`${info[escolha].texto}. Trocar tema`}
       onClick={(e) => {
         // o tema novo nasce do centro do ícone clicado
-        const r = e.currentTarget.getBoundingClientRect();
+        const r = (e.currentTarget.lastElementChild ?? e.currentTarget).getBoundingClientRect();
         aplicar(proxima, { x: r.left + r.width / 2, y: r.top + r.height / 2 });
       }}
-      className={`grid place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg ${className}`}
+      className={`${children ? "" : "grid place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg"} ${className}`}
     >
+      {children}
       {/* os três ícones no mesmo lugar: o que sai gira e some, o que entra gira e aparece */}
       <span className="grid size-[15px] *:col-start-1 *:row-start-1" aria-hidden="true">
         {ordem.map((k) => {

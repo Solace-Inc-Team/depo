@@ -226,11 +226,13 @@ export function NavInferior({
                 <KeyRound size={18} strokeWidth={1.75} aria-hidden="true" /> Conta e segurança
               </Link>
             </li>
-            <li className="gaveta-mais-linha justify-between">
-              <span className="flex items-center gap-3">
-                <SunMoon size={18} strokeWidth={1.75} aria-hidden="true" /> Tema
-              </span>
-              <TemaBotao className="-mr-2 size-11" />
+            <li>
+              {/* a linha toda troca o tema, como as outras; o ícone da direita mostra o atual */}
+              <TemaBotao className="gaveta-mais-linha w-full justify-between">
+                <span className="flex items-center gap-3">
+                  <SunMoon size={18} strokeWidth={1.75} aria-hidden="true" /> Tema
+                </span>
+              </TemaBotao>
             </li>
             <li>{sair}</li>
           </ul>
