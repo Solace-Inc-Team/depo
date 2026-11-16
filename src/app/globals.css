@@ -3802,3 +3802,40 @@ body:has(.saida-grupo) .main-app {
 .viagem-entregue {
   color: var(--muted);
 }
+
+/* avaliação dos entregadores (Relatórios): a seta vira ao abrir e a barra de cada parte enche ao aparecer */
+.nota-linha > summary::-webkit-details-marker {
+  display: none;
+}
+.nota-seta {
+  transition: rotate var(--dur) var(--ease-out);
+}
+.nota-linha[open] .nota-seta {
+  rotate: 180deg;
+}
+.nota-barra {
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--subtle);
+}
+.nota-barra > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transform-origin: left;
+}
+.nota-linha[open] .nota-barra > span {
+  animation: nota-enche 600ms var(--ease-out) 80ms both;
+}
+@keyframes nota-enche {
+  from {
+    scale: 0 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nota-linha[open] .nota-barra > span {
+    animation: none;
+  }
+}

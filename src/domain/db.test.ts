@@ -1473,3 +1473,41 @@ test("viagem: saem juntos, o acerto da volta conta só o dinheiro dela e o que f
   await m.shifts.voidCashEntry(A.ctx, entrada.id, "contou errado");
   assert.equal((await m.q.listViagens(A.t.id, A.branch.id)).filter((v) => v.tripId === trip).length, 2);
 });
+
+test("nota do entregador: viagem acertada com falta, demora para voltar pelo celular e ocorrência", async () => {
+  const { db } = m.db;
+  const { users } = m.schema;
+  const [driver] = await db.insert(users).values({ tenantId: A.t.id, name: "Entregador Nota", email: `nota@${A.t.id}.test`, role: "entregador", passwordHash: "x", branchId: A.branch.id }).returning();
+  const caixa = { ...A.ctx, role: "caixa" as const };
+  const comDriver = { tenantId: A.t.id, userId: driver.id, role: "entregador" as const, branchId: A.branch.id };
+  const shift = await m.shifts.openShift(A.ctx, driver.id, 0);
+  const novo = () =>
+    m.orders.createOrder(A.ctx, {
+      mode: "entrega", customerId: A.customer.id, items: [{ productId: A.product.id, quantity: 1, returnsEmpty: true }],
+      paymentMethod: "dinheiro", deliveryFeeCents: 0, changeForCents: null, notes: "", driverId: null,
+    });
+  const [o1, o2, o3] = [await novo(), await novo(), await novo()];
+  await m.orders.dispatchOrders(A.ctx, [o1.id, o2.id, o3.id], driver.id);
+  await m.orders.deliverOrder(comDriver, o1.id);
+  await m.orders.deliverOrder(comDriver, o2.id);
+  await m.orders.reportOccurrence(comDriver, o3.id, "ausente", "");
+  const [{ tripId }] = (await m.q.listViagens(A.t.id, A.branch.id)).filter((v) => v.driverId === driver.id);
+  await m.shifts.settleTrip(caixa, shift.id, tripId!, 21000, "faltou");
+
+  const desde = new Date(Date.now() - 86400000), ate = new Date(Date.now() + 60000);
+  const lista = await m.q.metricasEntregadores(A.t.id, A.branch.id, desde, ate);
+  const n = lista.find((x) => x.id === driver.id)!;
+  assert.equal(n.entregas, 2);
+  assert.equal(n.viagemEntregas, 2, "a viagem acertada conta as duas entregas");
+  assert.equal(n.voltaViagens, 1, "as duas foram confirmadas pelo celular dele");
+  assert.equal(n.acertos, 1);
+  assert.equal(n.acertosComFalta, 1, "entregou 210 de 220");
+  assert.deepEqual(n.ocorrencias, { ausente: 1 });
+  assert.ok(n.horasTurno > 0);
+  // o turno fechado sem falta conta como mais um acerto
+  await m.shifts.closeShift(caixa, shift.id, 1000, "");
+  const depois = (await m.q.metricasEntregadores(A.t.id, A.branch.id, desde, ate)).find((x) => x.id === driver.id)!;
+  assert.deepEqual([depois.acertos, depois.acertosComFalta], [2, 1]);
+  // outra empresa não vê ninguém daqui
+  assert.equal((await m.q.metricasEntregadores(B.t.id, B.branch.id, desde, ate)).some((x) => x.id === driver.id), false);
+});

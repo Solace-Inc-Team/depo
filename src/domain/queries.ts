@@ -6,6 +6,7 @@ import { branches, cashEntries, customerAddresses, customers, orderItems, orders
 import { expectedCash, paymentSummary } from "@/lib/cash";
 import { todayISO } from "@/lib/period";
 import { isUuid } from "@/lib/ctx";
+import type { Metricas } from "@/lib/nota";
 
 // Filial: as consultas da operação (estoque, pedidos, turnos, painel, relatórios) recebem a filial;
 // null quer dizer todas (só o dono, nos relatórios). Cliente, fiado e comodato são da empresa inteira.
@@ -721,4 +722,80 @@ export const primeirosPassos = scoped(async function primeirosPassos(tenantId: s
     })
     .from(sql`(select 1) as um`);
   return r;
+});
+
+/**
+ * O que entra na nota de cada entregador da filial no período (lib/nota.ts faz a conta).
+ * Viagem acertada: o repasse da volta (cash_entries com trip_id). A saída é a do primeiro pedido dela e a volta é o
+ * acerto; o dinheiro esperado é o dos pedidos entregues nela. "Pelo celular": todas as entregas confirmadas pelo
+ * próprio entregador (sem isso o horário da entrega é o da volta, e a demora para voltar não se mede).
+ */
+export const metricasEntregadores = scoped(async function metricasEntregadores(tenantId: string, branchId: string | null, from: Date, to: Date) {
+  // datas como texto: no SQL direto o driver não converte Date
+  const de = from.toISOString(), ate = to.toISOString();
+  const daFilial = (col: ReturnType<typeof sql.raw>) => (branchId ? sql`and ${col} = ${branchId}` : sql``);
+  const [entregadores, entregas, viagens, turnos, ocorrencias] = await Promise.all([
+    db.execute<{ id: string; nome: string }>(sql`
+      select id, name as nome from users
+      where tenant_id = ${tenantId} and role = 'entregador' and active ${daFilial(sql.raw("branch_id"))}`),
+    db.execute<{ driver_id: string; n: number }>(sql`
+      select driver_id, count(*)::int as n from orders
+      where tenant_id = ${tenantId} and status = 'entregue' and driver_id is not null
+        and delivered_at >= ${de}::timestamptz and delivered_at < ${ate}::timestamptz ${daFilial(sql.raw("branch_id"))}
+      group by driver_id`),
+    db.execute<{ driver_id: string; minutos: number; entregas: number; volta_min: number | null; celular: boolean; falta: boolean }>(sql`
+      select v.driver_id,
+        extract(epoch from (v.volta - v.saida)) / 60 as minutos,
+        v.entregas,
+        extract(epoch from (v.volta - v.ultima)) / 60 as volta_min,
+        v.celular,
+        v.contado < v.esperado as falta
+      from (
+        select e.id, o.driver_id, e.created_at as volta, e.amount_cents as contado,
+          min(o.dispatched_at) as saida, max(o.delivered_at) as ultima, count(*)::int as entregas,
+          sum(case when o.payment_method = 'dinheiro' then o.total_cents else o.cash_part_cents end)::int as esperado,
+          bool_and(exists (
+            select 1 from audit_log a
+            where a.entity_id = o.id::text and a.user_id = o.driver_id and a.action in ('pedido.entregue', 'pedido.entrega_parcial')
+          )) as celular
+        from cash_entries e
+        join orders o on o.trip_id = e.trip_id and o.status = 'entregue' and o.driver_id is not null
+        where e.tenant_id = ${tenantId} and e.trip_id is not null and e.voided_at is null
+          and e.created_at >= ${de}::timestamptz and e.created_at < ${ate}::timestamptz ${daFilial(sql.raw("o.branch_id"))}
+        group by e.id, o.driver_id
+      ) v
+      where v.saida is not null`),
+    db.execute<{ driver_id: string; acertos: number; com_falta: number; horas: number }>(sql`
+      select driver_id,
+        count(*) filter (where status = 'fechado' and closed_at >= ${de}::timestamptz and closed_at < ${ate}::timestamptz)::int as acertos,
+        count(*) filter (where status = 'fechado' and closed_at >= ${de}::timestamptz and closed_at < ${ate}::timestamptz and difference_cents < 0)::int as com_falta,
+        -- até 14 h por turno: turno esquecido aberto de um dia para o outro não derruba a produtividade
+        coalesce(sum(least(14, greatest(0, extract(epoch from (least(coalesce(closed_at, now()), ${ate}::timestamptz) - greatest(opened_at, ${de}::timestamptz))) / 3600))), 0) as horas
+      from shifts
+      where tenant_id = ${tenantId} and opened_at < ${ate}::timestamptz and coalesce(closed_at, now()) > ${de}::timestamptz ${daFilial(sql.raw("branch_id"))}
+      group by driver_id`),
+    db.execute<{ driver_id: string; tipo: string; n: number }>(sql`
+      select data->>'driverId' as driver_id, data->>'kind' as tipo, count(*)::int as n from audit_log
+      where tenant_id = ${tenantId} and action = 'pedido.ocorrencia' and data->>'driverId' is not null
+        and created_at >= ${de}::timestamptz and created_at < ${ate}::timestamptz
+      group by 1, 2`),
+  ]);
+  return entregadores.map((d): Metricas => {
+    const vs = viagens.filter((v) => v.driver_id === d.id);
+    const pc = vs.filter((v) => v.celular && v.volta_min !== null);
+    const t = turnos.find((x) => x.driver_id === d.id);
+    return {
+      id: d.id,
+      nome: d.nome,
+      entregas: entregas.find((e) => e.driver_id === d.id)?.n ?? 0,
+      viagemMin: vs.reduce((s, v) => s + Number(v.minutos), 0),
+      viagemEntregas: vs.reduce((s, v) => s + v.entregas, 0),
+      voltaMin: pc.reduce((s, v) => s + Math.max(0, Number(v.volta_min)), 0),
+      voltaViagens: pc.length,
+      acertos: vs.length + (t?.acertos ?? 0),
+      acertosComFalta: vs.filter((v) => v.falta).length + (t?.com_falta ?? 0),
+      horasTurno: Number(t?.horas ?? 0),
+      ocorrencias: Object.fromEntries(ocorrencias.filter((o) => o.driver_id === d.id).map((o) => [o.tipo, o.n])),
+    };
+  });
 });

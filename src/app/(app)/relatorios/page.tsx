@@ -8,6 +8,7 @@ import { paymentsByDay } from "@/domain/receivables";
 import { expensesTotal } from "@/domain/expenses";
 import { Difference, Empty, Money, PageHeader, fmtDateTime } from "@/components/ui";
 import { DivisaoPagamento } from "@/components/divisao-pagamento";
+import { AvaliacaoEntregadores } from "./avaliacao";
 
 export const metadata = { title: "Relatórios" };
 
@@ -122,6 +123,9 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
           Fiado recebido no período: <Money cents={fiadoTotal} className="font-medium text-fg" /> (já contado nas vendas, no dia da entrega).
         </p>
       </section>
+
+      {/* a nota de cada entregador é conversa do dono com ele: a equipe não vê */}
+      {user.role === "dono" && <AvaliacaoEntregadores tenantId={user.tenantId} filial={filial} />}
 
       <div className="mb-6 grid gap-6">
         <section className="panel overflow-x-auto">
