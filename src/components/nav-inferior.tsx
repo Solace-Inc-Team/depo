@@ -111,6 +111,59 @@ export function NavInferior({
   useEffect(() => {
     fechar(true);
   }, [path]);
+  // puxar para baixo fecha, como as gavetas do celular: com a lista no topo, o cartão acompanha o dedo;
+  // soltando depois de 80 px (ou num puxão rápido) ela desce e fecha, antes disso volta para o lugar
+  useEffect(() => {
+    const cartao = gaveta.current?.querySelector<HTMLElement>(".janela-cartao");
+    if (!cartao) return;
+    let inicio: { y: number } | null = null;
+    let puxado = 0;
+    // velocidade do último trecho do dedo (px por ms): um peteleco curto também fecha
+    let velocidade = 0;
+    let ultimo = { y: 0, t: 0 };
+    const solta = () => {
+      cartao.style.transition = "transform 250ms var(--ease-out)";
+      cartao.style.transform = "";
+    };
+    const comeca = (e: TouchEvent) => {
+      inicio = cartao.scrollTop <= 0 ? { y: e.touches[0].clientY } : null;
+      ultimo = { y: e.touches[0].clientY, t: e.timeStamp };
+      puxado = 0;
+      velocidade = 0;
+    };
+    const move = (e: TouchEvent) => {
+      if (!inicio) return;
+      const dy = e.touches[0].clientY - inicio.y;
+      if (dy <= 0 && !puxado) return (inicio = null);
+      e.preventDefault();
+      puxado = Math.max(0, dy);
+      const y = e.touches[0].clientY;
+      if (e.timeStamp > ultimo.t) velocidade = (y - ultimo.y) / (e.timeStamp - ultimo.t);
+      ultimo = { y, t: e.timeStamp };
+      cartao.style.transition = "none";
+      cartao.style.transform = `translateY(${puxado}px)`;
+    };
+    const fim = () => {
+      if (!inicio || !puxado) return void (inicio = null);
+      const rapido = velocidade > 0.5;
+      inicio = null;
+      if (puxado > 80 || rapido) {
+        fechar();
+        // a descida parte de onde o dedo deixou; ao fechar, o cartão volta ao normal para a próxima abertura
+        gaveta.current?.addEventListener("close", () => { cartao.style.transition = ""; cartao.style.transform = ""; }, { once: true });
+      } else solta();
+    };
+    cartao.addEventListener("touchstart", comeca, { passive: true });
+    cartao.addEventListener("touchmove", move, { passive: false });
+    cartao.addEventListener("touchend", fim);
+    cartao.addEventListener("touchcancel", solta);
+    return () => {
+      cartao.removeEventListener("touchstart", comeca);
+      cartao.removeEventListener("touchmove", move);
+      cartao.removeEventListener("touchend", fim);
+      cartao.removeEventListener("touchcancel", solta);
+    };
+  }, []);
   // o voltar do celular fecha a gaveta em vez de sair da tela
   useEffect(() => {
     const voltar = () => {
