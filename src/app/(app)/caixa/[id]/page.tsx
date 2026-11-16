@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { isUuid } from "@/lib/ctx";
 import { requireUser } from "@/lib/auth";
 import { getShift } from "@/domain/queries";
-import { Difference, Money, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
+import { Difference, Money, StatusBadge, fmtQuando, paymentLabel } from "@/components/ui";
 import { CheckSucesso } from "@/components/check-sucesso";
 import { JanelaAcao } from "@/components/janela-acao";
 import { ActionForm } from "@/components/action-form";
@@ -42,9 +42,9 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
         <h1 className="h1">Acerto de {s.driverName}</h1>
       </div>
       <p className="-mt-4 mb-6 text-muted">
-        Turno aberto em {fmtDateTime(s.openedAt)}
+        Turno aberto em {fmtQuando(s.openedAt)}
         {s.openedByName && ` por ${s.openedByName}`}
-        {s.closedAt && `, conferido em ${fmtDateTime(s.closedAt)}`}
+        {s.closedAt && `, conferido em ${fmtQuando(s.closedAt)}`}
         {s.closedAt && s.closedByName && ` por ${s.closedByName}`}
       </p>
 
@@ -148,7 +148,7 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
             {resolutions[s.resolution as keyof typeof resolutions] ?? s.resolution}. {s.resolutionNotes}
           </p>
           <p className="mt-1 text-sm text-muted">
-            {s.resolvedByName}, {fmtDateTime(s.resolvedAt)}
+            {s.resolvedByName}, {fmtQuando(s.resolvedAt)}
           </p>
         </section>
       )}
@@ -197,7 +197,7 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
                         {e.note && `: ${e.note}`}
                       </p>
                       <p className="text-[13px] text-muted">
-                        {fmtDateTime(e.createdAt)}, lançado por {e.by}
+                        {fmtQuando(e.createdAt)}, lançado por {e.by}
                         {e.voidedAt && `. Estornado: ${e.voidReason}`}
                       </p>
                     </div>
@@ -276,7 +276,7 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
                 <p className="text-muted">Só o caixa ou o dono fecha o acerto.</p>
               ) : inRoute > 0 ? (
                 <p className="rounded-md bg-warn-soft p-3 text-warn-fg">
-                  {inRoute} {inRoute === 1 ? "pedido ainda está" : "pedidos ainda estão"} em rota. Lance o resultado em “Pedidos do turno” (Entregue, ou parcial e não entregue) antes de fechar.
+                  {inRoute} {inRoute === 1 ? "pedido ainda está" : "pedidos ainda estão"} em rota. Lance o resultado antes de fechar.
                 </p>
               ) : (
                 <CloseShiftForm shiftId={s.id} expectedCents={s.expected} />

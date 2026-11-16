@@ -77,8 +77,8 @@ const secoes: Secao[] = [
         <p>Em <B>Caixa e acertos</B>, escolha o entregador, informe o <B>Troco inicial</B> e clique em <B>Abrir turno</B>. Sem turno aberto ele não recebe pedidos.</p>
         <h3>Durante o dia</h3>
         <ul>
-          <li>Entregador deixou dinheiro: abra o turno dele e use <B>Registrar repasse</B>.</li>
-          <li>Pagou gasolina ou outra despesa com o dinheiro das entregas: <B>Registrar gasto</B>, com o comprovante.</li>
+          <li>Entregador deixou dinheiro: abra o turno dele e use <B>Receber repasse</B>.</li>
+          <li>Pagou gasolina ou outra despesa com o dinheiro das entregas: <B>Gasto autorizado</B>, com o comprovante.</li>
           <li>Pix: confira no extrato do banco e clique em <B>Pix conferido no extrato</B> no pedido. Nunca confirme por foto de comprovante.</li>
         </ul>
         <h3>Fechar o acerto</h3>
@@ -134,14 +134,14 @@ const secoes: Secao[] = [
           <li>Cada entregador anota o que recebeu em dinheiro.</li>
           <li>Quando voltar, lance todos os pedidos na ordem, com <B>Observações</B> “lançado depois, sistema fora”, despache e confirme as entregas.</li>
           <li>Só então feche os acertos. Guarde as folhas até o fim do mês.</li>
-          <li>Avise a Solace se a queda passar de 15 minutos.</li>
+          <li>Avise o suporte do depo se a queda passar de 15 minutos.</li>
         </ol>
         <h3>Dinheiro não bateu</h3>
         <p>Feche o acerto com o valor contado e escreva a explicação. Confira os pedidos do turno (pagamento misto, troco, entrega parcial) antes de qualquer conclusão. O dono decide o que fazer com a diferença.</p>
         <h3>Botijão ou galão danificado</h3>
         <p>Em <B>Estoque</B>, <B>Registrar avaria</B>: ele sai de cheios ou vazios e vai para avariados, com o defeito descrito.</p>
         <h3>Esqueceu a senha</h3>
-        <p>Peça ao dono para redefinir em <B>Equipe</B>. Se for o dono, fale com a Solace.</p>
+        <p>Peça ao dono para redefinir em <B>Equipe</B>. Se for o dono, fale com o suporte do depo.</p>
       </>
     ),
   },

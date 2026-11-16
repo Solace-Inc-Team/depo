@@ -2,7 +2,7 @@ import Link from "next/link";
 import { HandCoins } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { listDebtors } from "@/domain/receivables";
-import { Money, PageHeader, fmtDateTime } from "@/components/ui";
+import { Money, PageHeader, fmtQuando } from "@/components/ui";
 
 export const metadata = { title: "Fiado" };
 
@@ -56,10 +56,10 @@ export default async function Fiado() {
                     <td data-rotulo="Deve desde" className={age > 30 ? "font-medium text-warn-fg" : "text-muted"}>
                       {age === 0 ? "hoje" : `há ${age} ${age === 1 ? "dia" : "dias"}`}
                     </td>
-                    <td data-rotulo="Último pagamento" className="text-muted">{d.last_payment ? fmtDateTime(new Date(d.last_payment)) : "nunca"}</td>
+                    <td data-rotulo="Último pagamento" className="text-muted">{d.last_payment ? fmtQuando(new Date(d.last_payment)) : "nunca"}</td>
                     <td data-rotulo="Saldo" className="text-right font-medium"><Money cents={d.owed} /></td>
                     <td className="text-right max-sm:pt-2">
-                      <Link href={`/clientes/${d.id}#receber`} className="btn h-8 text-[13px]">Receber</Link>
+                      <Link href={`/clientes/${d.id}#receber`} className="btn tap text-[13px] sm:h-8">Receber</Link>
                     </td>
                   </tr>
                 );

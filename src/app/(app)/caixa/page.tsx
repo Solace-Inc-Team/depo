@@ -4,7 +4,7 @@ import { listDrivers, listShifts } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
 import { openShiftAction } from "@/app/actions";
 import { JanelaAcao } from "@/components/janela-acao";
-import { Difference, Empty, Money, PageHeader, fmtDateTime } from "@/components/ui";
+import { Difference, Empty, Money, PageHeader, fmtQuando } from "@/components/ui";
 
 export const metadata = { title: "Caixa e acertos" };
 
@@ -52,7 +52,7 @@ export default async function Caixa() {
                 <div className="min-w-0">
                   <p className="text-lg font-semibold">{s.driverName}</p>
                   <p className="text-sm text-muted">
-                    Desde {fmtDateTime(s.openedAt)}, {s.orderCount} {s.orderCount === 1 ? "pedido" : "pedidos"}
+                    Desde {fmtQuando(s.openedAt)}, {s.orderCount} {s.orderCount === 1 ? "pedido" : "pedidos"}
                     {s.inRoute ? `, ${s.inRoute} em rota` : ""}
                   </p>
                 </div>
@@ -61,7 +61,7 @@ export default async function Caixa() {
                     <p className="text-sm text-muted">Deve apresentar</p>
                     <Money cents={s.expected} className="text-2xl font-semibold" />
                   </div>
-                  <Link href={`/caixa/${s.id}`} className="btn btn-primary">{canSettle ? "Acerto" : "Ver turno"}</Link>
+                  <Link href={`/caixa/${s.id}`} className="btn btn-primary">{canSettle ? "Fazer acerto" : "Ver turno"}</Link>
                 </div>
               </li>
             ))}
@@ -92,7 +92,7 @@ export default async function Caixa() {
                     </span>
                   </span>
                   <span className="mt-1 block text-[13px] text-muted">
-                    {fmtDateTime(s.closedAt)}, esperado <Money cents={s.expectedCashCents ?? 0} />, contado <Money cents={s.countedCashCents ?? 0} />
+                    {fmtQuando(s.closedAt)}, esperado <Money cents={s.expectedCashCents ?? 0} />, contado <Money cents={s.countedCashCents ?? 0} />
                   </span>
                 </Link>
               </li>
@@ -107,7 +107,7 @@ export default async function Caixa() {
               {closed.map((s) => (
                 <tr key={s.id} className={s.pending ? "bg-danger-soft/40" : ""}>
                   <td><Link href={`/caixa/${s.id}`} className="font-medium hover:text-accent">{s.driverName}</Link></td>
-                  <td>{fmtDateTime(s.closedAt)}</td>
+                  <td>{fmtQuando(s.closedAt)}</td>
                   <td className="text-right"><Money cents={s.expectedCashCents ?? 0} /></td>
                   <td className="text-right"><Money cents={s.countedCashCents ?? 0} /></td>
                   <td className="text-right">

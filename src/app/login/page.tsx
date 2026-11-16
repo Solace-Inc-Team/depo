@@ -28,7 +28,7 @@ export default async function LoginPage() {
       {/* a explicação só aparece para quem precisa: um link curto no lugar de um parágrafo fixo */}
       <details className="pergunta mt-4 text-center text-[13px]">
         <summary className="alvo cursor-pointer text-muted hover:text-fg">Esqueci a senha</summary>
-        <p className="mt-2 text-muted">Peça ao dono da empresa para redefinir. Se você é o dono, fale com a Solace.</p>
+        <p className="mt-2 text-muted">Peça ao dono da empresa para redefinir. Se você é o dono, fale com o suporte do depo.</p>
       </details>
       <p className="mt-6 text-center text-[13px] text-muted">
         Ainda não usa? <Link href="/cadastro" className="alvo font-medium text-fg hover:underline">Criar conta</Link>

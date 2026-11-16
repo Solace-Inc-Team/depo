@@ -69,7 +69,7 @@ export default async function Entregas() {
         description={
           lateCount
             ? `${lateCount} ${lateCount === 1 ? "pedido passou" : "pedidos passaram"} de ${waited(settings.lateAfterMinutes)} desde que ${lateCount === 1 ? "foi lançado" : "foram lançados"}.`
-            : "Pedidos esperando para sair e o que está na rua com cada entregador."
+            : undefined
         }
       />
 

@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useRef, type ReactNode } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, type MouseEvent, type ReactNode } from "react";
 import {
   ChartColumnIncreasing,
   CircleHelp,
@@ -16,6 +16,7 @@ import {
   Receipt,
   ReceiptText,
   Settings,
+  SunMoon,
   Tag,
   Truck,
   UserRoundCog,
@@ -44,6 +45,9 @@ const icones: Record<string, LucideIcon> = {
 };
 
 export type ItemMais = { href: string; label: string };
+
+// nomes curtos nos blocos da gaveta: "Caixa e acertos" e "Produtos e preços" quebravam em duas linhas
+const curto: Record<string, string> = { "/caixa": "Caixa", "/produtos": "Produtos" };
 
 const ativo = (path: string, href: string) =>
   href === "/" ? path === "/" : href === "/pedidos" ? /^\/pedidos(\/(?!novo).*)?$/.test(path) : path === href || path.startsWith(href + "/");
@@ -80,11 +84,23 @@ export function NavInferior({
 }) {
   const path = usePathname();
   const gaveta = useRef<HTMLDialogElement>(null);
+  const router = useRouter();
+  // tela escolhida na gaveta: primeiro desfaz a entrada que a gaveta pôs no histórico, depois navega
+  // (sem isso o voltar da tela nova caía numa cópia da tela de antes)
+  const destino = useRef<string | null>(null);
+  const ir = (e: MouseEvent, href: string) => {
+    if (!history.state?.gavetaMais) return fechar(true);
+    e.preventDefault();
+    destino.current = href;
+    history.back();
+  };
   const noMais = mais.some((g) => g.links.some((l) => ativo(path, l.href)));
 
-  const fechar = () => {
+  const fechar = (porVoltar = false) => {
     const d = gaveta.current;
     if (!d?.open || d.dataset.saindo !== undefined) return;
+    // aberta, a gaveta ganhou uma entrada no histórico (o voltar do Android a fecha): fechando por outro caminho, ela sai
+    if (!porVoltar && history.state?.gavetaMais) history.back();
     d.dataset.saindo = "";
     const reduzir = matchMedia("(prefers-reduced-motion: reduce)").matches;
     setTimeout(() => {
@@ -94,8 +110,21 @@ export function NavInferior({
   };
   // escolheu uma tela na gaveta: ela sai junto com a navegação
   useEffect(() => {
-    fechar();
+    fechar(true);
   }, [path]);
+  // o voltar do celular fecha a gaveta em vez de sair da tela
+  useEffect(() => {
+    const voltar = () => {
+      fechar(true);
+      const d = destino.current;
+      destino.current = null;
+      // depois do roteador do Next tratar o mesmo voltar; na hora, a navegação era engolida por ele
+      if (d) setTimeout(() => router.push(d), 0);
+    };
+    window.addEventListener("popstate", voltar);
+    return () => window.removeEventListener("popstate", voltar);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <>
@@ -118,6 +147,7 @@ export function NavInferior({
           className="nav-inferior-aba"
           data-on={noMais || undefined}
           onClick={() => {
+            history.pushState({ ...history.state, gavetaMais: true }, "");
             gaveta.current?.showModal();
             gaveta.current?.querySelector<HTMLElement>(".janela-cartao")?.focus();
           }}
@@ -135,7 +165,9 @@ export function NavInferior({
           e.preventDefault();
           fechar();
         }}
-        onClick={(e) => e.target === e.currentTarget && fechar()}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) fechar();
+        }}
       >
         <div className="janela-cartao outline-none" tabIndex={-1}>
           {/* a alça diz que é uma gaveta; quem é e de qual empresa fica no alto, como no rodapé lateral do computador */}
@@ -148,7 +180,7 @@ export function NavInferior({
                 {usuario.papel} · {usuario.empresa}
               </p>
             </div>
-            <button type="button" onClick={fechar} aria-label="Fechar" className="-mr-2 grid size-11 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
+            <button type="button" onClick={() => fechar()} aria-label="Fechar" className="-mr-2 grid size-11 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
               <X size={18} strokeWidth={1.75} aria-hidden="true" />
             </button>
           </div>
@@ -156,15 +188,16 @@ export function NavInferior({
           {mais.map((g) => (
             <section key={g.titulo} className="mt-5">
               <h2 className="mb-2 text-[12px] font-medium text-muted">{g.titulo}</h2>
-              <ul className="grid grid-cols-3 gap-2">
+              <ul className="grid grid-cols-4 gap-2">
                 {g.links.map((l) => {
                   const Icone = icones[l.href] ?? LayoutGrid;
                   const on = ativo(path, l.href);
                   return (
                     <li key={l.href}>
-                      <Link href={l.href} aria-current={on ? "page" : undefined} className="gaveta-mais-item" data-on={on || undefined}>
+                      {/* a gaveta sai no toque, junto com a troca de tela (antes esperava a tela nova chegar) */}
+                      <Link href={l.href} onClick={(e) => ir(e, l.href)} aria-label={l.label} aria-current={on ? "page" : undefined} className="gaveta-mais-item" data-on={on || undefined}>
                         <Icone size={20} strokeWidth={1.75} aria-hidden="true" />
-                        <span>{l.label}</span>
+                        <span aria-hidden="true">{curto[l.href] ?? l.label}</span>
                       </Link>
                     </li>
                   );
@@ -178,7 +211,7 @@ export function NavInferior({
             {config && (
               <li>
                 {/* só o endereço muda (?config): a gaveta sai na hora, senão ficaria por baixo da janela das Configurações */}
-                <Link href={`${path}?config=empresa`} onClick={fechar} className="gaveta-mais-linha">
+                <Link href={`${path}?config=empresa`} onClick={(e) => ir(e, `${path}?config=empresa`)} className="gaveta-mais-linha">
                   <Settings size={18} strokeWidth={1.75} aria-hidden="true" /> Configurações
                 </Link>
               </li>
@@ -190,11 +223,13 @@ export function NavInferior({
             </li>
             <li>
               <Link href="/senha" className="gaveta-mais-linha">
-                <KeyRound size={18} strokeWidth={1.75} aria-hidden="true" /> Senha e segurança
+                <KeyRound size={18} strokeWidth={1.75} aria-hidden="true" /> Conta e segurança
               </Link>
             </li>
             <li className="gaveta-mais-linha justify-between">
-              <span>Tema</span>
+              <span className="flex items-center gap-3">
+                <SunMoon size={18} strokeWidth={1.75} aria-hidden="true" /> Tema
+              </span>
               <TemaBotao className="-mr-2 size-11" />
             </li>
             <li>{sair}</li>

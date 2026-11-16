@@ -106,7 +106,8 @@ export function DeliverButton({ orderId, label }: { orderId: string; label: stri
 
   if (left !== null && left > 0)
     return (
-      <div className="enter" role="status">
+      // a chave diferente faz o React trocar o bloco (e o .enter tocar de novo), em vez de reaproveitar o do botão
+      <div key="desfazer" className="enter" role="status">
         <div className="flex items-center gap-3">
           <p className="num flex-1 text-[15px]">
             {/* o número desce rolando, como os outros números do sistema */}
@@ -125,7 +126,7 @@ export function DeliverButton({ orderId, label }: { orderId: string; label: stri
 
   // volta do "Desfazer" (ou do erro): o botão chega de novo com movimento, não reaparece seco
   return (
-    <div className="enter">
+    <div key="botao" className="enter">
       <button
         type="button"
         disabled={pending || left === 0}

@@ -46,7 +46,8 @@ export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
   return (
     <>
       <PageHeader title="Pedidos">
-        <Link href="/pedidos/novo" className="btn btn-primary">
+        {/* no celular e no tablet o "Novo" está na barra de baixo: aqui seria o mesmo botão duas vezes */}
+        <Link href="/pedidos/novo" className="btn btn-primary max-lg:hidden">
           <Plus size={16} strokeWidth={2} aria-hidden="true" />
           Novo pedido
         </Link>
@@ -80,7 +81,7 @@ export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
 
       <form className="mb-4 flex flex-wrap items-center justify-between gap-3" role="search">
         {current && <input type="hidden" name="status" value={current} />}
-        <div className="w-full max-w-xs">
+        <div className="w-full sm:max-w-xs">
           <CampoBusca name="q" defaultValue={q} placeholder="Cliente ou número do pedido" rotulo="Buscar pedido" />
         </div>
         <p className="text-[13px] text-muted">

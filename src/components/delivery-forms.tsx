@@ -12,10 +12,11 @@ export function DeliveryExceptions({ order, items, forDriver = false }: { order:
   return (
     // botões secundários de verdade: no celular do entregador são alvo de dedo, não texto solto
     <div className="grid gap-2">
-      <Revelar label="Entreguei só uma parte">
+      {/* o entregador fala de si ("Entreguei…"); na loja, quem lança é o atendente: os nomes de Entregas e do acerto */}
+      <Revelar label={forDriver ? "Entreguei só uma parte" : "Entrega parcial"}>
         <PartialDeliveryForm order={order} items={items} forDriver={forDriver} />
       </Revelar>
-      <Revelar label="Não consegui entregar">
+      <Revelar label={forDriver ? "Não consegui entregar" : "Não entregue"}>
         <ActionForm action={occurrenceAction} className="space-y-3">
           <input type="hidden" name="orderId" value={orderId} />
           <div>
@@ -32,7 +33,7 @@ export function DeliveryExceptions({ order, items, forDriver = false }: { order:
             <input id={`onote-${orderId}`} name="note" maxLength={160} className="input" />
           </div>
           <p className="text-[13px] text-muted">
-            O pedido volta para a fila da loja e os produtos saem da conta {forDriver ? "sua" : "do entregador"}.
+            O pedido volta para a fila da loja e os produtos saem {forDriver ? "da sua conta" : "da conta do entregador"}.
           </p>
           <button className="btn btn-danger w-full">Registrar e devolver à fila</button>
         </ActionForm>

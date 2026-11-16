@@ -3442,7 +3442,10 @@ html:has(.pagina-escura) body {
   }
   /* teclado aberto num campo da tela: a barra sai, para o campo e o teclado ficarem com a tela */
   body:has(main :is(input:not([type="checkbox"], [type="radio"], [type="hidden"]), textarea, select):focus) .nav-inferior {
-    display: none;
+    translate: 0 110%;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
   }
 }
 /* só abaixo de 1024 px: no computador a navegação é o menu lateral (a regra fora de camada venceria o lg:hidden) */
@@ -3465,10 +3468,14 @@ html:has(.pagina-escura) body {
   -webkit-backdrop-filter: blur(16px) saturate(1.4);
   backdrop-filter: blur(16px) saturate(1.4);
 }
-/* no novo pedido (celular) o pé da tela é da barra do carrinho */
-@media (max-width: 639px) {
+/* no novo pedido o pé da tela é da barra do carrinho (no celular e no tablet: no tablet a barra cobria o "Lançar pedido");
+   a barra de navegação desce em vez de sumir seco, e volta subindo */
+@media (max-width: 1023px) {
   .nav-inferior[data-tela="novo"] {
-    display: none;
+    translate: 0 110%;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
   }
 }
 .nav-inferior-aba,
@@ -3626,5 +3633,81 @@ button.gaveta-mais-linha:active {
   /* número ímpar de ações: a última ocupa a linha inteira */
   .acoes-topo:has(> :nth-child(3)) > .btn:last-child:nth-child(odd) {
     grid-column: 1 / -1;
+  }
+}
+
+/* acertos da revisão do celular --------------------------------------------------------------------------- */
+/* a barra de navegação entra e sai deslizando (teclado aberto, novo pedido): nada de sumir seco */
+.nav-inferior {
+  transition:
+    translate 260ms var(--ease-out),
+    opacity 200ms var(--ease-out),
+    visibility 260ms;
+}
+/* todas as abas com o mesmo espaço para o ícone: o rótulo de "Novo" ficava 3 px abaixo dos outros */
+.nav-inferior-aba > :first-child,
+.nav-inferior-novo > :first-child {
+  display: grid;
+  place-items: center;
+  height: 1.75rem;
+}
+/* o número em Entregas: texto da cor do fundo (escuro no tema escuro, claro no claro), com contraste nos dois */
+.nav-inferior-selo {
+  color: var(--gota);
+}
+/* janela no celular mais alta que a tela: rola por dentro (o botão de enviar ficava fora da tela, sem como chegar) */
+@media (max-width: 639px) {
+  .janela-cartao {
+    max-height: calc(100dvh - 1rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+/* os campos das janelas não refazem a cascata da tela a cada abertura (chegavam 0,7 s depois da gaveta) */
+.pagina dialog :is(.grid, .space-y-6) > :is(.panel, section, article, div),
+.pagina dialog :is(.table tbody tr, .panel > ul > li) {
+  animation: none;
+}
+/* a barra do carrinho sobe sozinha, sem esperar a cascata da tela */
+.pagina .barra-pedido.barra-pedido {
+  animation: barra-sobe var(--dur-slow) var(--ease-chegada) both;
+}
+/* o esqueleto de carregamento só aparece se a tela demorar: em troca rápida de aba ele piscava escuro */
+.esqueleto-pagina {
+  animation: fade-in 200ms ease 180ms backwards;
+}
+/* blocos da gaveta "Mais": altura fixa e ícone sempre no mesmo lugar, mesmo com nome de duas linhas */
+.gaveta-mais-item {
+  justify-content: flex-start;
+  height: 4.75rem;
+  padding-top: 0.85rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-inferior,
+  .config-conteudo[data-trocando] .config-secao {
+    transition: none;
+    animation: none;
+  }
+  .pagina .barra-pedido.barra-pedido,
+  .esqueleto-pagina {
+    animation: none;
+  }
+}
+/* filtro do painel: no computador fica sempre aberto, sem a caixa que recolhe */
+@media (min-width: 640px) {
+  .filtro-recolhe {
+    display: contents;
+  }
+  .filtro-recolhe > * {
+    overflow: visible;
+  }
+}
+/* blocos que só recolhem no celular (outros passos dos primeiros passos): no computador ficam sempre à vista */
+@media (min-width: 640px) {
+  .recolhe-celular {
+    display: contents;
+  }
+  .recolhe-celular > * {
+    overflow: visible;
   }
 }

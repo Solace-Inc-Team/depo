@@ -30,7 +30,7 @@ export default async function Clientes({ searchParams }: PageProps<"/clientes">)
   return (
     <>
       <PageHeader title="Clientes">
-        <JanelaAcao label="Cadastrar cliente" titulo="Cadastrar cliente" primario>
+        <JanelaAcao label="Novo cliente" titulo="Novo cliente" primario>
           <ActionForm action={saveCustomerAction} className="grid gap-3 sm:grid-cols-2" reset>
             <input type="hidden" name="depois" value="ficha" />
             <CustomerFields />

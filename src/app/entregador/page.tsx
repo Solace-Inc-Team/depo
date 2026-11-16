@@ -158,7 +158,7 @@ export default async function Entregador() {
                   {done.map((o) => (
                     <ViewTransition key={o.id} enter="item-in" default="none">
                       <li className="flex justify-between border-b border-line px-4 py-2.5 last:border-0">
-                        <span>#{o.number} {o.customerName}, {paymentLabel[o.paymentMethod].toLowerCase()}</span>
+                        <span>#{o.number} {o.customerName}, {paymentLabel[o.paymentMethod]}</span>
                         <Money cents={o.totalCents} />
                       </li>
                     </ViewTransition>

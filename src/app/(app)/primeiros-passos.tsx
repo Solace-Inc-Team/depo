@@ -49,16 +49,17 @@ export function PrimeirosPassos({ feito, testeAte }: { feito: Feito; testeAte?: 
       <div className="h-0.5 bg-subtle" aria-hidden="true">
         <div className="h-full bg-accent transition-[width] duration-500" style={{ width: `${(prontos / passos.length) * 100}%` }} />
       </div>
-      <ol>
+      {/* no celular os outros passos recolhem crescendo (.recolhe), sem a lista pular de uma vez */}
+      <ol className="[&>li:last-child_.passo-linha]:border-0">
         {passos.map((passo, i) => {
           const p = passo.chave === "produtos" && feito.sugeridos ? { ...passo, ...conferir } : passo;
           const ok = feito[p.chave];
           const atual = passo === proximo;
           return (
-            <li
-              key={passo.chave}
-              className={`flex items-start gap-3 border-b border-line px-4 py-3 last:border-0 ${atual ? "bg-subtle/60" : todos ? "" : "max-sm:hidden"}`}
-            >
+            <li key={passo.chave} className={atual ? "bg-subtle/60" : ""}>
+              <div className={atual ? "" : "recolhe recolhe-celular"} data-aberto={atual || todos || undefined}>
+              <div>
+              <div className="passo-linha flex items-start gap-3 border-b border-line px-4 py-3">
               <span
                 aria-hidden="true"
                 className={`num mt-0.5 grid size-6 shrink-0 place-items-center rounded-full text-[12px] font-semibold ${
@@ -93,6 +94,9 @@ export function PrimeirosPassos({ feito, testeAte }: { feito: Feito; testeAte?: 
                   </Link>
                 )
               )}
+              </div>
+              </div>
+              </div>
             </li>
           );
         })}

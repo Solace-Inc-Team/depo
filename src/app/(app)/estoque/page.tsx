@@ -6,7 +6,7 @@ import { ActionForm } from "@/components/action-form";
 import { damagedAction, purchaseAction, transferirAction } from "@/app/actions";
 import { JanelaAcao } from "@/components/janela-acao";
 import { PagamentoCompra } from "./pagamento-compra";
-import { PageHeader, fmtDateTime } from "@/components/ui";
+import { PageHeader, fmtQuando } from "@/components/ui";
 import { NivelVasilhame } from "@/components/nivel-vasilhame";
 import { comodatoPorProduto } from "@/domain/comodato";
 import { listFiliais } from "@/domain/filiais";
@@ -190,7 +190,7 @@ export default async function Estoque() {
           <tbody>
             {moves.map((m) => (
               <tr key={m.id}>
-                <td className="whitespace-nowrap">{fmtDateTime(m.createdAt)}</td>
+                <td className="whitespace-nowrap">{fmtQuando(m.createdAt)}</td>
                 <td>{m.productName}, {stateLabel[m.state]}</td>
                 <td>{m.driverName ?? "Loja"}</td>
                 <td className={`num text-right font-semibold ${m.quantity < 0 ? "text-danger" : "text-ok"}`}>

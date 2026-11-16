@@ -176,7 +176,10 @@ export function ActionForm({
             // dentro de uma JanelaAcao: deu certo, a janela fecha
             const janela = form.closest("dialog");
             janela?.dispatchEvent(new Event("fechar"));
-            if (reset || menu || janela) form.reset();
+            // o que salva sozinho (Configurações, Produtos) não volta ao valor antigo: o reset trazia o valor de antes
+            // até a tela atualizar, e o liga e desliga ia e voltava
+            // (a janela das Configurações também: ela fica aberta e cada campo já é o valor salvo)
+            if (reset || menu || (janela && !salvaAoMudar && !janela.classList.contains("janela-config"))) form.reset();
           } finally {
             enviando.current = false;
           }

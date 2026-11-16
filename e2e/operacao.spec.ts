@@ -57,7 +57,7 @@ test("pedido em dinheiro: atendente lança, entregador entrega, caixa faz o acer
 
   await entrar(page, "caixa@demo.com");
   await page.goto("/caixa");
-  await page.getByRole("listitem").filter({ hasText: "Carlos Mendes" }).getByRole("link", { name: "Acerto", exact: true }).click();
+  await page.getByRole("listitem").filter({ hasText: "Carlos Mendes" }).getByRole("link", { name: "Fazer acerto", exact: true }).click();
   await expect(page.getByLabel("Conta do acerto")).toContainText("R$ 140,00");
   await page.getByLabel("Dinheiro contado").fill("140,00");
   await page.getByRole("button", { name: "Fechar acerto" }).click();

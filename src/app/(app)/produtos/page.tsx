@@ -47,7 +47,7 @@ export default async function Produtos() {
     <>
       <PageHeader title="Produtos e preços" />
       <p className="-mt-3 mb-6 max-w-2xl text-muted">
-        Preço novo vale para os próximos pedidos; os já lançados guardam o preço da época.
+        Preço novo vale só para os próximos pedidos. Salva sozinho ao sair do campo.
       </p>
       {/* a divisória vai na seção: cada linha é um formulário, e a borda no fieldset de dentro nunca aparecia */}
       <section className="panel mb-6 divide-y divide-line">

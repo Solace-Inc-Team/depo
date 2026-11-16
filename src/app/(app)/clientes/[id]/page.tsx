@@ -1,7 +1,7 @@
 import { Revelar } from "@/components/revelar";
 import { JanelaAcao } from "@/components/janela-acao";
 import Link from "next/link";
-import { MessageCircle, Phone } from "lucide-react";
+import { MessageCircle, Phone, Plus } from "lucide-react";
 import { notFound } from "next/navigation";
 import { isUuid } from "@/lib/ctx";
 import { requireUser } from "@/lib/auth";
@@ -13,7 +13,7 @@ import { PopoverForm } from "@/components/popover-form";
 import { addAddressAction, removeAddressAction, anonymizeCustomerAction, receivePaymentAction, saveCustomerAction, voidPaymentAction, devolverVasilhameAction, registrarComodatoAction } from "@/app/actions";
 import { customerStatement } from "@/domain/receivables";
 import { centsToInput, formatBRL } from "@/lib/money";
-import { Empty, Money, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
+import { Empty, Money, StatusBadge, fmtQuando, paymentLabel } from "@/components/ui";
 
 export const metadata = { title: "Cliente" };
 
@@ -56,7 +56,8 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
           <h1 className="h1">{c.name}</h1>
         </div>
         {!c.anonymizedAt && (
-          <div className="flex flex-wrap gap-2">
+          // no celular as três ações dividem a largura por igual, alinhadas com os cartões de baixo
+          <div className="flex flex-wrap gap-2 max-sm:grid max-sm:w-full max-sm:grid-cols-3">
             {fone.length >= 10 && (
               <>
                 <a href={`tel:+55${fone}`} className="btn">
@@ -67,7 +68,10 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                 </a>
               </>
             )}
-            <Link href={`/pedidos/novo?cliente=${c.id}`} className="btn btn-primary">Novo pedido</Link>
+            <Link href={`/pedidos/novo?cliente=${c.id}`} className="btn btn-primary">
+              <Plus size={15} strokeWidth={2} aria-hidden="true" /> <span className="sm:hidden">Pedido</span>
+              <span className="max-sm:hidden">Novo pedido</span>
+            </Link>
           </div>
         )}
       </div>
@@ -127,7 +131,7 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                         <span className={`font-medium ${e.voidedAt ? "line-through" : ""}`}>Pagamento em {paymentLabel[e.method!].toLowerCase()}</span>
                       )}
                       <p className="text-muted">
-                        {fmtDateTime(e.at)}
+                        {fmtQuando(e.at)}
                         {e.by && `, recebido por ${e.by}`}
                         {e.note && `. ${e.note}`}
                         {e.voidedAt && `. Estornado: ${e.voidReason}`}
@@ -259,7 +263,7 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
             <section className="panel p-4">
               <h2 className="h2 mb-1">Dados apagados</h2>
               <p className="text-sm text-muted">
-                Nome, contato e endereço foram apagados em {fmtDateTime(c.anonymizedAt)} a pedido do cliente. Os pedidos continuam nos relatórios.
+                Nome, contato e endereço foram apagados em {fmtQuando(c.anonymizedAt)} a pedido do cliente. Os pedidos continuam nos relatórios.
               </p>
             </section>
           ) : (
@@ -337,10 +341,10 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                 <section className="panel p-4">
                   <h2 className="h2 mb-1">Apagar dados pessoais</h2>
                   <p className="mb-3 text-sm text-muted">
-                    Quando o cliente pedir (LGPD). Apaga nome, telefone, endereço e observações, inclusive do histórico. Os pedidos ficam, sem identificar a pessoa. Não tem volta.
+                    Quando o cliente pedir (LGPD). Os pedidos ficam, sem identificar a pessoa.
                   </p>
                   <Revelar label="Apagar dados do cliente" perigo>
-                    <ActionForm action={anonymizeCustomerAction} confirm={`Apagar os dados pessoais de ${c.name}? Não tem volta.`}>
+                    <ActionForm action={anonymizeCustomerAction} confirm={`Apagar os dados pessoais de ${c.name}? Nome, telefone, endereço e observações saem também do histórico. Não tem volta.`}>
                       <input type="hidden" name="customerId" value={c.id} />
                       <div className="mb-3 max-w-xs">
                         <label className="label" htmlFor="anon-pw">Sua senha, para confirmar</label>
@@ -364,7 +368,7 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                 {orders.map((o) => (
                   <tr key={o.id}>
                     <td className="num text-muted"><Link href={`/pedidos/${o.id}`} className="alvo hover:text-accent">#{o.number}</Link></td>
-                    <td>{fmtDateTime(o.createdAt)}</td>
+                    <td>{fmtQuando(o.createdAt)}</td>
                     {/* no celular a forma de pagamento sai: o resto cabe sem rolar */}
                     <td className="hidden sm:table-cell">{paymentLabel[o.paymentMethod]}</td>
                     <td><StatusBadge status={o.status} /></td>

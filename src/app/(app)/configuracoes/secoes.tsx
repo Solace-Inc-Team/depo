@@ -42,7 +42,8 @@ import {
 function Cabecalho({ titulo, descricao }: { titulo: string; descricao: string }) {
   return (
     <header className="mb-5">
-      <h3 className="text-[15px] font-semibold tracking-[-0.01em]">{titulo}</h3>
+      {/* no celular a aba escolhida já diz o nome da seção: o título repetia */}
+      <h3 className="text-[15px] font-semibold tracking-[-0.01em] max-sm:sr-only">{titulo}</h3>
       <p className="mt-0.5 text-[13px] text-muted">{descricao}</p>
     </header>
   );
@@ -125,7 +126,7 @@ export async function secoesConfig(tenantId: string, pagoAte: string | null) {
         <ActionForm action={saveSettingsAction} salvaAoMudar>
           <input type="hidden" name="section" value="empresa" />
           <Grupo>
-            <Linha icone={Building2} titulo="Nome da empresa" descricao="O nome no topo do sistema e do portal." htmlFor="emp-nome" campo>
+            <Linha icone={Building2} titulo="Nome da empresa" htmlFor="emp-nome" campo>
               <input id="emp-nome" name="empresaNome" required minLength={2} maxLength={80} defaultValue={s.name} className="input" />
             </Linha>
             <Linha icone={Phone} titulo="Telefone ou WhatsApp" descricao="Para o cliente chamar a loja direto do pedido." htmlFor="emp-tel" campo>
@@ -150,7 +151,7 @@ export async function secoesConfig(tenantId: string, pagoAte: string | null) {
                 <input id="staffDiscountPct" name="staffDiscountPct" type="number" min={0} max={100} required defaultValue={s.staffDiscountPct} className="input num w-24" />
               </ComUnidade>
             </Linha>
-            <Linha icone={Clock} titulo="Pedido atrasado depois de" descricao="Passado esse tempo, o pedido aparece como atrasado no painel." htmlFor="lateAfterMinutes">
+            <Linha icone={Clock} titulo="Pedido atrasado depois de" htmlFor="lateAfterMinutes">
               <ComUnidade unidade="min">
                 <input id="lateAfterMinutes" name="lateAfterMinutes" type="number" min={10} max={1440} required defaultValue={s.lateAfterMinutes} className="input num w-24" />
               </ComUnidade>
@@ -237,7 +238,7 @@ export async function secoesConfig(tenantId: string, pagoAte: string | null) {
           <ActionForm action={saveSettingsAction}>
             <input type="hidden" name="section" value="portal" />
             <Grupo>
-              <Linha icone={Globe} titulo="Clientes podem pedir pelo link" descricao="Desligado, o link deixa de abrir.">
+              <Linha icone={Globe} titulo="Clientes podem pedir pelo link" descricao="Desligado, o link não abre.">
                 {/* salva ao marcar */}
                 <CaixaQueSalva name="portalEnabled" defaultChecked={s.portalEnabled} />
               </Linha>

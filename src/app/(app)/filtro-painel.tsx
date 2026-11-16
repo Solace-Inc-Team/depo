@@ -3,14 +3,14 @@
 import { useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { SlidersHorizontal } from "lucide-react";
-import { useSaida } from "@/components/saida";
 
 // No celular o filtro fica recolhido para os números do dia aparecerem primeiro;
 // no computador ele está sempre à vista. Começa aberto quando já há filtro aplicado.
 // Escolher o dia ou o entregador já aplica: sem botão "Ver" e sem recarregar a página.
+// No celular o botão fica parado ao lado do título e os campos abrem embaixo, crescendo (.recolhe):
+// antes o botão pulava de linha e a tela de baixo saltava de uma vez.
 export function FiltroPainel({ ativo, children }: { ativo: boolean; children: ReactNode }) {
   const [aberto, setAberto] = useState(ativo);
-  const filtro = useSaida(aberto);
   const router = useRouter();
   const [, iniciar] = useTransition();
   const aplicar = (e: FormEvent<HTMLFormElement>) => {
@@ -22,7 +22,7 @@ export function FiltroPainel({ ativo, children }: { ativo: boolean; children: Re
     iniciar(() => router.replace(busca.size ? `/?${busca}` : "/", { scroll: false }));
   };
   return (
-    <div className="flex flex-wrap items-end gap-2">
+    <div className="flex flex-wrap items-end gap-2 max-sm:contents">
       <button
         type="button"
         className="btn sm:hidden"
@@ -33,16 +33,19 @@ export function FiltroPainel({ ativo, children }: { ativo: boolean; children: Re
         <SlidersHorizontal size={15} strokeWidth={1.75} aria-hidden="true" />
         {ativo ? "Filtrado" : "Filtrar"}
       </button>
-      <form
-        id="filtro-painel"
-        onSubmit={aplicar}
-        onChange={(e) => e.currentTarget.requestSubmit()}
-        aria-label="Filtrar o painel"
-        data-saindo={filtro.saindo || undefined}
-        className={`filtro-painel ${filtro.montado ? "flex" : "hidden"} order-last w-full flex-wrap items-end gap-2 sm:order-first sm:flex sm:w-auto`}
-      >
-        {children}
-      </form>
+      <div className="recolhe filtro-recolhe order-last w-full" data-aberto={aberto || undefined}>
+        <div>
+          <form
+            id="filtro-painel"
+            onSubmit={aplicar}
+            onChange={(e) => e.currentTarget.requestSubmit()}
+            aria-label="Filtrar o painel"
+            className="flex w-full flex-wrap items-end gap-2 pt-1 sm:w-auto sm:pt-0"
+          >
+            {children}
+          </form>
+        </div>
+      </div>
     </div>
   );
 }

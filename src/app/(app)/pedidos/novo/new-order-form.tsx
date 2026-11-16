@@ -113,7 +113,7 @@ export function NewOrderForm({
       <input type="hidden" name="paymentMethod" value={payment} />
 
       <div className="space-y-6">
-        <div role="tablist" aria-label="Tipo de venda" className="relative inline-grid grid-cols-2 rounded-lg bg-subtle p-1">
+        <div role="tablist" aria-label="Tipo de venda" className="relative grid grid-cols-2 rounded-lg bg-subtle p-1 sm:inline-grid">
           {/* fundo da aba escolhida: desliza para o lado em vez de trocar de repente */}
           <span
             aria-hidden="true"
@@ -204,7 +204,7 @@ export function NewOrderForm({
               {nothingFound && <p className="enter mt-2 text-sm text-muted">Nenhum cliente encontrado.</p>}
               <button type="button" className="btn btn-sm tap mt-2 max-w-full" onClick={() => setCreating(true)}>
                 <Plus size={14} strokeWidth={2} aria-hidden="true" />
-                <span className="truncate">{nothingFound ? `Cadastrar "${q}" como cliente novo` : "Cadastrar cliente novo"}</span>
+                <span className="truncate">{nothingFound ? `Cadastrar "${q}" como cliente novo` : "Novo cliente"}</span>
               </button>
             </div>
           )}
@@ -254,7 +254,7 @@ export function NewOrderForm({
                         type="button"
                         aria-pressed={!comodato(p)}
                         onClick={() => setEmprestado((e) => ({ ...e, [p.id]: false }))}
-                        className={`btn h-9 text-[13px] ${!comodato(p) ? "border-fg bg-fg text-bg hover:bg-fg" : ""}`}
+                        className={`btn h-11 text-[13px] sm:h-9 ${!comodato(p) ? "border-fg bg-fg text-bg hover:bg-fg" : ""}`}
                       >
                         Vender o vasilhame{p.containerPriceCents > 0 && ` (+${formatBRL(p.containerPriceCents)} cada)`}
                       </button>
@@ -264,7 +264,7 @@ export function NewOrderForm({
                         disabled={!customer}
                         title={customer ? undefined : "Escolha o cliente para emprestar"}
                         onClick={() => setEmprestado((e) => ({ ...e, [p.id]: true }))}
-                        className={`btn h-9 text-[13px] ${comodato(p) ? "border-fg bg-fg text-bg hover:bg-fg" : ""}`}
+                        className={`btn h-11 text-[13px] sm:h-9 ${comodato(p) ? "border-fg bg-fg text-bg hover:bg-fg" : ""}`}
                       >
                         Emprestar (comodato)
                       </button>

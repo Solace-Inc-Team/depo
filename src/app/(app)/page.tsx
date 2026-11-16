@@ -69,7 +69,7 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
   if (d.pixToCheck > 0)
     alertas.push({
       tom: "aviso",
-      texto: `${d.pixToCheck} ${d.pixToCheck === 1 ? "Pix entregue ainda não conferido" : "Pix entregues ainda não conferidos"} no extrato`,
+      texto: `${d.pixToCheck} Pix para conferir no extrato`,
       href: "/pedidos?status=entregue",
       acao: "Conferir",
     });
@@ -131,7 +131,7 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
             {/* com quem está o dinheiro: a mesma barra das formas de pagamento, um trecho por entregador */}
             <DivisaoPagamento className="mt-4 max-sm:hidden" partes={d.openShifts.map((s) => ({ rotulo: s.driverName, cents: s.expected }))} />
             <p className="mt-1 text-sm text-muted max-sm:text-[12.5px] sm:mt-auto">
-              com {d.openShifts.length} {d.openShifts.length === 1 ? "entregador" : "entregadores"}, a acertar
+              com {d.openShifts.length} {d.openShifts.length === 1 ? "entregador" : "entregadores"}
             </p>
           </div>
           <div className="flex flex-col border-t border-line p-5 max-sm:p-4 sm:border-t-0">
@@ -240,7 +240,7 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
                     </div>
                     <Link href={`/caixa/${s.id}`} className="text-right">
                       <Money cents={s.expected} className="block font-semibold" />
-                      <span className="text-sm text-accent">Acerto</span>
+                      <span className="text-sm text-accent">Fazer acerto</span>
                     </Link>
                   </li>
                 ))}

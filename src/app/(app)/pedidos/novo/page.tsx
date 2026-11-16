@@ -1,5 +1,4 @@
-import Link from "next/link";
-import { X } from "lucide-react";
+import { FecharNovo } from "./fechar-novo";
 import { requireUser } from "@/lib/auth";
 import { getCustomer, getSettings, listAddresses, listDrivers, listProducts, listShifts, stockOverview } from "@/domain/queries";
 import { withTenant } from "@/db";
@@ -29,9 +28,7 @@ export default async function NovoPedido({ searchParams }: PageProps<"/pedidos/n
       <div className="mb-6 flex items-center justify-between gap-3">
         <h1 className="h1">Novo pedido</h1>
         {/* no celular a barra de baixo dá lugar à do carrinho: a saída fica aqui no alto */}
-        <Link href="/pedidos" aria-label="Fechar sem lançar" className="-mr-2 grid size-11 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg sm:hidden">
-          <X size={20} strokeWidth={1.75} aria-hidden="true" />
-        </Link>
+        <FecharNovo />
       </div>
       <NewOrderForm
         products={products.map((p) => ({

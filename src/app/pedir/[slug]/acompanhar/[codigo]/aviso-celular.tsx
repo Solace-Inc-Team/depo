@@ -83,7 +83,8 @@ export function AvisoNoCelular({ slug, codigo }: { slug: string; codigo: string 
     }
   }
 
-  if (estado === "carregando" || estado === "sem-suporte") return null;
+  // avisos bloqueados no navegador: o cliente não precisa de recado sobre isso, a página já mostra o andamento
+  if (estado === "carregando" || estado === "sem-suporte" || estado === "bloqueado") return null;
   // a troca de estado acontece no mesmo lugar: o conteúdo novo chega com a entrada curta (.enter)
   return (
     <div key={estado} className="enter mt-4">
@@ -92,8 +93,6 @@ export function AvisoNoCelular({ slug, codigo }: { slug: string; codigo: string 
           <BellRing size={15} strokeWidth={1.75} className="text-ok" aria-hidden="true" />
           Avisaremos neste celular quando o pedido andar.
         </p>
-      ) : estado === "bloqueado" ? (
-        <p className="text-[13px] text-muted">Os avisos estão bloqueados neste navegador. Libere nas configurações do site para receber.</p>
       ) : (
         <>
           <button type="button" onClick={ligar} disabled={estado === "pedindo"} className="btn h-11 w-full gap-2">

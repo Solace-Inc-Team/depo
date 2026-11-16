@@ -10,7 +10,7 @@ import { ActionForm } from "@/components/action-form";
 import { cancelAction, confirmPixAction, deliverAction, dispatchAction, reassignAction, refundOrderAction } from "@/app/actions";
 import { DeliveryExceptions } from "@/components/delivery-forms";
 import { originLabel } from "@/domain/orders";
-import { Money, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
+import { Money, StatusBadge, fmtQuando, paymentLabel } from "@/components/ui";
 import { CopyButton } from "@/components/copy-button";
 import { headers } from "next/headers";
 import { MessageCircle } from "lucide-react";
@@ -79,7 +79,7 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
 
       {o.status === "aberto" && o.occurrence && (
         <p className="mb-6 rounded-md border border-warn/40 bg-warn-soft px-4 py-3 text-warn-fg">
-          <b>Tentativa de entrega sem sucesso</b> ({fmtDateTime(o.occurrenceAt)}): {o.occurrence}. Combine com o cliente e envie de novo.
+          <b>Tentativa de entrega sem sucesso</b> ({fmtQuando(o.occurrenceAt)}): {o.occurrence}. Combine com o cliente e envie de novo.
         </p>
       )}
 
@@ -88,7 +88,7 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
           <section className="panel">
             <table className="table">
               <thead>
-                <tr><th>Item</th><th className="text-right">Qtd.</th><th className="text-right">Preço</th><th className="text-right">Subtotal</th></tr>
+                <tr><th>Item</th><th className="text-right">Qtd.</th><th className="text-right max-sm:hidden">Preço</th><th className="text-right">Subtotal</th></tr>
               </thead>
               <tbody>
                 {o.items.map((i) => (
@@ -106,7 +106,8 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
                         i.quantity
                       )}
                     </td>
-                    <td className="text-right"><Money cents={i.unitPriceCents} /></td>
+                    {/* no celular o preço unitário sai: com ele a tabela passava da largura da tela de 320 px */}
+                    <td className="text-right max-sm:hidden"><Money cents={i.unitPriceCents} /></td>
                     <td className="text-right"><Money cents={(i.deliveredQuantity ?? i.quantity) * i.unitPriceCents} /></td>
                   </tr>
                 ))}
@@ -161,7 +162,7 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
                       </>
                     )}
                   </span>
-                  <span className="shrink-0 text-sm whitespace-nowrap text-muted">{fmtDateTime(h.createdAt)}</span>
+                  <span className="shrink-0 text-sm whitespace-nowrap text-muted">{fmtQuando(h.createdAt)}</span>
                 </li>
               ))}
             </ol>
@@ -223,7 +224,7 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
           {o.paymentMethod === "pix" && o.pixConfirmedAt && (
             <p className="flex items-center gap-2.5 rounded-md bg-ok-soft px-4 py-3 text-sm text-ok">
               <CheckSucesso size={20} />
-              {o.pixConfirmedBy ? "Pix conferido" : "Pix confirmado pelo Mercado Pago"} em {fmtDateTime(o.pixConfirmedAt)}.
+              {o.pixConfirmedBy ? "Pix conferido" : "Pix confirmado pelo Mercado Pago"} em {fmtQuando(o.pixConfirmedAt)}.
             </p>
           )}
 
@@ -251,7 +252,7 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
               <h2 className="h2 mb-1">Resultado da entrega</h2>
               <ActionForm action={deliverAction}>
                 <input type="hidden" name="orderId" value={o.id} />
-                <button className="btn btn-primary w-full">Confirmar entrega</button>
+                <button className="btn btn-primary w-full">Entregue</button>
               </ActionForm>
               <div className="mt-3">
                 <DeliveryExceptions order={o} items={o.items} />
