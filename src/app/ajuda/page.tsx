@@ -104,7 +104,7 @@ const secoes: Secao[] = [
           <li><B>Estornar pedido</B>, ajuste de estoque e inventário pedem sua senha de novo. O registro nunca é apagado: o estorno cria um lançamento ao contrário.</li>
           <li>Estoque: faça inventário com frequência em <B>Estoque</B>. Só as diferenças viram ajuste, com motivo.</li>
           <li><B>Produtos e preços</B> e <B>Equipe</B> (incluir pessoas, redefinir senha, desativar quem saiu) ficam no menu, em Gestão.</li>
-          <li>A engrenagem no alto do menu (<B>Configurações</B>) reúne o que se ajusta uma vez: <B>Regras da casa</B> (limite de desconto, prazo de atraso), <B>Pagamentos</B> (chave Pix, Mercado Pago), <B>Pedidos pelo site</B> e <B>Filiais</B>.</li>
+          <li>A engrenagem no alto do menu (<B>Configurações</B>) reúne o que se ajusta uma vez: <B>Empresa</B> (nome, telefone e endereço que o cliente vê), <B>Regras da casa</B> (limite de desconto, prazo de atraso), <B>Pagamentos</B> (chave Pix, Mercado Pago), <B>Pedidos pelo site</B>, <B>Filiais</B> e <B>Assinatura</B>.</li>
           <li><B>Relatórios</B>: vendas por dia, entregador e produto; <B>Fechamento do dia</B> para imprimir; vendas em planilha.</li>
           <li><B>Auditoria</B>: quem fez o quê e quando, com o antes e depois de preços e ajustes.</li>
           <li>Comodato de antes do sistema: na tela do cliente, <B>Registrar comodato que já existia</B>, com sua senha. Não mexe no estoque; os vasilhames emprestados aparecem em <B>Em comodato</B> no estoque.</li>

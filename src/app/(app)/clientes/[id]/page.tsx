@@ -1,6 +1,7 @@
 import { Revelar } from "@/components/revelar";
 import { JanelaAcao } from "@/components/janela-acao";
 import Link from "next/link";
+import { MessageCircle, Phone } from "lucide-react";
 import { notFound } from "next/navigation";
 import { isUuid } from "@/lib/ctx";
 import { requireUser } from "@/lib/auth";
@@ -15,6 +16,13 @@ import { centsToInput, formatBRL } from "@/lib/money";
 import { Empty, Money, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
 
 export const metadata = { title: "Cliente" };
+
+/** "hoje", "ontem", "há 6 dias" */
+function quando(d: Date | null) {
+  if (!d) return "nenhum ainda";
+  const dias = Math.floor((Date.now() - d.getTime()) / 864e5);
+  return dias < 1 ? "hoje" : dias === 1 ? "ontem" : `há ${dias} dias`;
+}
 
 export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
   const user = await requireUser("dono", "atendente", "caixa");
@@ -31,6 +39,13 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
   ]);
   const retornaveis = produtos.filter((p) => p.returnable);
   const podeRegistrar = user.role === "dono" && !c.anonymizedAt && retornaveis.length > 0;
+  // resumo do topo: o que antes era preciso somar de cabeça na lista de pedidos
+  // shortcut: conta os 300 pedidos mais recentes (o limite de listOrders); cliente com mais que isso aparece com menos
+  const entregues = orders.filter((o) => o.status === "entregue");
+  const comprado = entregues.reduce((s, o) => s + o.totalCents, 0);
+  const ultimo = orders.find((o) => o.status !== "cancelado")?.createdAt ?? null;
+  const fone = c.phone?.replace(/\D/g, "") ?? "";
+  const desde = new Intl.DateTimeFormat("pt-BR", { month: "short", year: "numeric", timeZone: "America/Sao_Paulo" }).format(c.createdAt);
 
   return (
     <>
@@ -40,8 +55,35 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
           <span className="text-muted">/</span>
           <h1 className="h1">{c.name}</h1>
         </div>
-        {!c.anonymizedAt && <Link href={`/pedidos/novo?cliente=${c.id}`} className="btn btn-primary">Novo pedido</Link>}
+        {!c.anonymizedAt && (
+          <div className="flex flex-wrap gap-2">
+            {fone.length >= 10 && (
+              <>
+                <a href={`tel:+55${fone}`} className="btn">
+                  <Phone size={15} strokeWidth={1.75} aria-hidden="true" /> Ligar
+                </a>
+                <a href={`https://wa.me/${fone.length <= 11 ? "55" + fone : fone}`} target="_blank" rel="noopener noreferrer" className="btn">
+                  <MessageCircle size={15} strokeWidth={1.75} aria-hidden="true" /> WhatsApp
+                </a>
+              </>
+            )}
+            <Link href={`/pedidos/novo?cliente=${c.id}`} className="btn btn-primary">Novo pedido</Link>
+          </div>
+        )}
       </div>
+      <section className="panel mb-6 grid grid-cols-2 divide-line sm:grid-cols-4 sm:divide-x" aria-label="Resumo do cliente">
+        {[
+          ["Cliente desde", desde],
+          ["Pedidos entregues", String(entregues.length)],
+          ["Já comprou", formatBRL(comprado)],
+          ["Último pedido", quando(ultimo)],
+        ].map(([rotulo, valor]) => (
+          <div key={rotulo} className="p-4">
+            <p className="text-[13px] text-muted">{rotulo}</p>
+            <p className="num mt-0.5 text-lg font-semibold tracking-[-0.02em]">{valor}</p>
+          </div>
+        ))}
+      </section>
       <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr]">
         <div className="space-y-6">
           {st.entries.length > 0 && (

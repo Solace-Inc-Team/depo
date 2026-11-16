@@ -313,13 +313,18 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
           {(o.status === "aguardando_pagamento" || o.status === "aberto" || o.status === "em_rota") && (
             <section className="panel p-4">
               <h2 className="h2 mb-1">Cancelar pedido</h2>
-              {o.status === "em_rota" && <p className="mb-2 text-sm text-muted">Os produtos voltam do entregador para a loja.</p>}
-              <ActionForm action={cancelAction} className="space-y-2" confirm="Cancelar este pedido?">
-                <input type="hidden" name="orderId" value={o.id} />
-                <label className="label" htmlFor="reason">Motivo</label>
-                <input id="reason" name="reason" required minLength={3} className="input" />
-                <button className="btn btn-danger">Cancelar pedido</button>
-              </ActionForm>
+              <p className="mb-3 text-[13px] text-muted">
+                {o.status === "em_rota" ? "Os produtos voltam do entregador para a loja." : "O pedido sai da fila e o motivo fica registrado no histórico."}
+              </p>
+              {/* fechado até alguém pedir, como o estorno: ação sem volta não fica com o campo aberto na tela */}
+              <Revelar label="Cancelar pedido" perigo>
+                <ActionForm action={cancelAction} className="space-y-2" confirm="Cancelar este pedido?">
+                  <input type="hidden" name="orderId" value={o.id} />
+                  <label className="label" htmlFor="reason">Motivo</label>
+                  <input id="reason" name="reason" required minLength={3} className="input" />
+                  <button className="btn btn-danger">Cancelar pedido</button>
+                </ActionForm>
+              </Revelar>
             </section>
           )}
         </div>

@@ -222,7 +222,7 @@ export function NewOrderForm({
                       <p className="font-semibold">{p.name}</p>
                       <p className="text-sm text-muted">
                         <span className="num">{formatBRL(p.priceCents)}</span>, {p.available} {p.returnable ? "cheios livres" : "livres"}
-                        {p.reserved > 0 && ` (${p.reserved} em pedidos aguardando)`}
+                        {p.reserved > 0 && ` (${p.reserved} ${p.reserved === 1 ? "reservado" : "reservados"})`}
                       </p>
                       {/* o pedido passa mesmo assim (a carga pode chegar antes da entrega), mas a pessoa fica sabendo */}
                       <Aparece quando={n > p.available}>

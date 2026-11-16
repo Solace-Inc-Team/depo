@@ -11,7 +11,11 @@ export async function PixBox({ code, size = 176 }: { code: string; size?: number
       <div className="shrink-0 rounded-md bg-white p-2" dangerouslySetInnerHTML={{ __html: qr }} />
       <div className="w-full min-w-0 flex-1 space-y-2">
         <p className="text-[13px] text-muted">Pix copia e cola</p>
-        <p className="num rounded-md bg-subtle p-2 text-[12px] break-all">{code}</p>
+        {/* ninguém lê o código, só copia: duas linhas bastam para reconhecer, o inteiro vai no botão */}
+        {/* o corte fica num span por dentro: com o recuo no mesmo elemento, a terceira linha vazava no espaço de baixo */}
+        <p className="num rounded-md bg-subtle p-2 text-[12px] break-all" title={code}>
+          <span className="line-clamp-2">{code}</span>
+        </p>
         <CopyButton text={code} />
       </div>
     </div>
