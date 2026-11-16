@@ -85,7 +85,7 @@ export default async function FolhaDaRota({ params }: PageProps<"/entregas/rota/
                   {o.items.map((i) => (
                     <li key={i.id}>
                       <b className="num">{i.quantity}×</b> {i.name}
-                      {i.returnsEmpty ? ", recolher vazio" : i.loan ? ", em comodato" : ", sem troca"}
+                      {i.returnsEmpty ? ", recolher vazio" : ", sem troca"}
                     </li>
                   ))}
                 </ul>

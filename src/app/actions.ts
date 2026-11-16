@@ -19,7 +19,6 @@ import { createOrder, dispatchOrder, deliverOrder, cancelOrder, refundOrder, new
 import { inscreverAviso, placePortalOrder, portalOrderSchema, portalTenant } from "@/domain/portal";
 import { conectarMercadoPago, desconectarMercadoPago, liberarSemPix, pixDoPedido } from "@/domain/pix";
 import { cancelarConta, criarConta, pagarConta } from "@/domain/contas";
-import { devolverVasilhame, registrarComodato } from "@/domain/comodato";
 import { createExpense, expenseSchema, voidExpense } from "@/domain/expenses";
 import { openShift, closeShift, addCashEntry, cashEntrySchema, voidCashEntry, resolveDifference } from "@/domain/shifts";
 import { receivePurchase, markDamaged, runInventory, saveSupplier, supplierSchema, transferirEstoque } from "@/domain/stock";
@@ -742,44 +741,6 @@ export async function deleteTenantAction(fd: FormData): Promise<ActionState> {
     total = Object.values(counts).reduce((s, n) => s + n, 0);
   }, ["/admin"]);
   return r?.error ? r : { ok: `Empresa excluída: ${total} registros apagados.` };
-}
-
-/** Comodato que já existia antes do sistema: só o dono, com a senha (é ajuste de saldo). */
-export async function registrarComodatoAction(fd: FormData) {
-  const user = await requireUser("dono");
-  const metodo = z.enum(["dinheiro", "pix", "cartao"]).nullable().catch(null).parse(str(fd, "depositMethod") || null);
-  return run(
-    async () => {
-      await confirmPassword(user, fd);
-      await registrarComodato(user, {
-        customerId: str(fd, "customerId"),
-        productId: str(fd, "productId"),
-        quantity: int(fd, "quantity"),
-        depositCents: money(fd, "deposit", false) ?? 0,
-        depositMethod: metodo,
-        note: str(fd, "note"),
-      });
-    },
-    ["/"],
-    "Comodato registrado.",
-  );
-}
-
-/** O cliente devolve vasilhames do comodato: voltam para a loja como vazios. */
-export async function devolverVasilhameAction(fd: FormData) {
-  const user = await requireUser("dono", "caixa", "atendente");
-  return run(
-    () =>
-      devolverVasilhame(user, {
-        customerId: str(fd, "customerId"),
-        productId: str(fd, "productId"),
-        quantity: int(fd, "quantity"),
-        refundCents: money(fd, "refund", false) ?? 0,
-        note: str(fd, "note"),
-      }),
-    ["/"],
-    "Devolução registrada. Os vazios voltaram para a loja.",
-  );
 }
 
 export async function criarFilialAction(fd: FormData) {

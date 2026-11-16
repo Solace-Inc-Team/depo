@@ -8,7 +8,6 @@ import { JanelaAcao } from "@/components/janela-acao";
 import { PagamentoCompra } from "./pagamento-compra";
 import { PageHeader, fmtQuando } from "@/components/ui";
 import { NivelVasilhame } from "@/components/nivel-vasilhame";
-import { comodatoPorProduto } from "@/domain/comodato";
 import { listFiliais } from "@/domain/filiais";
 import { juntarTransferencias } from "@/lib/movimentos";
 
@@ -16,12 +15,11 @@ export const metadata = { title: "Estoque" };
 
 export default async function Estoque() {
   const user = await requireUser("dono", "atendente", "caixa");
-  const [stock, moves, products, suppliers, comodato, filiais] = await Promise.all([
+  const [stock, moves, products, suppliers, filiais] = await Promise.all([
     stockOverview(user.tenantId, user.branchId),
     recentMovements(user.tenantId, user.branchId, 20),
     listProducts(user.tenantId, true),
     listSuppliers(user.tenantId, true),
-    comodatoPorProduto(user.tenantId),
     listFiliais(user.tenantId),
   ]);
   // só existe transferência quando há outra filial ativa para receber
@@ -132,7 +130,6 @@ export default async function Estoque() {
               <th className="text-right">Cheios em rota</th>
               <th className="text-right">Vazios em rota</th>
               <th className="text-right">Avariados</th>
-              <th className="text-right">Em comodato</th>
               <th className="text-right">Total de vasilhames</th>
             </tr>
           </thead>
@@ -168,9 +165,8 @@ export default async function Estoque() {
                 <td data-rotulo="Vazios em rota" className="num text-right text-xl">{p.returnable ? p.emptyTransit : "-"}</td>
                 {/* traço só quando não se aplica (produto que não volta); zero é zero */}
                 <td data-rotulo="Avariados" className={`num text-right text-xl ${p.damaged ? "text-warn-fg" : "text-muted"}`}>{p.damaged}</td>
-                <td data-rotulo="Em comodato" className="num text-right text-xl text-muted">{p.returnable ? (comodato.get(p.id) ?? 0) : "-"}</td>
                 <td data-rotulo="Total de vasilhames" className="num text-right text-xl text-muted">
-                  {p.returnable ? p.fullStore + p.emptyStore + p.fullTransit + p.emptyTransit + p.damaged + (comodato.get(p.id) ?? 0) : "-"}
+                  {p.returnable ? p.fullStore + p.emptyStore + p.fullTransit + p.emptyTransit + p.damaged : "-"}
                 </td>
               </tr>
             ))}

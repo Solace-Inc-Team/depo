@@ -25,18 +25,16 @@ const secoes: Secao[] = [
         <h3>Lançar um pedido</h3>
         <ol>
           <li>Em <B>Novo pedido</B>, digite nome, telefone ou endereço em <B>Buscar por nome, telefone ou endereço</B> (a tecla <kbd>/</kbd> leva direto para a busca). Cliente novo: cadastre ali mesmo.</li>
-          <li>Use <B>+</B> e <B>−</B> em cada produto. Se o cliente não tem vasilhame vazio para trocar, marque <B>Cliente não tem vasilhame para trocar</B> e escolha: <B>Vender o vasilhame</B> (o casco entra no preço) ou <B>Emprestar (comodato)</B> (a loja empresta e não cobra; precisa do cliente identificado).</li>
+          <li>Use <B>+</B> e <B>−</B> em cada produto. Se o cliente não tem vasilhame vazio para trocar, marque <B>Cliente não tem vasilhame para trocar</B>: o vasilhame é vendido junto e o preço dele entra no pedido.</li>
           <li>Escolha o pagamento. Em dinheiro, preencha <B>Troco para</B> quando o cliente avisar a nota; o entregador já sai sabendo o troco.</li>
           <li>Desconto só até o limite que o dono definiu, sempre com motivo.</li>
           <li>Clique em <B>Lançar pedido</B> (ou <kbd>Ctrl</kbd> + <kbd>Enter</kbd>). O preço sempre vem do cadastro; não dá para mudar na hora.</li>
         </ol>
         <p>Venda no balcão: use a aba <B>Venda no balcão</B>. O pedido já nasce entregue.</p>
         <h3>Despachar</h3>
-        <p>Em <B>Entregas</B>, os pedidos esperando ficam à esquerda, do mais antigo para o mais novo. Escolha o entregador e clique em <B>Saiu para entrega</B>. Só aparece quem está com turno aberto.</p>
+        <p>Em <B>Entregas</B>, os pedidos esperando ficam à esquerda, do mais antigo para o mais novo. O sistema já sugere um entregador; confira ou troque e clique em <B>Saiu com</B> (o botão mostra o nome de quem leva). Só aparece quem está com turno aberto.</p>
         <h3>O cliente acompanha o pedido</h3>
         <p>No pedido, <B>Mandar no WhatsApp</B> ou <B>Copiar link</B> manda ao cliente uma página que mostra se o pedido foi recebido, saiu ou foi entregue, sem login. Quem pede pelo site já recebe esse link no fim do pedido.</p>
-        <h3>Vasilhame emprestado (comodato)</h3>
-        <p>Na tela do cliente, <B>Vasilhames em comodato</B> mostra quantos cascos da loja estão com ele e a caução que deixou. Quando ele devolver, use <B>Receber vasilhames de volta</B>: os cascos voltam como vazios e, se houver caução, você registra quanto devolveu.</p>
         <h3>Quando o pedido volta</h3>
         <p>Se o entregador não conseguiu entregar, o pedido volta para a fila com o motivo em amarelo. Dá para mandar de novo, trocar o entregador ou cancelar. Cancelar só antes de sair; depois de sair, quem decide é o caixa ou o dono.</p>
       </>
@@ -107,7 +105,6 @@ const secoes: Secao[] = [
           <li>A engrenagem no alto do menu (<B>Configurações</B>) reúne o que se ajusta uma vez: <B>Empresa</B> (nome, telefone e endereço que o cliente vê), <B>Regras da casa</B> (limite de desconto, prazo de atraso), <B>Pagamentos</B> (chave Pix, Mercado Pago), <B>Pedidos pelo site</B>, <B>Filiais</B> e <B>Assinatura</B>.</li>
           <li><B>Relatórios</B>: vendas por dia, entregador e produto; <B>Fechamento do dia</B> para imprimir; vendas em planilha.</li>
           <li><B>Auditoria</B>: quem fez o quê e quando, com o antes e depois de preços e ajustes.</li>
-          <li>Comodato de antes do sistema: na tela do cliente, <B>Registrar comodato que já existia</B>, com sua senha. Não mexe no estoque; os vasilhames emprestados aparecem em <B>Em comodato</B> no estoque.</li>
           <li>Ative a verificação em duas etapas em <B>Trocar senha</B>: é a sua conta que aprova o caixa.</li>
         </ul>
         <h3>Filiais</h3>

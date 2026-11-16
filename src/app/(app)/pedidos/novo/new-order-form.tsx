@@ -35,9 +35,6 @@ export function NewOrderForm({
   const [mode, setMode] = useState<"entrega" | "balcao">("entrega");
   const [qty, setQty] = useState<Record<string, number>>({});
   const [keepsBottle, setKeepsBottle] = useState<Record<string, boolean>>({}); // true = cliente não tem vazio para trocar
-  // sem vazio: a loja vende o casco ou empresta (comodato); comodato só com cliente identificado
-  const [emprestado, setEmprestado] = useState<Record<string, boolean>>({});
-  const comodato = (p: Product) => p.returnable && !!keepsBottle[p.id] && !!emprestado[p.id] && !!customer;
   const [customer, setCustomer] = useState<Customer | undefined>(initialCustomer);
   const [search, setSearch] = useState("");
   const [matches, setMatches] = useState<{ q: string; list: Customer[] }>({ q: "", list: [] });
@@ -88,12 +85,12 @@ export function NewOrderForm({
 
   const items = products
     .filter((p) => qty[p.id] > 0)
-    .map((p) => ({ productId: p.id, quantity: qty[p.id], returnsEmpty: p.returnable && !keepsBottle[p.id], loan: comodato(p) }));
+    .map((p) => ({ productId: p.id, quantity: qty[p.id], returnsEmpty: p.returnable && !keepsBottle[p.id] }));
   const parsedFee = parseBRL(fee) ?? 0;
   // taxa fora do limite não entra no total mostrado; o servidor recusa com a mensagem
   const feeCents = mode === "entrega" && parsedFee >= 0 && parsedFee <= 100_00 ? parsedFee : 0;
-  // sem vazio para trocar, o vasilhame entra no preço, a não ser que vá em comodato
-  const priceOf = (p: Product) => p.priceCents + (p.returnable && keepsBottle[p.id] && !comodato(p) ? p.containerPriceCents : 0);
+  // sem vazio para trocar, o cliente compra o vasilhame junto: entra no preço
+  const priceOf = (p: Product) => p.priceCents + (p.returnable && keepsBottle[p.id] ? p.containerPriceCents : 0);
   const subtotal = products.reduce((s, p) => s + (qty[p.id] ?? 0) * priceOf(p), 0);
   const parsedDiscount = parseBRL(discount) ?? 0;
   const discountCents = parsedDiscount > 0 && parsedDiscount <= subtotal ? parsedDiscount : 0;
@@ -242,36 +239,13 @@ export function NewOrderForm({
                         checked={!!keepsBottle[p.id]}
                         onChange={(e) => setKeepsBottle((k) => ({ ...k, [p.id]: e.target.checked }))}
                       />
-                      Cliente não tem vasilhame para trocar
+                      {/* o vasilhame é vendido junto: o preço dele à vista, sem segunda escolha */}
+                      <span>
+                        Cliente não tem vasilhame para trocar
+                        {p.containerPriceCents > 0 && <span className="text-muted"> (+{formatBRL(p.containerPriceCents)} cada)</span>}
+                      </span>
                     </label>
                   </Aparece>
-                  {/* sem vazio: vender o casco ou emprestar; a escolha muda o preço na hora */}
-                  {p.returnable && (
-                    // sempre na página, recolhida: abre e fecha deslizando; fechada, fica fora do teclado e do leitor de tela
-                    <div className="recolhe" data-aberto={(n > 0 && keepsBottle[p.id]) || undefined} inert={!(n > 0 && keepsBottle[p.id])}>
-                    <div><div className="flex flex-wrap gap-2 pt-2" role="group" aria-label={`Vasilhame de ${p.name}`}>
-                      <button
-                        type="button"
-                        aria-pressed={!comodato(p)}
-                        onClick={() => setEmprestado((e) => ({ ...e, [p.id]: false }))}
-                        className={`btn h-11 text-[13px] sm:h-9 ${!comodato(p) ? "border-fg bg-fg text-bg hover:bg-fg" : ""}`}
-                      >
-                        Vender o vasilhame{p.containerPriceCents > 0 && ` (+${formatBRL(p.containerPriceCents)} cada)`}
-                      </button>
-                      <button
-                        type="button"
-                        aria-pressed={comodato(p)}
-                        disabled={!customer}
-                        title={customer ? undefined : "Escolha o cliente para emprestar"}
-                        onClick={() => setEmprestado((e) => ({ ...e, [p.id]: true }))}
-                        className={`btn h-11 text-[13px] sm:h-9 ${comodato(p) ? "border-fg bg-fg text-bg hover:bg-fg" : ""}`}
-                      >
-                        Emprestar (comodato)
-                      </button>
-                      {!customer && <p className="w-full text-[12px] text-muted">Comodato precisa do cliente escolhido.</p>}
-                    </div></div>
-                    </div>
-                  )}
                 </li>
               );
             })}
