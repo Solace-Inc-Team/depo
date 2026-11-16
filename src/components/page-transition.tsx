@@ -2,12 +2,15 @@
 
 import { ViewTransition, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import { useWebKit } from "@/lib/webkit";
 
 // a chave muda só quando a rota muda: atualizar a mesma tela não anima
 export function PageTransition({ children }: { children: ReactNode }) {
   const path = usePathname();
+  // no Safari e no iPhone a troca é sem esta animação (lib/webkit.ts explica)
+  const webkit = useWebKit();
   return (
-    <ViewTransition key={path} enter="page" exit="page" default="none">
+    <ViewTransition key={path} enter={webkit ? "none" : "page"} exit={webkit ? "none" : "page"} default="none">
       {/* .pagina: o conteúdo entra em cascata (globals.css); como a chave é a rota, só anima ao trocar de tela */}
       <div className="pagina">{children}</div>
     </ViewTransition>

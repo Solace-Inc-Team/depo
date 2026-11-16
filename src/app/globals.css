@@ -859,12 +859,6 @@ details[open] > :not(summary) {
 ::view-transition-new(root) {
   animation: none;
 }
-/* o Safari do iPhone tira a foto da tela nova sem o fundo da página: ela ficava transparente e a antiga
-   aparecia por baixo, parada, até a troca acabar (Empresas por baixo de Conta e segurança). Com o fundo atrás
-   da foto nova, a antiga não vaza. Na troca de tema não: lá a tela nova entra em círculo por cima da antiga */
-html:not([data-trocando-tema])::view-transition-new(root) {
-  background-color: var(--bg);
-}
 /* troca de tema: a tela nova nasce do botão clicado e se espalha até o canto mais longe */
 html[data-trocando-tema]::view-transition-new(root) {
   animation: 600ms var(--ease-trajeto) both tema-revela;
