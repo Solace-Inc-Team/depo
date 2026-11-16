@@ -68,6 +68,7 @@ export function ActionForm({
   reset = false,
   confirm,
   salvaAoMudar = false,
+  id,
 }: {
   action: (fd: FormData) => Promise<ActionState>;
   children: ReactNode;
@@ -77,6 +78,8 @@ export function ActionForm({
   confirm?: string;
   /** salva sozinho quando um campo muda (ao sair do campo, ou ao marcar a caixa), sem botão */
   salvaAoMudar?: boolean;
+  /** para campos fora do formulário entrarem nele com o atributo form (os pedidos marcados na fila) */
+  id?: string;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
   // envio em andamento: o fieldset desabilitado não segura requestSubmit (Ctrl+Enter repetido criava pedidos em dobro)
@@ -109,6 +112,7 @@ export function ActionForm({
   return (
     <form
       ref={formRef}
+      id={id}
       // mexeu no formulário depois do erro: o aviso sai (esmaecendo), em vez de ficar até o próximo envio
       onInput={() => error && setError(undefined)}
       // se enviado antes do JS carregar, vai como POST: senha nunca aparece na URL

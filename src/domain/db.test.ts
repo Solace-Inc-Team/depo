@@ -1414,3 +1414,62 @@ test("lista de clientes traz quando cada um pediu pela última vez", async () =>
     .where(and(eq(orders.customerId, A.customer.id), ne(orders.status, "cancelado")));
   assert.equal(comPedido!.ultimoPedido!.getTime(), ultimo.m!.getTime());
 });
+
+test("viagem: saem juntos, o acerto da volta conta só o dinheiro dela e o que ficou na rua vai para a próxima", async () => {
+  const { db } = m.db;
+  const { users } = m.schema;
+  const [driver] = await db.insert(users).values({ tenantId: A.t.id, name: "Entregador Viagem", email: `vg@${A.t.id}.test`, role: "entregador", passwordHash: "x", branchId: A.branch.id }).returning();
+  const caixa = { ...A.ctx, role: "caixa" as const };
+  const atendente = { ...A.ctx, role: "atendente" as const };
+  const comDriver = { tenantId: A.t.id, userId: driver.id, role: "entregador" as const, branchId: A.branch.id };
+  const shift = await m.shifts.openShift(atendente, driver.id, 3000);
+  const novo = (paymentMethod: "dinheiro" | "pix") =>
+    m.orders.createOrder(A.ctx, {
+      mode: "entrega", customerId: A.customer.id, items: [{ productId: A.product.id, quantity: 1, returnsEmpty: true }],
+      paymentMethod, deliveryFeeCents: 0, changeForCents: null, notes: "", driverId: null,
+    });
+  const [o1, o2, o3] = [await novo("dinheiro"), await novo("pix"), await novo("dinheiro")];
+
+  // tudo ou nada: um pedido inválido segura os outros na fila
+  await assert.rejects(m.orders.dispatchOrders(atendente, [o1.id, crypto.randomUUID()], driver.id));
+  const viagens0 = await m.q.listViagens(A.t.id, A.branch.id);
+  assert.equal(viagens0.filter((v) => v.driverId === driver.id).length, 0);
+
+  await m.orders.dispatchOrders(atendente, [o1.id, o2.id], driver.id);
+  // saiu depois, mas antes de ele voltar: entra na mesma viagem
+  await m.orders.dispatchOrder(atendente, o3.id, driver.id);
+  const naRua = (await m.q.listViagens(A.t.id, A.branch.id)).filter((v) => v.driverId === driver.id);
+  assert.equal(naRua.length, 3);
+  const trip = naRua[0].tripId!;
+  assert.ok(naRua.every((v) => v.tripId === trip), "os três na mesma viagem");
+  assert.equal((await m.q.listViagens(B.t.id, B.branch.id)).some((v) => v.tripId === trip), false, "B não vê a viagem de A");
+
+  await m.orders.deliverOrder(comDriver, o1.id);
+  await m.orders.deliverOrder(comDriver, o2.id);
+  // o3 ainda não foi entregue quando ele passa na loja
+
+  await assert.rejects(m.shifts.settleTrip(atendente, shift.id, trip, 11000, ""), /Sem permissão/);
+  await assert.rejects(m.shifts.settleTrip(B.ctx, shift.id, trip, 11000, ""), /não encontrado/);
+  await assert.rejects(m.shifts.settleTrip(caixa, shift.id, trip, 10000, ""), /explique/);
+  // só o dinheiro de o1 conta nesta volta: o Pix não passa pela mão dele, e o troco fica com ele
+  const r = await m.shifts.settleTrip(caixa, shift.id, trip, 11000, "");
+  assert.deepEqual(r, { esperado: 11000, diff: 0 });
+  await assert.rejects(m.shifts.settleTrip(caixa, shift.id, trip, 11000, ""), /já foi acertada/);
+
+  const depois = (await m.q.listViagens(A.t.id, A.branch.id)).filter((v) => v.driverId === driver.id);
+  assert.deepEqual(depois.map((v) => v.id), [o3.id], "só o que ficou na rua continua, numa viagem nova");
+  assert.notEqual(depois[0].tripId, trip);
+
+  // a volta seguinte fecha com falta: o turno cobra de novo no fim
+  await m.orders.deliverOrder(comDriver, o3.id);
+  await m.shifts.settleTrip(caixa, shift.id, depois[0].tripId!, 10000, "faltou dez");
+  const view = await m.q.getShift(A.t.id, shift.id);
+  assert.equal(view!.expected, 3000 + 1000, "troco mais a falta da segunda volta");
+
+  // estornar o acerto da volta reabre a viagem
+  const { cashEntries } = m.schema;
+  const { eq } = await import("drizzle-orm");
+  const [entrada] = await db.select().from(cashEntries).where(eq(cashEntries.tripId, trip));
+  await m.shifts.voidCashEntry(A.ctx, entrada.id, "contou errado");
+  assert.equal((await m.q.listViagens(A.t.id, A.branch.id)).filter((v) => v.tripId === trip).length, 2);
+});

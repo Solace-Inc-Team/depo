@@ -2,14 +2,18 @@ import { ViewTransition } from "react";
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { withTenant } from "@/db";
-import { getSettings, listDrivers, listOrders, listShifts } from "@/domain/queries";
+import { getSettings, listDrivers, listOrders, listShifts, listViagens } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
-import { confirmPixAction, dispatchAction } from "@/app/actions";
+import { confirmPixAction, dispatchAction, settleTripAction } from "@/app/actions";
 import { cancelarPixVencidos, PRAZO_PAGAR_MS } from "@/domain/pix";
 import { Empty, Money, PageHeader, SiteBadge, fmtTime, paymentLabel } from "@/components/ui";
 import { ResultadoRua } from "@/components/resultado-rua";
-import { Printer } from "lucide-react";
+import { Check, Printer } from "lucide-react";
 import { formatBRL } from "@/lib/money";
+import { cashOf, expectedCash } from "@/lib/cash";
+import { JanelaAcao } from "@/components/janela-acao";
+import { Marcar } from "@/components/controles";
+import { FORM_GRUPO, SaidaEmGrupo } from "./saida-grupo";
 import { sugerirEntregadores } from "@/lib/sugestao";
 import { SaidaEntregador } from "./saida";
 
@@ -33,7 +37,7 @@ export default async function Entregas() {
   const user = await requireUser("dono", "atendente", "caixa");
   // quem passou dos 15 minutos sem pagar sai antes de a fila ser montada
   await cancelarPixVencidos(user.tenantId);
-  const [aPagar, waiting, inRoute, drivers, open, settings] = await withTenant(user.tenantId, () =>
+  const [aPagar, waiting, inRoute, drivers, open, settings, viagens] = await withTenant(user.tenantId, () =>
     Promise.all([
       listOrders(user.tenantId, { status: "aguardando_pagamento", branchId: user.branchId }),
       listOrders(user.tenantId, { status: "aberto", branchId: user.branchId }),
@@ -41,6 +45,7 @@ export default async function Entregas() {
       listDrivers(user.tenantId, user.branchId),
       listShifts(user.tenantId, user.branchId, "aberto"),
       getSettings(user.tenantId),
+      listViagens(user.tenantId, user.branchId),
     ]),
   );
   const onShift = drivers.filter((d) => open.some((s) => s.driverId === d.id));
@@ -62,6 +67,10 @@ export default async function Entregas() {
   const primeiroNome = (id: string) => onShift.find((d) => d.id === id)?.name.split(" ")[0] ?? "";
   const late = (o: { createdAt: Date }) => minutesSince(o.createdAt) > settings.lateAfterMinutes;
   const lateCount = [...waiting, ...inRoute].filter(late).length;
+  // mais de um pedido na fila e alguém para levar: dá para marcar vários e mandar numa saída só
+  const podeJuntar = onShift.length > 0 && queue.length > 1;
+  // quem confere o dinheiro do entregador: o dono ou o caixa
+  const confere = user.role !== "atendente";
 
   return (
     <>
@@ -120,7 +129,10 @@ export default async function Entregas() {
                 <Card key={o.id} id={o.id}>
                   <li className={`border-b border-line px-4 py-3 last:border-0 ${minutesSince(o.createdAt) < 1 ? "row-new" : ""}`}>
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                      <Link href={`/pedidos/${o.id}`} className="alvo font-semibold hover:text-accent">
+                      {podeJuntar && (
+                        <Marcar form={FORM_GRUPO} name="orderId" value={o.id} aria-label={`Marcar o pedido #${o.number} para sair junto`} className="shrink-0 self-center" />
+                      )}
+                      <Link href={`/pedidos/${o.id}`} className="alvo mr-auto font-semibold hover:text-accent">
                         <span className="num text-muted">#{o.number}</span> {o.customerName ?? "Cliente"}
                         {o.origin === "portal" && <SiteBadge />}
                       </Link>
@@ -165,20 +177,28 @@ export default async function Entregas() {
           </h2>
           {onShift.length ? (
             onShift.map((d) => {
-              const mine = inRoute.filter((o) => o.driverId === d.id).reverse();
+              // a viagem dele: o que está na rua e o que já entregou e ainda não foi acertado
+              const daViagem = viagens.filter((o) => o.driverId === d.id);
+              const naRua = daViagem.filter((o) => o.status === "em_rota");
+              const entregues = daViagem.filter((o) => o.status === "entregue");
+              const tripId = (entregues[0] ?? daViagem[0])?.tripId;
+              const daVolta = daViagem.filter((o) => o.tripId === tripId);
+              const esperado = expectedCash(0, daVolta);
               return (
                 <div key={d.id} className="border-b border-line last:border-0">
                   {/* com pedidos, o nome é cabeçalho do grupo; livre, é uma linha comum: está pronto para sair */}
-                  <p className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 text-[13px] font-medium ${mine.length ? "bg-subtle py-2" : "py-3"}`}>
+                  <p className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 text-[13px] font-medium ${daViagem.length ? "bg-subtle py-2" : "py-3"}`}>
                     <span>{d.name}</span>
-                    {mine.length ? (
+                    {daViagem.length ? (
                       <span className="flex items-center gap-3 text-muted">
-                        {mine.length} em rota
+                        {[naRua.length && `${naRua.length} na rua`, entregues.length && `${entregues.length} ${entregues.length === 1 ? "entregue" : "entregues"}`].filter(Boolean).join(", ")}
                         {/* para quem sai sem celular: a folha com tudo que ele precisa na rua */}
-                        <Link href={`/entregas/rota/${d.id}`} className="tap flex items-center gap-1 font-normal hover:text-fg">
-                          <Printer size={13} strokeWidth={1.75} aria-hidden="true" />
-                          Folha da rota
-                        </Link>
+                        {naRua.length > 0 && (
+                          <Link href={`/entregas/rota/${d.id}`} className="tap flex items-center gap-1 font-normal hover:text-fg">
+                            <Printer size={13} strokeWidth={1.75} aria-hidden="true" />
+                            Folha da rota
+                          </Link>
+                        )}
                       </span>
                     ) : (
                       <span className="flex items-center gap-1.5 text-ok">
@@ -187,8 +207,23 @@ export default async function Entregas() {
                       </span>
                     )}
                   </p>
-                  {mine.map((o) => (
+                  {daViagem.map((o) => (
                     <Card key={o.id} id={o.id}>
+                      {o.status === "entregue" ? (
+                        // entregue: fica aqui, apagado, até o acerto da volta
+                        <div className="viagem-entregue flex flex-wrap items-baseline justify-between gap-x-3 border-b border-line/60 px-4 py-2.5 last:border-0">
+                          <Link href={`/pedidos/${o.id}`} className="flex min-w-0 items-center gap-1.5 hover:text-fg">
+                            <Check size={14} strokeWidth={2} className="shrink-0 self-center text-ok" aria-hidden="true" />
+                            <span className="min-w-0">
+                              <span className="num">#{o.number}</span> {o.customerName ?? "Cliente"}
+                            </span>
+                          </Link>
+                          <span className="text-[13px]">
+                            {cashOf(o) > 0 ? <><Money cents={cashOf(o)} /> em dinheiro</> : paymentLabel[o.paymentMethod]}
+                            {o.deliveredAt && `, às ${fmtTime(o.deliveredAt)}`}
+                          </span>
+                        </div>
+                      ) : (
                       <div className={`border-b border-line/60 px-4 py-2.5 last:border-0 ${minutesSince(o.dispatchedAt) < 1 ? "row-new" : ""}`}>
                         <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                           <Link href={`/pedidos/${o.id}`} className="min-w-0 hover:text-accent">
@@ -204,8 +239,47 @@ export default async function Entregas() {
                           <ResultadoRua id={o.id} numero={o.number} totalCents={o.totalCents} pagamento={paymentLabel[o.paymentMethod]} />
                         </div>
                       </div>
+                      )}
                     </Card>
                   ))}
+                  {/* ele voltou à loja: confere o dinheiro das entregas desta viagem */}
+                  {confere && entregues.length > 0 && tripId && (
+                    <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-t border-line/60 px-4 py-3">
+                      <p className="text-[13px] text-muted">
+                        Em dinheiro nesta volta: <Money cents={esperado} className="font-semibold text-fg" />
+                      </p>
+                      <JanelaAcao label="Acertar a volta" titulo={`Acerto da volta de ${d.name.split(" ")[0]}`} primario>
+                        <ActionForm action={settleTripAction} className="space-y-4">
+                          <input type="hidden" name="shiftId" value={daVolta[0].shiftId ?? ""} />
+                          <input type="hidden" name="tripId" value={tripId} />
+                          <ul className="divide-y divide-line rounded-lg border border-line text-sm">
+                            {daVolta.map((o) => (
+                              <li key={o.id} className="flex items-baseline justify-between gap-3 px-3 py-2">
+                                <span className="min-w-0 truncate">
+                                  <span className="num text-muted">#{o.number}</span> {o.customerName ?? "Cliente"}
+                                </span>
+                                <span className="shrink-0 text-[13px] text-muted">
+                                  {o.status === "em_rota" ? "continua com ele" : cashOf(o) > 0 ? <Money cents={cashOf(o)} className="text-fg" /> : paymentLabel[o.paymentMethod]}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                          <p className="flex items-baseline justify-between gap-3 text-sm">
+                            Deve entregar em dinheiro <Money cents={esperado} className="text-base font-semibold" />
+                          </p>
+                          <div>
+                            <label className="label" htmlFor={`volta-${tripId}`}>Quanto ele entregou</label>
+                            <input id={`volta-${tripId}`} name="counted" inputMode="decimal" data-mascara="dinheiro" required maxLength={12} className="input num" placeholder="0,00" />
+                          </div>
+                          <div>
+                            <label className="label" htmlFor={`volta-obs-${tripId}`}>Observação (se o valor não bater)</label>
+                            <input id={`volta-obs-${tripId}`} name="notes" maxLength={160} className="input" />
+                          </div>
+                          <button className="btn btn-primary w-full">Fechar a volta</button>
+                        </ActionForm>
+                      </JanelaAcao>
+                    </div>
+                  )}
                 </div>
               );
             })
@@ -214,6 +288,7 @@ export default async function Entregas() {
           )}
         </section>
       </div>
+      {podeJuntar && <SaidaEmGrupo entregadores={onShift.map((d) => ({ id: d.id, name: d.name }))} />}
     </>
   );
 }

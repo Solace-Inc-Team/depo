@@ -15,12 +15,12 @@ import { DomainError } from "@/lib/ctx";
 import { formatBRL, parseBRL } from "@/lib/money";
 import { clientIp } from "@/lib/request";
 import type { ActionState } from "@/components/action-form";
-import { createOrder, dispatchOrder, deliverOrder, cancelOrder, refundOrder, newOrderSchema, reportOccurrence, reassignOrder, confirmPix } from "@/domain/orders";
+import { createOrder, dispatchOrders, deliverOrder, cancelOrder, refundOrder, newOrderSchema, reportOccurrence, reassignOrder, confirmPix } from "@/domain/orders";
 import { inscreverAviso, placePortalOrder, portalOrderSchema, portalTenant } from "@/domain/portal";
 import { conectarMercadoPago, desconectarMercadoPago, liberarSemPix, pixDoPedido } from "@/domain/pix";
 import { cancelarConta, criarConta, pagarConta } from "@/domain/contas";
 import { createExpense, expenseSchema, voidExpense } from "@/domain/expenses";
-import { openShift, closeShift, addCashEntry, cashEntrySchema, voidCashEntry, resolveDifference } from "@/domain/shifts";
+import { openShift, closeShift, addCashEntry, cashEntrySchema, voidCashEntry, resolveDifference, settleTrip } from "@/domain/shifts";
 import { receivePurchase, markDamaged, runInventory, saveSupplier, supplierSchema, transferirEstoque } from "@/domain/stock";
 import { receivePayment, paymentSchema, voidPayment } from "@/domain/receivables";
 import { pixAssinatura } from "@/domain/assinatura";
@@ -214,7 +214,10 @@ export async function dispatchAction(fd: FormData) {
   const user = await requireUser("dono", "atendente", "caixa");
   const driverId = str(fd, "driverId");
   if (!driverId) return { error: "Escolha o entregador." };
-  return run(() => dispatchOrder(user, str(fd, "orderId"), driverId), ["/"], "Pedido saiu para entrega.");
+  // vários "orderId" no mesmo formulário: os pedidos marcados na fila saem juntos, numa viagem só
+  const ids = fd.getAll("orderId").map(String).filter((v) => z.uuid().safeParse(v).success);
+  if (!ids.length) return { error: "Escolha os pedidos que vão sair." };
+  return run(() => dispatchOrders(user, ids, driverId), ["/"], ids.length === 1 ? "Pedido saiu para entrega." : `${ids.length} pedidos saíram para entrega.`);
 }
 
 export async function deliverAction(fd: FormData) {
@@ -376,6 +379,12 @@ export async function cashEntryAction(fd: FormData) {
     ["/"],
     kind === "saida" ? "Gasto registrado e lançado nas despesas." : "Repasse registrado.",
   );
+}
+
+export async function settleTripAction(fd: FormData) {
+  const user = await requireUser("dono", "caixa");
+  if (!z.uuid().safeParse(str(fd, "tripId")).success || !z.uuid().safeParse(str(fd, "shiftId")).success) return { error: "Volta não encontrada." };
+  return run(() => settleTrip(user, str(fd, "shiftId"), str(fd, "tripId"), money(fd, "counted")!, str(fd, "notes")), ["/"], "Volta acertada.");
 }
 
 export async function voidCashEntryAction(fd: FormData) {

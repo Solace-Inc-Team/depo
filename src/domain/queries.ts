@@ -100,6 +100,8 @@ const orderCols = {
   customerAddress: sql<string | null>`coalesce(${orders.address}, ${customers.address})`,
   driverName: driver.name,
   driverId: orders.driverId,
+  shiftId: orders.shiftId,
+  tripId: orders.tripId,
   branchId: orders.branchId,
   // Pix com cobrança do Mercado Pago: confirma sozinho (sem ela, a loja confere no extrato)
   pixAutomatico: sql<boolean>`${orders.mpPaymentId} is not null`,
@@ -141,6 +143,30 @@ export const listOrders = scoped(function listOrders(
       ),
     )
     .orderBy(desc(orders.createdAt))
+    .limit(300);
+});
+
+/**
+ * Viagens ainda não acertadas, com os pedidos na rua e os já entregues: é o que o entregador traz de volta.
+ * Só turnos abertos; o mais antigo primeiro, na ordem em que saíram.
+ */
+export const listViagens = scoped(function listViagens(tenantId: string, branchId: string | null) {
+  return db
+    .select(orderCols)
+    .from(orders)
+    .innerJoin(shifts, and(eq(shifts.id, orders.shiftId), eq(shifts.status, "aberto")))
+    .leftJoin(customers, eq(customers.id, orders.customerId))
+    .leftJoin(driver, eq(driver.id, orders.driverId))
+    .where(
+      and(
+        eq(orders.tenantId, tenantId),
+        branchId ? eq(orders.branchId, branchId) : undefined,
+        inArray(orders.status, ["em_rota", "entregue"]),
+        sql`${orders.tripId} is not null`,
+        sql`not exists (select 1 from ${cashEntries} e where e.trip_id = ${orders.tripId} and e.voided_at is null)`,
+      ),
+    )
+    .orderBy(asc(orders.dispatchedAt))
     .limit(300);
 });
 
@@ -316,6 +342,7 @@ export const getShift = scoped(async function getShift(tenantId: string, id: str
     .select({
       id: cashEntries.id,
       kind: cashEntries.kind,
+      tripId: cashEntries.tripId,
       amountCents: cashEntries.amountCents,
       note: cashEntries.note,
       createdAt: cashEntries.createdAt,

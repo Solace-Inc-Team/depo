@@ -239,6 +239,8 @@ export const cashEntries = pgTable(
     voidedAt: timestamp("voided_at", { withTimezone: true }),
     voidedBy: uuid("voided_by").references(() => users.id),
     voidReason: text("void_reason"),
+    // repasse que fecha uma volta do entregador (acerto da viagem); sem ele, é um repasse avulso
+    tripId: uuid("trip_id"),
   },
   (t) => [index("cash_entries_shift_idx").on(t.shiftId)],
 );
@@ -254,6 +256,8 @@ export const orders = pgTable(
     status: orderStatusEnum("status").notNull().default("aberto"),
     driverId: uuid("driver_id").references(() => users.id),
     shiftId: uuid("shift_id").references(() => shifts.id),
+    // viagem: os pedidos que saíram juntos com o entregador e são acertados juntos quando ele volta
+    tripId: uuid("trip_id"),
     paymentMethod: paymentMethodEnum("payment_method").notNull(),
     // pagamento misto: parte em dinheiro de um pedido pago no Pix ou no cartão (passa pela mão do entregador)
     cashPartCents: integer("cash_part_cents").notNull().default(0),
@@ -295,6 +299,7 @@ export const orders = pgTable(
     uniqueIndex("orders_tracking_uq").on(t.trackingId),
     index("orders_tenant_status_idx").on(t.tenantId, t.status),
     index("orders_branch_status_idx").on(t.branchId, t.status),
+    index("orders_trip_idx").on(t.tripId),
     index("orders_tenant_created_idx").on(t.tenantId, t.createdAt),
     uniqueIndex("orders_tenant_number_uq").on(t.tenantId, t.number),
     // o aviso do Mercado Pago chega só com o id da cobrança

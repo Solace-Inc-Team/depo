@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { tenantTransaction, type Tx } from "@/db";
 import { shifts, users, orders, stockMovements, cashEntries, expenses } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
@@ -87,6 +87,56 @@ export async function addCashEntry(ctx: Ctx, input: z.infer<typeof cashEntrySche
       .returning();
     await audit(tx, ctx, `turno.${input.kind}`, "shift", shift.id, { entryId: entry.id, amountCents: input.amountCents });
     return entry;
+  });
+}
+
+/**
+ * Acerto da volta: o entregador chegou na loja e entrega o dinheiro das entregas desta viagem. Vira um
+ * repasse ligado à viagem (o acerto do turno já desconta). Pedido que ainda não foi resolvido continua com
+ * ele, numa viagem nova; a diferença fica registrada e aparece de novo no acerto do turno.
+ */
+export async function settleTrip(ctx: Ctx, shiftId: string, tripId: string, countedCashCents: number, notes: string) {
+  assertRole(ctx, ...CONFERENTE);
+  if (!Number.isInteger(countedCashCents) || countedCashCents < 0) throw new DomainError("Informe o valor contado.");
+  return tenantTransaction(ctx, async (tx) => {
+    const shift = await lockOpenShift(tx, ctx, shiftId);
+    const [feito] = await tx
+      .select({ id: cashEntries.id })
+      .from(cashEntries)
+      .where(and(eq(cashEntries.tripId, tripId), eq(cashEntries.shiftId, shift.id), isNull(cashEntries.voidedAt)));
+    if (feito) throw new DomainError("Esta volta já foi acertada.");
+    const daViagem = await tx
+      .select({ id: orders.id, status: orders.status, paymentMethod: orders.paymentMethod, totalCents: orders.totalCents, cashPartCents: orders.cashPartCents })
+      .from(orders)
+      .where(and(eq(orders.shiftId, shift.id), eq(orders.tripId, tripId)));
+    if (!daViagem.length) throw new DomainError("Volta não encontrada.");
+    const esperado = expectedCash(0, daViagem);
+    const diff = cashDifference(esperado, countedCashCents);
+    if (diff !== 0 && notes.trim().length < 3)
+      throw new DomainError(`${diff < 0 ? "Faltam" : "Sobram"} ${formatBRL(Math.abs(diff))}: explique na observação (ao menos 3 letras).`);
+    const inHand = expectedCash(shift.openingCashCents, await shiftOrdersOf(tx, shift.id), await handedOver(tx, shift.id));
+    if (countedCashCents > inHand)
+      throw new DomainError(`Pelo sistema o entregador tem ${formatBRL(inHand)} em dinheiro. Confira as entregas antes de lançar um valor maior.`);
+
+    const entregues = daViagem.filter((o) => o.status === "entregue").length;
+    const [entry] = await tx
+      .insert(cashEntries)
+      .values({
+        tenantId: ctx.tenantId,
+        shiftId: shift.id,
+        kind: "repasse",
+        amountCents: countedCashCents,
+        note: [`${entregues} ${entregues === 1 ? "entrega" : "entregas"}`, notes.trim()].filter(Boolean).join(". "),
+        tripId,
+        createdBy: ctx.userId,
+      })
+      .returning();
+    // o que ainda está na rua continua com ele: fica fora desta volta e entra na próxima
+    const naRua = daViagem.filter((o) => o.status === "em_rota").map((o) => o.id);
+    // uma viagem nova só para todos eles
+    if (naRua.length) await tx.update(orders).set({ tripId: crypto.randomUUID() }).where(inArray(orders.id, naRua));
+    await audit(tx, ctx, "turno.acerto_volta", "shift", shift.id, { tripId, esperado, countedCashCents, diff, entryId: entry.id });
+    return { esperado, diff };
   });
 }
 

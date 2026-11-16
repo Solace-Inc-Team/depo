@@ -193,7 +193,7 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
                   <li key={e.id} className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-line px-4 py-2.5 ${e.voidedAt ? "text-muted" : ""}`}>
                     <div className="min-w-0">
                       <p className={e.voidedAt ? "line-through" : "font-medium"}>
-                        {e.kind === "repasse" ? "Repasse ao caixa" : "Gasto autorizado"}
+                        {e.kind === "saida" ? "Gasto autorizado" : e.tripId ? "Acerto da volta" : "Repasse ao caixa"}
                         {e.note && `: ${e.note}`}
                       </p>
                       <p className="text-[13px] text-muted">

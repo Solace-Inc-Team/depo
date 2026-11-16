@@ -190,6 +190,13 @@
       "when": 1794782301500,
       "tag": "0026_empresa_contato",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1794859388481,
+      "tag": "0027_viagens",
+      "breakpoints": true
     }
   ]
 }

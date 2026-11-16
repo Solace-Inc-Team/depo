@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { tenantTransaction, type Tx } from "@/db";
-import { orders, orderItems, customers, customerAddresses, shifts, expenses, tenants } from "@/db/schema";
+import { orders, orderItems, customers, customerAddresses, shifts, expenses, tenants, cashEntries } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
 import { itemsSubtotal, orderTotal, partialDiscount } from "@/lib/cash";
 import { formatBRL } from "@/lib/money";
@@ -187,6 +187,26 @@ export async function createOrder(ctx: Ctx, raw: NewOrder) {
   });
 }
 
+/**
+ * A viagem em que o pedido entra: a que o entregador já tem e ainda não foi acertada, senão uma nova.
+ * Quem sai com três pedidos sai numa viagem só; depois do acerto da volta, a próxima saída abre outra.
+ */
+async function viagemDe(tx: Tx, shiftId: string, driverId: string) {
+  const [aberta] = await tx
+    .select({ tripId: orders.tripId })
+    .from(orders)
+    .where(
+      and(
+        eq(orders.shiftId, shiftId),
+        eq(orders.driverId, driverId),
+        sql`${orders.tripId} is not null`,
+        sql`not exists (select 1 from ${cashEntries} e where e.trip_id = ${orders.tripId} and e.voided_at is null)`,
+      ),
+    )
+    .limit(1);
+  return aberta?.tripId ?? crypto.randomUUID();
+}
+
 async function dispatchInTx(tx: Tx, ctx: Ctx, orderId: string, driverId: string) {
   const { o, items, name, c } = await loadOrder(tx, ctx, orderId);
   if (o.status !== "aberto") throw new DomainError("Só pedidos em aberto podem sair para entrega.");
@@ -205,7 +225,7 @@ async function dispatchInTx(tx: Tx, ctx: Ctx, orderId: string, driverId: string)
   }
   await tx
     .update(orders)
-    .set({ status: "em_rota", driverId, shiftId: shift.id, dispatchedAt: new Date(), occurrence: null, occurrenceAt: null })
+    .set({ status: "em_rota", driverId, shiftId: shift.id, tripId: await viagemDe(tx, shift.id, driverId), dispatchedAt: new Date(), occurrence: null, occurrenceAt: null })
     .where(eq(orders.id, o.id));
   await audit(tx, ctx, "pedido.saida", "order", o.id, { driverId, shiftId: shift.id });
 }
@@ -233,7 +253,7 @@ export async function reportOccurrence(ctx: Ctx, orderId: string, kind: string, 
     const text = [occurrenceKinds[kind as keyof typeof occurrenceKinds], note.trim()].filter(Boolean).join(": ");
     await tx
       .update(orders)
-      .set({ status: "aberto", driverId: null, shiftId: null, dispatchedAt: null, occurrence: text, occurrenceAt: new Date() })
+      .set({ status: "aberto", driverId: null, shiftId: null, tripId: null, dispatchedAt: null, occurrence: text, occurrenceAt: new Date() })
       .where(eq(orders.id, o.id));
     await audit(tx, ctx, "pedido.ocorrencia", "order", o.id, { kind, note: note.trim(), driverId: o.driverId });
   });
@@ -287,15 +307,25 @@ export async function reassignOrder(ctx: Ctx, orderId: string, driverId: string)
       await move(tx, c, { ...base, shiftId: o.shiftId ?? undefined, driverId: o.driverId, quantity: -i.quantity }, name(i.productId));
       await move(tx, c, { ...base, shiftId: shift.id, driverId, quantity: i.quantity }, name(i.productId));
     }
-    await tx.update(orders).set({ driverId, shiftId: shift.id }).where(eq(orders.id, o.id));
+    await tx.update(orders).set({ driverId, shiftId: shift.id, tripId: await viagemDe(tx, shift.id, driverId) }).where(eq(orders.id, o.id));
     await audit(tx, ctx, "pedido.trocar_entregador", "order", o.id, { from: o.driverId, to: driverId });
   });
 }
 
 export async function dispatchOrder(ctx: Ctx, orderId: string, driverId: string) {
+  return dispatchOrders(ctx, [orderId], driverId);
+}
+
+/** Vários pedidos saem juntos com o mesmo entregador, numa viagem só. Ou saem todos, ou nenhum. */
+export async function dispatchOrders(ctx: Ctx, orderIds: string[], driverId: string) {
   assertRole(ctx, "dono", "atendente", "caixa");
-  await tenantTransaction(ctx, (tx) => dispatchInTx(tx, ctx, orderId, driverId));
-  void avisarCliente(ctx.tenantId, orderId, "saiu");
+  const ids = [...new Set(orderIds)];
+  if (!ids.length) throw new DomainError("Escolha os pedidos que vão sair.");
+  if (ids.length > 30) throw new DomainError("Escolha até 30 pedidos por saída.");
+  await tenantTransaction(ctx, async (tx) => {
+    for (const id of ids) await dispatchInTx(tx, ctx, id, driverId);
+  });
+  for (const id of ids) void avisarCliente(ctx.tenantId, id, "saiu");
 }
 
 /**

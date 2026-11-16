@@ -3755,3 +3755,38 @@ button.gaveta-mais-linha:active {
   z-index: -1;
   pointer-events: none;
 }
+
+/* saída de vários pedidos juntos (Entregas): a barra sobe no pé da tela quando há pedido marcado.
+   No celular ela fica no lugar da navegação, como a do novo pedido; no computador, ao lado do menu. */
+.saida-grupo {
+  position: fixed;
+  inset: auto 0 0;
+  z-index: 25;
+  padding: 0.75rem 1rem max(0.75rem, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+}
+@media (min-width: 1024px) {
+  .saida-grupo {
+    left: 15rem;
+  }
+}
+/* o último cartão da fila não fica escondido atrás da barra */
+body:has(.saida-grupo) .main-app {
+  padding-bottom: calc(9rem + env(safe-area-inset-bottom));
+}
+@media (max-width: 1023px) {
+  body:has(.saida-grupo:not([data-saindo])) .nav-inferior {
+    translate: 0 110%;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
+/* pedido já entregue na viagem: fica na lista até o acerto da volta, mais apagado que os que estão na rua */
+.viagem-entregue {
+  color: var(--muted);
+}
