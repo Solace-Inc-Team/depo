@@ -1635,6 +1635,10 @@ html[data-trocando-tema] .janela[open] .janela-cartao {
     0 0 0 100vmax rgb(0 0 0 / 0.38),
     0 30px 80px -20px rgb(0 0 0 / 0.45);
 }
+/* e o desfoque do fundo vai para a própria página (cada parte, para a barra fixa não sair do lugar) */
+html[data-trocando-tema]:has(.janela[open]) .app-shell > :not(dialog) {
+  filter: blur(3px);
+}
 .janela[data-saindo]::backdrop {
   animation: fade-out 170ms ease-in both;
 }
