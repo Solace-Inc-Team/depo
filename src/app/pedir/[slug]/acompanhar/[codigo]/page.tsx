@@ -10,6 +10,7 @@ import { AtualizaSozinho } from "@/components/atualiza-sozinho";
 import { AvisoNoCelular } from "./aviso-celular";
 import { CheckSucesso } from "@/components/check-sucesso";
 import { TextoQueTroca } from "@/components/texto-que-troca";
+import Beams from "@/components/reactbits/Beams";
 
 // Página que o cliente abre pelo link do pedido: a situação em destaque, o caminho até a porta
 // (recebido, saiu, entregue) e o que foi pedido. Sem login; o código do link é a chave.
@@ -63,7 +64,11 @@ export default async function Acompanhar({ params }: PageProps<"/pedir/[slug]/ac
 
   return (
     // como a página de pedir: sempre escura, qualquer que seja o tema escolhido no sistema neste aparelho
-    <div className="pagina-escura">
+    <div className="pagina-escura isolate">
+    {/* o mesmo fundo da página de pedir, mais fraco: aqui o que importa é a etapa do pedido */}
+    <div aria-hidden="true" className="fundo-tela">
+      <Beams color="#6d9dff" quality={0.5} grain={0.15} speed={0.5} brightness={1} mouseInteraction={false} backgroundColor={undefined} dpr={undefined} style={undefined} />
+    </div>
     <main className="stagger mx-auto min-h-screen max-w-lg px-4 py-8">
       <AtualizaSozinho ativo={!cancelado && !entregue} />
       <p className="text-[13px] text-muted">{loja.name}</p>
