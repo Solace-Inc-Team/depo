@@ -1,7 +1,8 @@
 "use client";
 
-import { useSyncExternalStore, type ReactNode } from "react";
+import { useSyncExternalStore } from "react";
 import { Monitor, Moon, Sun } from "lucide-react";
+import { Alternar } from "./controles";
 import { aplicar, lerEscolha, temaEscuro, type Escolha } from "@/lib/tema";
 
 // os ícones dos três estados (o automático só aparece para quem já o tinha escolhido); o clique alterna escuro e claro,
@@ -14,8 +15,7 @@ const info = {
 };
 
 /** Um botão que alterna escuro e claro. O título diz o atual; o clique passa ao outro. */
-/** Com children, a linha inteira é o botão (a gaveta do celular): o nome à esquerda, o ícone à direita. */
-export function TemaBotao({ className = "", children }: { className?: string; children?: ReactNode }) {
+export function TemaBotao({ className = "" }: { className?: string }) {
   // no servidor é o escuro padrão; no navegador lê a escolha guardada e acompanha qualquer troca de tema
   const escolha = useSyncExternalStore(temaEscuro.assinar, lerEscolha, () => "escuro" as Escolha);
   // quem ainda está no automático vai para o oposto do que está vendo
@@ -28,12 +28,11 @@ export function TemaBotao({ className = "", children }: { className?: string; ch
       aria-label={`${info[escolha].texto}. Trocar tema`}
       onClick={(e) => {
         // o tema novo nasce do centro do ícone clicado
-        const r = (e.currentTarget.lastElementChild ?? e.currentTarget).getBoundingClientRect();
+        const r = e.currentTarget.getBoundingClientRect();
         aplicar(proxima, { x: r.left + r.width / 2, y: r.top + r.height / 2 });
       }}
-      className={`${children ? "" : "grid place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg"} ${className}`}
+      className={`grid place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg ${className}`}
     >
-      {children}
       {/* os três ícones no mesmo lugar: o que sai gira e some, o que entra gira e aparece */}
       <span className="grid size-[15px] *:col-start-1 *:row-start-1" aria-hidden="true">
         {ordem.map((k) => {
@@ -42,5 +41,27 @@ export function TemaBotao({ className = "", children }: { className?: string; ch
         })}
       </span>
     </button>
+  );
+}
+
+/** A linha "Modo claro" da gaveta do celular: o escuro é o padrão, então o claro é um liga e desliga. */
+export function ModoClaro({ className = "" }: { className?: string }) {
+  const escolha = useSyncExternalStore(temaEscuro.assinar, lerEscolha, () => "escuro" as Escolha);
+  const claro = escolha === "claro" || (escolha === "auto" && typeof document !== "undefined" && document.documentElement.dataset.tema === "claro");
+  // um label: tocar em qualquer ponto da linha liga ou desliga
+  return (
+    <label className={className}>
+      <span className="flex items-center gap-3">
+        <Sun size={18} strokeWidth={1.75} aria-hidden="true" /> Modo claro
+      </span>
+      <Alternar
+        checked={claro}
+        onChange={(e) => {
+          // o tema novo nasce do interruptor
+          const r = e.currentTarget.getBoundingClientRect();
+          aplicar(e.currentTarget.checked ? "claro" : "escuro", { x: r.left + r.width / 2, y: r.top + r.height / 2 });
+        }}
+      />
+    </label>
   );
 }

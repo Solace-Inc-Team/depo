@@ -3595,6 +3595,7 @@ html:has(.pagina-escura) body {
   -webkit-tap-highlight-color: transparent;
 }
 a.gaveta-mais-linha:active,
+label.gaveta-mais-linha:active,
 button.gaveta-mais-linha:active {
   background: var(--subtle);
 }

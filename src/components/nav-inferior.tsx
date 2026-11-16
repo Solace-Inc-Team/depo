@@ -16,7 +16,6 @@ import {
   Receipt,
   ReceiptText,
   Settings,
-  SunMoon,
   Tag,
   Truck,
   UserRoundCog,
@@ -25,7 +24,7 @@ import {
   X,
   type LucideIcon,
 } from "lucide-react";
-import { TemaBotao } from "./tema-botao";
+import { ModoClaro } from "./tema-botao";
 
 // Navegação do celular e do tablet: uma barra no pé da tela com o que se usa o dia inteiro e o resto numa gaveta.
 // Fica no pé porque é onde o polegar alcança; a barra de rolar de lado escondia metade do menu.
@@ -227,12 +226,7 @@ export function NavInferior({
               </Link>
             </li>
             <li>
-              {/* a linha toda troca o tema, como as outras; o ícone da direita mostra o atual */}
-              <TemaBotao className="gaveta-mais-linha w-full justify-between">
-                <span className="flex items-center gap-3">
-                  <SunMoon size={18} strokeWidth={1.75} aria-hidden="true" /> Tema
-                </span>
-              </TemaBotao>
+              <ModoClaro className="gaveta-mais-linha justify-between" />
             </li>
             <li>{sair}</li>
           </ul>
