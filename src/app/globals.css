@@ -3744,10 +3744,14 @@ button.gaveta-mais-linha:active {
   border-color: color-mix(in srgb, var(--marca) 80%, transparent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--marca) 22%, transparent), 0 10px 30px -14px rgb(0 0 0 / 0.55);
 }
-/* os fios atrás da página do cliente: fixos na tela, a página rola por cima */
+/* o fundo da página do cliente: fixo na tela, a página rola por cima. A altura é a da tela com a barra do Safari
+   recolhida (lvh): sem isso o desenho mudava de tamanho, e se redesenhava, toda vez que a barra encolhe ao rolar */
 .fundo-tela {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100lvh;
   z-index: -1;
   pointer-events: none;
 }

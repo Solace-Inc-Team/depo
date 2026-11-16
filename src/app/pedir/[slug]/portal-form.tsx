@@ -45,8 +45,18 @@ export function PortalForm({
   const items = products
     .filter((p) => qty[p.id] > 0)
     .map((p) => ({ productId: p.id, quantity: qty[p.id], returnsEmpty: p.returnable && !noBottle[p.id] }));
-  // a barra do celular sobe com o primeiro produto e desce quando o carrinho esvazia
-  const barra = useSaida(items.length > 0, 200);
+  // a barra do celular sobe com o primeiro produto e desce quando o carrinho esvazia, ou quando o Total já está na tela
+  // (dois totais e um "Continuar" que voltava para a entrega, ao lado do botão de pedir)
+  const totalRef = useRef<HTMLDivElement>(null);
+  const [totalNaTela, setTotalNaTela] = useState(false);
+  useEffect(() => {
+    const el = totalRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => setTotalNaTela(e.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  const barra = useSaida(items.length > 0 && !totalNaTela, 200);
   const unidades = items.reduce((s, i) => s + i.quantity, 0);
   const total = products.reduce((s, p) => s + (qty[p.id] ?? 0) * price(p), 0);
   // até 20 por item, e nunca mais do que a loja tem livre agora
@@ -189,7 +199,7 @@ export function PortalForm({
           </p>
         )}
 
-        <div className="panel p-4">
+        <div ref={totalRef} className="panel p-4">
           <p className="flex items-baseline justify-between">
             <span className="font-semibold">Total</span>
             <LiveNumber value={total} cents className="text-3xl font-semibold" />
