@@ -296,6 +296,18 @@ body {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+/* o cartão da janela recebe o foco ao abrir só para o leitor de tela e o Tab começarem nele; no Safari o foco por
+   código depois de um toque acendia o anel azul na borda da gaveta. Os campos e botões de dentro mantêm o anel */
+.janela-cartao:focus-visible {
+  outline: none;
+}
+/* janela aberta no celular e no tablet: a página de trás não rola. No iPhone o arrasto na gaveta (que cabe sem
+   rolar) ou no fundo escuro passava para a página, e o painel subia e descia por trás */
+@media (max-width: 1023px) {
+  html:has(.janela[open]) {
+    overflow: hidden;
+  }
+}
 
 /* movimento: curtas no dia a dia, nada que faça o operador esperar.
    Duas curvas no site todo, as mesmas das demos da página inicial:
