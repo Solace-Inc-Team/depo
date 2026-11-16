@@ -1621,6 +1621,9 @@ body[data-confirmando] .deliver-btn {
 .janela[data-saindo] .janela-cartao {
   animation: janela-sai 170ms ease-in both;
 }
+.janela[data-assentou]::backdrop {
+  animation: none;
+}
 .janela[data-saindo]::backdrop {
   animation: fade-out 170ms ease-in both;
 }

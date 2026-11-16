@@ -45,6 +45,12 @@ export function aplicar(escolha: Escolha, origem?: { x: number; y: number }) {
   html.style.setProperty("--tema-x", `${origem.x}px`);
   html.style.setProperty("--tema-y", `${origem.y}px`);
   html.style.setProperty("--tema-r", `${raio}px`);
+  // janela aberta: o fundo escurecido já entrou. Sem isto o Safari refazia a entrada dele no meio da troca
+  // (o topo ficava nítido e depois escurecia de novo); vale até a janela fechar
+  document.querySelectorAll<HTMLDialogElement>("dialog[open]").forEach((d) => {
+    d.dataset.assentou = "";
+    d.addEventListener("close", () => delete d.dataset.assentou, { once: true });
+  });
   html.dataset.trocandoTema = "";
   document.startViewTransition(trocar).finished.finally(() => delete html.dataset.trocandoTema);
 }
