@@ -20,8 +20,9 @@ export default async function Pedir({ params, searchParams }: PageProps<"/pedir/
   const products = await portalProducts(t.id, t.branchId);
 
   return (
-    // os fios do fundo vão de ponta a ponta da tela: o clip impede a rolagem de lado
-    <div className="overflow-x-clip">
+    // a página do cliente é sempre escura, como a vitrine: o tema escolhido no sistema naquele aparelho não vale aqui.
+    // Os fios do fundo vão de ponta a ponta da tela: o clip impede a rolagem de lado
+    <div className="pagina-escura overflow-x-clip">
     <main className="stagger mx-auto min-h-screen max-w-lg px-4 py-8">
       <p className="text-[13px] text-muted">Pedido pelo site</p>
       <h1 className="h1">{t.name}</h1>

@@ -62,6 +62,8 @@ export default async function Acompanhar({ params }: PageProps<"/pedir/[slug]/ac
   const daVez = cancelado ? -1 : etapas.findIndex((e) => !e.feita);
 
   return (
+    // como a página de pedir: sempre escura, qualquer que seja o tema escolhido no sistema neste aparelho
+    <div className="pagina-escura">
     <main className="stagger mx-auto min-h-screen max-w-lg px-4 py-8">
       <AtualizaSozinho ativo={!cancelado && !entregue} />
       <p className="text-[13px] text-muted">{loja.name}</p>
@@ -140,5 +142,6 @@ export default async function Acompanhar({ params }: PageProps<"/pedir/[slug]/ac
 
       {!cancelado && !entregue && <p className="mt-6 text-center text-[13px] text-muted">Esta página se atualiza sozinha.</p>}
     </main>
+    </div>
   );
 }
