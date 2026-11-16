@@ -3756,3 +3756,15 @@ button.gaveta-mais-linha:active {
   -webkit-mask-image: linear-gradient(transparent, #000 18%, #000 75%, transparent);
   mask-image: linear-gradient(transparent, #000 18%, #000 75%, transparent);
 }
+/* tela larga: o desenho dos fios depende da proporção; espalhado pela largura toda, a onda ia para a direita e
+   deixava a lista sem fundo. Fica numa faixa em volta da coluna, com o mesmo desenho do celular, sumindo dos lados */
+@media (min-width: 44rem) {
+  .fundo-fios {
+    left: calc(50% - 22rem);
+    width: 44rem;
+    -webkit-mask-image: linear-gradient(transparent, #000 18%, #000 75%, transparent), linear-gradient(to right, transparent, #000 18%, #000 82%, transparent);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(transparent, #000 18%, #000 75%, transparent), linear-gradient(to right, transparent, #000 18%, #000 82%, transparent);
+    mask-composite: intersect;
+  }
+}
