@@ -163,12 +163,17 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
               {s.orders.map((o) => (
                 <Fragment key={o.id}>
                   <tr>
-                    <td className="num text-muted"><Link href={`/pedidos/${o.id}`} className="hover:text-accent">#{o.number}</Link></td>
-                    <td>{o.customerName ?? "Balcão"}</td>
+                    {/* no celular o número vai junto do nome (uma coluna a menos): sem isso "Bar do Zé" quebrava em dois.
+                        O nome fica com a sobra da linha; situação e valor não quebram */}
+                    <td className="num hidden whitespace-nowrap text-muted sm:table-cell"><Link href={`/pedidos/${o.id}`} className="hover:text-accent">#{o.number}</Link></td>
+                    <td className="w-full">
+                      <Link href={`/pedidos/${o.id}`} className="num mr-1.5 text-muted hover:text-accent sm:hidden">#{o.number}</Link>
+                      {o.customerName ?? "Balcão"}
+                    </td>
                     {/* no celular a forma de pagamento sai para o total caber sem rolar */}
                     <td className="hidden sm:table-cell">{paymentLabel[o.paymentMethod]}</td>
-                    <td><StatusBadge status={o.status} /></td>
-                    <td className="text-right"><Money cents={o.totalCents} className={o.status === "cancelado" ? "line-through text-muted" : ""} /></td>
+                    <td className="whitespace-nowrap"><StatusBadge status={o.status} /></td>
+                    <td className="whitespace-nowrap text-right"><Money cents={o.totalCents} className={o.status === "cancelado" ? "line-through text-muted" : ""} /></td>
                   </tr>
                   {/* ainda na rua: quando o entregador volta sem celular, o caixa lança o resultado aqui antes de fechar */}
                   {o.status === "em_rota" && canSettle && (
@@ -190,7 +195,7 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
             {s.entries.length > 0 && (
               <ul>
                 {s.entries.map((e) => (
-                  <li key={e.id} className={`flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-line px-4 py-2.5 ${e.voidedAt ? "text-muted" : ""}`}>
+                  <li key={e.id} className={`flex items-center justify-between gap-x-4 border-b border-line px-4 py-2.5 ${e.voidedAt ? "text-muted" : ""}`}>
                     <div className="min-w-0">
                       <p className={e.voidedAt ? "line-through" : "font-medium"}>
                         {e.kind === "saida" ? "Gasto autorizado" : e.tripId ? "Acerto da volta" : "Repasse ao caixa"}
@@ -201,7 +206,8 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
                         {e.voidedAt && `. Estornado: ${e.voidReason}`}
                       </p>
                     </div>
-                    <div className="flex items-center gap-4">
+                    {/* o valor fica sempre à direita; o texto comprido quebra antes dele */}
+                    <div className="flex shrink-0 items-center gap-4">
                       <Money cents={e.amountCents} className={e.voidedAt ? "line-through" : "font-semibold"} />
                       {isOpen && !e.voidedAt && user.role === "dono" && (
                         <PopoverForm label="Estornar" titulo={`${e.kind === "repasse" ? "Repasse" : "Gasto"} de ${formatBRL(e.amountCents)}`} action={voidCashEntryAction} submit="Estornar lançamento" danger>

@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { withTenant } from "@/db";
 import { getSettings, listDrivers, listOrders, listShifts, listViagens } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
-import { confirmPixAction, dispatchAction, settleTripAction } from "@/app/actions";
+import { confirmPixAction, dispatchAction } from "@/app/actions";
 import { cancelarPixVencidos, PRAZO_PAGAR_MS } from "@/domain/pix";
 import { Empty, Money, PageHeader, SiteBadge, fmtTime, paymentLabel } from "@/components/ui";
 import { ResultadoRua } from "@/components/resultado-rua";
@@ -14,6 +14,7 @@ import { cashOf, expectedCash } from "@/lib/cash";
 import { JanelaAcao } from "@/components/janela-acao";
 import { Marcar } from "@/components/controles";
 import { FORM_GRUPO, SaidaEmGrupo } from "./saida-grupo";
+import { AcertoVolta } from "./acerto-volta";
 import { sugerirEntregadores } from "@/lib/sugestao";
 import { SaidaEntregador } from "./saida";
 
@@ -262,9 +263,7 @@ export default async function Entregas() {
                         {esperado > 0 ? <>Em dinheiro nesta volta: <Money cents={esperado} className="font-semibold text-fg" /></> : "Nada em dinheiro nesta volta"}
                       </p>
                       <JanelaAcao label="Acertar a volta" titulo={`Acerto da volta de ${d.name.split(" ")[0]}`} primario>
-                        <ActionForm action={settleTripAction} className="space-y-4">
-                          <input type="hidden" name="shiftId" value={daVolta[0].shiftId ?? ""} />
-                          <input type="hidden" name="tripId" value={tripId} />
+                        <AcertoVolta shiftId={daVolta[0].shiftId ?? ""} tripId={tripId} esperado={esperado}>
                           <ul className="divide-y divide-line rounded-lg border border-line text-sm">
                             {daVolta.map((o) => (
                               <li key={o.id} className="flex items-baseline justify-between gap-3 px-3 py-2">
@@ -277,26 +276,7 @@ export default async function Entregas() {
                               </li>
                             ))}
                           </ul>
-                          {esperado > 0 ? (
-                            <>
-                              <p className="flex items-baseline justify-between gap-3 text-sm">
-                                Deve entregar em dinheiro <Money cents={esperado} className="text-base font-semibold" />
-                              </p>
-                              <div>
-                                <label className="label" htmlFor={`volta-${tripId}`}>Quanto ele entregou</label>
-                                <input id={`volta-${tripId}`} name="counted" inputMode="decimal" data-mascara="dinheiro" required maxLength={12} className="input num" placeholder="0,00" />
-                              </div>
-                              <div>
-                                <label className="label" htmlFor={`volta-obs-${tripId}`}>Observação (se o valor não bater)</label>
-                                <input id={`volta-obs-${tripId}`} name="notes" maxLength={160} className="input" />
-                              </div>
-                            </>
-                          ) : (
-                            // só Pix, cartão ou fiado: não há dinheiro para contar, a volta só fecha (e marca a hora da chegada)
-                            <input type="hidden" name="counted" value="0" />
-                          )}
-                          <button className="btn btn-primary w-full">Fechar a volta</button>
-                        </ActionForm>
+                        </AcertoVolta>
                       </JanelaAcao>
                     </div>
                     </Desliza>

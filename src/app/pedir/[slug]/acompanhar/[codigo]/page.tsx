@@ -67,7 +67,7 @@ export default async function Acompanhar({ params }: PageProps<"/pedir/[slug]/ac
     // como a página de pedir: sempre escura, qualquer que seja o tema escolhido no sistema neste aparelho
     <div className="pagina-escura isolate">
     {/* o mesmo fundo da página de pedir, mais fraco: aqui o que importa é a etapa do pedido */}
-    <div aria-hidden="true" className="fundo-tela">
+    <div aria-hidden="true" className="fundo-tela fundo-calmo">
       <Beams color="#6d9dff" quality={0.5} grain={0.15} speed={0.5} brightness={1} mouseInteraction={false} backgroundColor={undefined} dpr={undefined} style={undefined} />
     </div>
     <main className="stagger mx-auto min-h-screen max-w-lg px-4 py-8">

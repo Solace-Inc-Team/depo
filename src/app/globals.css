@@ -3803,6 +3803,14 @@ body:has(.saida-grupo) .main-app {
   }
 }
 
+/* acompanhamento do pedido: o fundo da página de pedir, mais apagado e sumindo no topo. No computador as faixas
+   claras disputavam com os cartões, e no celular o nome da loja sumia em cima de uma delas */
+.fundo-calmo {
+  opacity: 0.6;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 260px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 260px);
+}
+
 /* pedido marcado para sair junto: a saída do próprio cartão apaga, quem manda agora é a barra do pé */
 .saida-unica {
   transition: opacity var(--dur) var(--ease-out);

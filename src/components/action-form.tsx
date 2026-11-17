@@ -114,7 +114,15 @@ export function ActionForm({
       ref={formRef}
       id={id}
       // mexeu no formulário depois do erro: o aviso sai (esmaecendo), em vez de ficar até o próximo envio
-      onInput={() => error && setError(undefined)}
+      onInput={(e) => {
+        if (error) setError(undefined);
+        // campo marcado em vermelho que ficou válido por causa de outro (a observação deixou de ser obrigatória
+        // quando o valor passou a bater): sai do vermelho também. Depois da tela atualizar, para valer o novo "required"
+        const form = e.currentTarget;
+        setTimeout(() => {
+          for (const c of form.querySelectorAll<Campo>("[aria-invalid]")) if (c.checkValidity()) c.removeAttribute("aria-invalid");
+        }, 0);
+      }}
       // se enviado antes do JS carregar, vai como POST: senha nunca aparece na URL
       method="post"
       // a validação dos campos é mostrada pelo próprio formulário (sem o balão do navegador); o servidor valida de novo

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Aparece } from "@/components/saida";
 import { ActionForm } from "@/components/action-form";
 import { closeShiftAction } from "@/app/actions";
 import { formatBRL, parseBRL } from "@/lib/money";
@@ -11,6 +12,10 @@ export function CloseShiftForm({ shiftId, expectedCents }: { shiftId: string; ex
   const [counted, setCounted] = useState("");
   const c = parseBRL(counted);
   const diff = c === null ? null : c - expectedCents;
+  // ao apagar o valor, o bloco recolhe ainda mostrando o último resultado, em vez de encolher vazio
+  const [ultimo, setUltimo] = useState<number | null>(null);
+  if (diff !== null && diff !== ultimo) setUltimo(diff);
+  const mostra = diff ?? ultimo;
   return (
     <ActionForm action={closeShiftAction} className="space-y-3" confirm={
         c === null
@@ -31,27 +36,29 @@ export function CloseShiftForm({ shiftId, expectedCents }: { shiftId: string; ex
           placeholder="0,00"
         />
       </div>
+      {/* o resultado abre crescendo quando há valor e recolhe quando apaga: antes o espaço ficava reservado e vazio */}
+      <Aparece quando={diff !== null}>
       <p aria-live="polite" className="flex min-h-9 items-center text-lg">
-        {/* o espaço do resultado fica reservado para nada pular; vazio, ele lembra com quanto comparar */}
-        {diff !== null && (
+        {mostra !== null && (
           // a cor acompanha: verde quando bate, amarelo se sobra, vermelho se falta
           <span
             className={`enter inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-semibold transition-colors duration-300 ${
-              diff === 0 ? "bg-ok-soft text-ok" : diff < 0 ? "bg-danger-soft text-danger" : "bg-warn-soft text-warn-fg"
+              mostra === 0 ? "bg-ok-soft text-ok" : mostra < 0 ? "bg-danger-soft text-danger" : "bg-warn-soft text-warn-fg"
             }`}
           >
-            {diff === 0 ? (
+            {mostra === 0 ? (
               <>
                 <CheckSucesso size={20} /> bateu, sem diferença
               </>
             ) : (
               <>
-                {diff < 0 ? "falta" : "sobra"} <LiveNumber value={Math.abs(diff)} cents />
+                {mostra < 0 ? "falta" : "sobra"} <LiveNumber value={Math.abs(mostra)} cents />
               </>
             )}
           </span>
         )}
       </p>
+      </Aparece>
       <div>
         <label className="label" htmlFor="notes">Observação {diff ? "(obrigatória quando há diferença)" : "(opcional)"}</label>
         <textarea id="notes" name="notes" rows={3} className="input" required={!!diff} />
