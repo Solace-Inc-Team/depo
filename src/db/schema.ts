@@ -310,6 +310,19 @@ export const orders = pgTable(
 // pedido que se repete: o cliente que pede o mesmo a cada tantos dias. No dia, ele aparece em Entregas para a
 // atendente lançar com um toque (o sistema não cria o pedido sozinho: cliente viajando viraria pedido fantasma).
 // Os itens são os do pedido de origem; o preço é o do dia em que for lançado.
+/** Onde parou a conversa do robô do WhatsApp com cada telefone (11 dígitos, com DDD). */
+export const conversasWhatsapp = pgTable(
+  "conversas_whatsapp",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    telefone: text("telefone").notNull(),
+    estado: jsonb("estado").$type<import("@/lib/robo").Estado>(),
+    atualizadoEm: timestamp("atualizado_em", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("conversas_whatsapp_tel_uq").on(t.tenantId, t.telefone)],
+);
+
 export const pedidosProgramados = pgTable(
   "pedidos_programados",
   {

@@ -58,6 +58,11 @@ export async function anonymizeCustomer(ctx: Ctx, customerId: string) {
       .from(orders)
       .where(and(eq(orders.customerId, c.id), inArray(orders.status, ["aberto", "em_rota"])));
     if (busy) throw new DomainError("Este cliente tem pedido em andamento. Conclua ou cancele antes.");
+    // onde parou a conversa do robô é do telefone dele: sai antes de o telefone ser apagado
+    await tx.execute(
+      sql`delete from conversas_whatsapp where tenant_id = ${ctx.tenantId}
+        and telefone = right(regexp_replace((select phone from customers where id = ${c.id}), '\\D', '', 'g'), 11)`,
+    );
     await tx
       .update(customers)
       .set({ name: "Cliente removido", phone: "", address: "", reference: "", notes: "", anonymizedAt: new Date() })

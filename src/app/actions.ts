@@ -30,7 +30,9 @@ import { addAddress, addressSchema, removeAddress, saveSettings, settingsSchema,
 import { TERMS_VERSION } from "@/lib/legal";
 import { ativarFilial, criarFilial, mudarDeFilial } from "@/domain/filiais";
 import { alterarProgramado, alterarSchema, excluirProgramado, lancarProgramado, pausarProgramado, programar, programarSchema, pularProgramado } from "@/domain/programados";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { conversar, recomecarConversa } from "@/domain/robo";
+import type { Saida } from "@/lib/robo";
 import { FILIAL_COOKIE } from "@/lib/auth";
 import { todayISO } from "@/lib/period";
 
@@ -842,4 +844,32 @@ export async function pularProgramadoAction(fd: FormData) {
   let proxima = "";
   const r = await run(async () => (proxima = await pularProgramado(user, str(fd, "id"))), ["/"]);
   return r?.error ? r : { ok: `Pulado. O próximo fica para ${diaBR(proxima)}.` };
+}
+
+// Tela de teste do robô do WhatsApp: o dono conversa como se fosse o cliente daquele telefone. O pedido lançado
+// aqui é de verdade (cai em Entregas), marcado como teste.
+const textoCurto = (v: unknown, n: number) => (typeof v === "string" ? v.slice(0, n) : undefined);
+
+export async function conversarTesteAction(telefone: unknown, entrada: unknown): Promise<{ saidas?: Saida[]; erro?: string }> {
+  const user = await requireUser("dono");
+  const e = (entrada ?? {}) as Record<string, unknown>;
+  const h = await headers();
+  try {
+    const saidas = await conversar(
+      user.tenantId,
+      String(telefone ?? ""),
+      { texto: textoCurto(e.texto, 500), id: textoCurto(e.id, 100) },
+      { base: `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`, teste: true },
+    );
+    revalidatePath("/", "layout");
+    return { saidas };
+  } catch (err) {
+    if (err instanceof DomainError) return { erro: err.message };
+    throw err;
+  }
+}
+
+export async function recomecarConversaAction(telefone: unknown) {
+  const user = await requireUser("dono");
+  return run(() => recomecarConversa(user.tenantId, String(telefone ?? "")), []);
 }

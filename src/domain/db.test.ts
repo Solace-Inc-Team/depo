@@ -25,6 +25,7 @@ let m: {
   monitoring: typeof import("@/domain/monitoring");
   portal: typeof import("@/domain/portal");
   prog: typeof import("@/domain/programados");
+  robo: typeof import("@/domain/robo");
 };
 
 type World = Awaited<ReturnType<typeof makeTenant>>;
@@ -79,6 +80,7 @@ before(async () => {
     monitoring: await import("@/domain/monitoring"),
     portal: await import("@/domain/portal"),
     prog: await import("@/domain/programados"),
+    robo: await import("@/domain/robo"),
   };
   await m.db.runMigrations();
   A = await makeTenant("A");
@@ -1572,6 +1574,44 @@ test("pedido programado: lança no dia uma vez só, pula, pausa e some com o cli
   await m.orders.cancelOrder(A.ctx, pedido.id, "teste");
   await m.registry.anonymizeCustomer(A.ctx, cliente.id);
   assert.equal((await db.select().from(pedidosProgramados).where(eq(pedidosProgramados.customerId, cliente.id))).length, 0);
+});
+
+test("robô do WhatsApp: repete o último pedido uma vez só, cada empresa com os seus clientes, e some com o cliente anonimizado", async () => {
+  const { db } = m.db;
+  const { conversasWhatsapp, customers, orders } = m.schema;
+  const { and, eq } = await import("drizzle-orm");
+  const [cliente] = await db.insert(customers).values({ tenantId: A.t.id, name: "Maria do Robô", phone: "(11) 98888-7777", address: "Rua do Robô, 7" }).returning();
+  const origem = await m.orders.createOrder(A.ctx, {
+    mode: "entrega", customerId: cliente.id, items: [{ productId: A.product.id, quantity: 1, returnsEmpty: true }],
+    paymentMethod: "pix", deliveryFeeCents: 300, changeForCents: null, notes: "", driverId: null,
+  });
+  const fala = (tenantId: string, entrada: { texto?: string; id?: string }) => m.robo.conversar(tenantId, "+55 11 98888-7777", entrada, { base: "https://depo.test" });
+
+  const [menu] = await fala(A.t.id, { texto: "Oi" });
+  assert.ok(menu.tipo === "botoes" && menu.botoes[0].id === "repetir");
+  assert.match(menu.texto, /Olá, Maria! .*\n.*\n\n1x Gás A\nTaxa de entrega: R\$\s3,00\nTotal: R\$\s113,00 no Pix\nEntrega: Rua do Robô, 7/);
+
+  // dois toques ao mesmo tempo em "Repetir pedido": um pedido só
+  const [r1, r2] = await Promise.all([fala(A.t.id, { id: "repetir" }), fala(A.t.id, { id: "repetir" })]);
+  const lancados = [r1, r2].filter((r) => /Pedido #\d+ anotado/.test(r[0].texto));
+  assert.equal(lancados.length, 1);
+  assert.match(lancados[0][0].texto, /https:\/\/depo\.test\/pedir\/.+\/acompanhar\//);
+  const novos = await db.select().from(orders).where(and(eq(orders.customerId, cliente.id), eq(orders.origin, "whatsapp")));
+  assert.equal(novos.length, 1);
+  assert.equal(novos[0].totalCents, origem.totalCents);
+  assert.equal(novos[0].address, "Rua do Robô, 7");
+  assert.equal(novos[0].status, "aberto", "Pix pelo robô entra na fila: paga na entrega");
+
+  // o mesmo telefone em outra empresa não é cliente dela
+  const [outra] = await fala(B.t.id, { texto: "Oi" });
+  assert.match(outra.texto, /Ainda não temos seu cadastro/);
+
+  // anonimizar o cliente apaga onde a conversa parou (é do telefone dele)
+  for (const o of [origem, novos[0]]) await m.orders.cancelOrder(A.ctx, o.id, "teste");
+  await m.registry.anonymizeCustomer(A.ctx, cliente.id);
+  const conversa = await db.select().from(conversasWhatsapp).where(and(eq(conversasWhatsapp.tenantId, A.t.id), eq(conversasWhatsapp.telefone, "11988887777")));
+  assert.equal(conversa.length, 0);
+  assert.equal((await db.select().from(conversasWhatsapp).where(eq(conversasWhatsapp.tenantId, B.t.id))).length, 1, "a da outra empresa fica");
 });
 
 test("relatórios novos: pedidos por hora, clientes com compras e venda por produto, cada empresa só com os seus", async () => {

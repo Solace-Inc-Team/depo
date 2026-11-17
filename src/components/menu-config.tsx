@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { BadgeCheck, Building2, Globe, Settings, SlidersHorizontal, Store, Wallet, X } from "lucide-react";
+import { BadgeCheck, Building2, Globe, MessageCircle, Settings, SlidersHorizontal, Store, Wallet, X } from "lucide-react";
 
 export const SECOES = [
   { id: "empresa", label: "Empresa", icone: Building2 },
   { id: "regras", label: "Regras da casa", icone: SlidersHorizontal },
   { id: "pagamentos", label: "Pagamentos", icone: Wallet },
   { id: "site", label: "Pedidos pelo site", icone: Globe },
+  { id: "whatsapp", label: "WhatsApp", icone: MessageCircle },
   { id: "filiais", label: "Filiais", icone: Store },
   { id: "assinatura", label: "Assinatura", icone: BadgeCheck },
 ] as const;

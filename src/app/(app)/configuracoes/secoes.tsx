@@ -11,6 +11,7 @@ import {
   Globe,
   KeyRound,
   MapPin,
+  MessageCircle,
   Percent,
   Phone,
   Plus,
@@ -266,6 +267,23 @@ export async function secoesConfig(tenantId: string, pagoAte: string | null) {
             </Grupo>
           ))}
         </div>
+      </>
+    ),
+
+    whatsapp: (
+      <>
+        <Cabecalho titulo="WhatsApp" descricao="Um robô que atende o cliente no WhatsApp da loja com botões e lança o pedido sozinho, sem ninguém digitar." />
+        <Grupo>
+          <Linha
+            icone={MessageCircle}
+            titulo="Robô de pedidos"
+            descricao="Ainda não está ligado ao número da loja. Teste a conversa como se fosse o cliente."
+          >
+            <Link href="/whatsapp" className="btn btn-sm">
+              <MessageCircle size={14} aria-hidden="true" /> Testar conversa
+            </Link>
+          </Linha>
+        </Grupo>
       </>
     ),
 

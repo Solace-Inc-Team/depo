@@ -3870,3 +3870,90 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
     animation: none;
   }
 }
+
+/* robô do WhatsApp (tela de teste): balões como no celular, cliente à direita e a loja à esquerda */
+.robo-conversa {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: min(60vh, 560px);
+  min-height: 320px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px;
+  transition: opacity var(--dur-fast) ease-in;
+}
+.robo-conversa[data-limpando] {
+  opacity: 0;
+}
+.robo-balao,
+.robo-aviso,
+.robo-mensagem {
+  animation:
+    var(--dur) var(--ease-out) both fade-in,
+    var(--dur) var(--ease-out) both rise;
+}
+/* a mensagem com botões tem uma largura só: o balão e os botões embaixo dele alinham, como no WhatsApp */
+.robo-mensagem {
+  display: flex;
+  width: min(85%, 22rem);
+  flex-direction: column;
+  gap: 6px;
+}
+.robo-balao {
+  max-width: min(85%, 26rem);
+  align-self: flex-start;
+  border-radius: 14px 14px 14px 4px;
+  background: var(--subtle);
+  padding: 8px 12px;
+  white-space: pre-line;
+}
+.robo-mensagem .robo-balao {
+  max-width: none;
+  align-self: stretch;
+  animation: none;
+}
+.robo-balao-cliente {
+  align-self: flex-end;
+  border-radius: 14px 14px 4px 14px;
+  background: var(--accent-soft);
+}
+.robo-opcoes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.robo-opcoes .btn {
+  justify-content: center;
+}
+.robo-lista > summary {
+  display: flex;
+  width: 100%;
+  list-style: none;
+  justify-content: center;
+}
+.robo-lista > summary::-webkit-details-marker {
+  display: none;
+}
+.robo-lista .robo-opcoes {
+  padding-top: 6px;
+}
+.robo-lista .robo-item {
+  justify-content: space-between;
+}
+.robo-lista-seta {
+  transition: rotate var(--dur) var(--ease-out);
+}
+.robo-lista[open] .robo-lista-seta {
+  rotate: 180deg;
+}
+.robo-aviso {
+  align-self: center;
+  max-width: 26rem;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.robo-digitando {
+  align-self: flex-start;
+}
