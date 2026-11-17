@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 
 const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
+  // sem script de nonce ainda: trava o que não depende dele (plugin, <base> trocado, moldura de outro site, formulário para fora)
+  { key: "Content-Security-Policy", value: "object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
