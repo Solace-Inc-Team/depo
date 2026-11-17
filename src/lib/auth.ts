@@ -139,7 +139,10 @@ export const pendingTerms = (u: SessionUser) => u.role === "dono" && !u.platform
 // venceu e passou da tolerância: o sistema pausa até pagar (os dados ficam; exportar continua liberado)
 export const assinaturaBloqueada = (u: SessionUser) => !u.platformAdmin && !!situacaoAssinatura(u.pagoAte, todayISO())?.bloqueado;
 
-export async function requireUser(...roles: Role[]): Promise<SessionUser> {
+// mesmoBloqueado: a página Senha e o 2FA continuam abertos com a assinatura vencida (senha vazada não espera pagamento)
+export async function requireUser(...args: (Role | { mesmoBloqueado: true })[]): Promise<SessionUser> {
+  const roles = args.filter((a): a is Role => typeof a === "string");
+  const mesmoBloqueado = args.some((a) => typeof a === "object");
   const user = await getUser();
   if (user) await renovarSessao();
   if (!user) {
@@ -150,7 +153,7 @@ export async function requireUser(...roles: Role[]): Promise<SessionUser> {
     redirect(((await cookies()).has(COOKIE) ? "/login/sair" : "/login") + next);
   }
   if (pendingTerms(user)) redirect("/aceite");
-  if (assinaturaBloqueada(user)) redirect("/assinatura");
+  if (!mesmoBloqueado && assinaturaBloqueada(user)) redirect("/assinatura");
   if (roles.length && !roles.includes(user.role)) redirect(user.role === "entregador" ? "/entregador" : "/");
   return user;
 }

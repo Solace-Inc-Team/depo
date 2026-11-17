@@ -348,7 +348,10 @@ export async function saveSettingsAction(fd: FormData) {
               ? { pixKey: str(fd, "pixKey"), pixName: str(fd, "pixName"), pixCity: str(fd, "pixCity") }
               : section === "empresa"
                 ? { name: str(fd, "empresaNome"), phone: str(fd, "phone"), address: str(fd, "address") }
-                : { portalEnabled: fd.get("portalEnabled") === "on" },
+                : section === "portal"
+                  ? { portalEnabled: fd.get("portalEnabled") === "on" }
+                  : // formulário sem seção não pode cair no portal e desligá-lo
+                    (() => { throw new DomainError("Formulário inválido. Recarregue a página."); })(),
         ),
       ),
     ["/"],
@@ -590,7 +593,7 @@ export async function toggleTenantAction(fd: FormData) {
 }
 
 export async function changePasswordAction(fd: FormData): Promise<ActionState> {
-  const user = await requireUser();
+  const user = await requireUser({ mesmoBloqueado: true });
   const next = str(fd, "next");
   if (next.length < 8) return { error: "A nova senha precisa de ao menos 8 caracteres." };
   if (next !== str(fd, "confirm")) return { error: "A confirmação não bate com a nova senha." };
@@ -608,14 +611,14 @@ export async function changePasswordAction(fd: FormData): Promise<ActionState> {
 }
 
 export async function startTotpAction(): Promise<ActionState> {
-  const user = await requireUser();
+  const user = await requireUser({ mesmoBloqueado: true });
   if (user.totpEnabled) return { error: "A verificação em duas etapas já está ativa." };
   await db.update(users).set({ totpSecret: newTotpSecret() }).where(eq(users.id, user.userId));
   revalidatePath("/senha");
 }
 
 export async function confirmTotpAction(fd: FormData): Promise<ActionState> {
-  const user = await requireUser();
+  const user = await requireUser({ mesmoBloqueado: true });
   const [u] = await db.select({ secret: users.totpSecret }).from(users).where(eq(users.id, user.userId));
   if (!u?.secret) return { error: "Comece a configuração de novo." };
   const key = `totp:${user.userId}`;
@@ -623,12 +626,15 @@ export async function confirmTotpAction(fd: FormData): Promise<ActionState> {
   if (!verifyTotp(u.secret, str(fd, "code"))) return { error: "Código inválido. Confira se o relógio do celular está certo." };
   await clearFailures(key);
   await db.update(users).set({ totpEnabled: true }).where(eq(users.id, user.userId));
+  // como na troca de senha: aparelho que entrou antes do 2FA sai e entra de novo com o código
+  await db.delete(sessions).where(eq(sessions.userId, user.userId));
+  await createSession(user.userId);
   revalidatePath("/", "layout");
   return { ok: "Verificação em duas etapas ativada." };
 }
 
 export async function disableTotpAction(fd: FormData): Promise<ActionState> {
-  const user = await requireUser();
+  const user = await requireUser({ mesmoBloqueado: true });
   const key = `senha:${user.userId}`;
   if (await attempt(key)) return { error: BLOCKED_MESSAGE };
   const [u] = await db.select({ hash: users.passwordHash }).from(users).where(eq(users.id, user.userId));

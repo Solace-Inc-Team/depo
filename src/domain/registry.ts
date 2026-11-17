@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
-import { tenantTransaction } from "@/db";
+import { tenantTransaction, type Tx } from "@/db";
 import { auditLog, customerAddresses, customers, orders, products, sessions, tenants, users, pedidosProgramados } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
 import { telefoneSchema } from "./telefone";
@@ -227,12 +227,19 @@ export async function createUser(ctx: Ctx, input: z.input<typeof userSchema>) {
   }
 }
 
+// outro dono não mexe no acesso de um dono: com dois donos, um tomaria a conta do outro. Isso fica com a Solace
+async function naoEhDono(tx: Tx, ctx: Ctx, userId: string) {
+  const [alvo] = await tx.select({ role: users.role }).from(users).where(and(eq(users.id, userId), eq(users.tenantId, ctx.tenantId)));
+  if (alvo?.role === "dono") throw new DomainError("O acesso de outro dono só pode ser mudado pela Solace. Fale com o suporte.");
+}
+
 export async function resetUserPassword(ctx: Ctx, userId: string, password: string) {
   assertRole(ctx, "dono");
   if (userId === ctx.userId) throw new DomainError("Para trocar a sua própria senha, use a página Senha.");
   if (password.length < 8) throw new DomainError("A senha nova precisa de ao menos 8 caracteres.");
   const passwordHash = await hashPassword(password);
   await tenantTransaction(ctx, async (tx) => {
+    await naoEhDono(tx, ctx, userId);
     const [u] = await tx
       .update(users)
       // quem perdeu o celular também perde o 2FA: desliga para ativar de novo no aparelho novo
@@ -258,6 +265,7 @@ export async function setUserActive(ctx: Ctx, userId: string, active: boolean) {
   assertRole(ctx, "dono");
   if (userId === ctx.userId) throw new DomainError("Você não pode desativar o próprio usuário.");
   await tenantTransaction(ctx, async (tx) => {
+    await naoEhDono(tx, ctx, userId);
     const [u] = await tx
       .update(users)
       .set({ active })

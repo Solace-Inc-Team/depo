@@ -13,7 +13,7 @@ import { ActionForm } from "@/components/action-form";
 export const metadata = { title: "Conta e segurança" };
 
 export default async function Senha() {
-  const user = await requireUser();
+  const user = await requireUser({ mesmoBloqueado: true });
   const back = user.platformAdmin ? "/admin" : user.role === "entregador" ? "/entregador" : "/";
   const [u] = await db.select({ secret: users.totpSecret, enabled: users.totpEnabled }).from(users).where(eq(users.id, user.userId));
   const settingUp = !!u.secret && !u.enabled;

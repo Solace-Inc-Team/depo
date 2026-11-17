@@ -252,6 +252,12 @@ test("redefinir senha: só dentro da empresa, derruba sessões e desliga 2FA do 
   const { eq } = await import("drizzle-orm");
   await assert.rejects(m.registry.resetUserPassword(B.ctx, A.driver.id, "senha-nova-1"), /não encontrado/);
   await assert.rejects(m.registry.resetUserPassword(A.ctx, A.owner.id, "senha-nova-1"), /própria senha/);
+  // segundo dono não toma a conta do titular: nem troca a senha, nem desativa
+  const socio = await m.registry.createUser(A.ctx, { name: "Sócio", email: `socio@${A.t.id}.test`, password: "senha-boa-1", role: "dono" });
+  const ctxSocio = { ...A.ctx, userId: socio.id };
+  await assert.rejects(m.registry.resetUserPassword(ctxSocio, A.owner.id, "senha-nova-1"), /outro dono/);
+  await assert.rejects(m.registry.setUserActive(ctxSocio, A.owner.id, false), /outro dono/);
+  await db.delete(users).where(eq(users.id, socio.id));
 
   await db.insert(sessions).values({ id: "sessao-teste", userId: A.driver.id, expiresAt: new Date(Date.now() + 3600e3) });
   await db.update(users).set({ totpEnabled: true, totpSecret: "ABC" }).where(eq(users.id, A.driver.id));
