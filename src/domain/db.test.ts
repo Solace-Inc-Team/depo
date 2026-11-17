@@ -1598,6 +1598,14 @@ test("robô do WhatsApp: repete o último pedido uma vez só, cada empresa com o
   });
   const fala = (tenantId: string, entrada: { texto?: string; id?: string }) => m.robo.conversar(tenantId, "+55 11 98888-7777", entrada, { base: "https://depo.test" });
 
+  // a tela de teste confere o total, mas não deixa pedido em Entregas
+  const teste = (entrada: { texto?: string; id?: string }) => m.robo.conversar(A.t.id, "+55 11 98888-7777", entrada, { base: "https://depo.test", teste: true });
+  await teste({ texto: "Oi" });
+  const [t1] = await teste({ id: "repetir" });
+  assert.match(t1.texto, /Total R\$\s113,00[\s\S]*não foi lançado/);
+  assert.equal((await db.select().from(orders).where(and(eq(orders.customerId, cliente.id), eq(orders.origin, "whatsapp")))).length, 0);
+  await m.robo.recomecarConversa(A.t.id, "+55 11 98888-7777");
+
   const [menu] = await fala(A.t.id, { texto: "Oi" });
   assert.ok(menu.tipo === "botoes" && menu.botoes[0].id === "repetir");
   assert.match(menu.texto, /Olá, Maria! .*\n.*\n\n1x Gás A\nTaxa de entrega: R\$\s3,00\nTotal: R\$\s113,00 no Pix\nEntrega: Rua do Robô, 7/);

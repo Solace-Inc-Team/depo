@@ -13,6 +13,8 @@ import { disponivelNaLoja } from "./stock";
 /** Conversa parada há mais que isso começa de novo; com a loja atendendo, o robô fica quieto por mais tempo. */
 const EXPIRA_MIN = 30;
 const LOJA_MIN = 120;
+// lança e desfaz: a tela de teste não deixa pedido nenhum
+const DESFAZER = Symbol("desfazer");
 
 /** Os 11 dígitos do telefone (DDD + número), venha como vier ("+55 (11) 9...", "5511..."). */
 export function digitosTelefone(telefone: string) {
@@ -95,20 +97,26 @@ export async function conversar(tenantId: string, telefone: string, entrada: Ent
       let saidas = r.saidas;
       if (r.lancar && cliente && endereco) {
         try {
-          const pedido = await lancar(tx, tenantId, branchId, {
-            customerId: cliente.id,
-            ...r.lancar,
-            taxaCents: ctx.taxaCents,
-            endereco,
-            referencia,
-            teste,
-          });
-          saidas = [
-            {
-              tipo: "texto",
-              texto: `Pedido #${pedido.number} anotado! Total ${formatBRL(pedido.totalCents)}.\nAcompanhe a entrega por aqui: ${base}/pedir/${loja.slug}/acompanhar/${pedido.trackingId}`,
-            },
-          ];
+          const dados = { customerId: cliente.id, ...r.lancar, taxaCents: ctx.taxaCents, endereco, referencia, teste };
+          let texto: string;
+          if (teste) {
+            // a tela de teste confere tudo (estoque, preço, total) lançando de verdade num savepoint desfeito no
+            // fim: nada cai em Entregas nem reserva estoque da loja
+            let total = 0;
+            await tx
+              .transaction(async (sp) => {
+                total = (await lancar(sp, tenantId, branchId, dados)).totalCents;
+                throw DESFAZER;
+              })
+              .catch((e) => {
+                if (e !== DESFAZER) throw e;
+              });
+            texto = `Pedido #N anotado! Total ${formatBRL(total)}.\nAcompanhe a entrega por aqui: (link do pedido)\n\n(Teste: na conversa real o pedido cai em Entregas. Este não foi lançado.)`;
+          } else {
+            const pedido = await lancar(tx, tenantId, branchId, dados);
+            texto = `Pedido #${pedido.number} anotado! Total ${formatBRL(pedido.totalCents)}.\nAcompanhe a entrega por aqui: ${base}/pedir/${loja.slug}/acompanhar/${pedido.trackingId}`;
+          }
+          saidas = [{ tipo: "texto", texto }];
         } catch (e) {
           if (!(e instanceof DomainError)) throw e;
           // acabou o produto, preço mudou...: diz o motivo e volta ao começo

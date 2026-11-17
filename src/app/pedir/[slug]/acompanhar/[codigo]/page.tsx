@@ -141,7 +141,7 @@ export default async function Acompanhar({ params }: PageProps<"/pedir/[slug]/ac
           <p className="font-semibold">Pague com Pix</p>
           <PixBox code={pix.codigo} />
           <p className="text-[13px] text-muted">
-            {pix.automatico ? "Assim que o Pix cair, esta página mostra que foi recebido." : "O pedido sai normalmente; a loja confere o Pix no extrato."}
+            {pix.automatico ? "Assim que o Pix cair, esta página mostra que foi recebido." : "O pedido sai para entrega depois que a loja confirmar o pagamento."}
           </p>
         </section>
       )}

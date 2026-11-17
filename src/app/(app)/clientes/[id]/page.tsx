@@ -70,16 +70,19 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
           <h1 className="h1">{c.name}</h1>
         </div>
         {!c.anonymizedAt && (
-          // no celular as três ações dividem a largura por igual, alinhadas com os cartões de baixo
-          <div className="flex flex-wrap gap-2 max-sm:grid max-sm:w-full max-sm:grid-cols-3">
+          // no celular as ações (duas ou três) dividem a largura por igual, alinhadas com os cartões de baixo
+          <div className="flex flex-wrap gap-2 max-sm:grid max-sm:w-full max-sm:grid-flow-col max-sm:auto-cols-fr">
             {fone.length >= 10 && (
               <>
                 <a href={`tel:+55${fone}`} className="btn">
                   <Phone size={15} strokeWidth={1.75} aria-hidden="true" /> Ligar
                 </a>
-                <a href={linkWhatsApp(fone)!} target="_blank" rel="noopener noreferrer" className="btn">
-                  <MessageCircle size={15} strokeWidth={1.75} aria-hidden="true" /> WhatsApp
-                </a>
+                {/* fixo não tem WhatsApp: fica só o Ligar */}
+                {linkWhatsApp(fone) && (
+                  <a href={linkWhatsApp(fone)!} target="_blank" rel="noopener noreferrer" className="btn">
+                    <MessageCircle size={15} strokeWidth={1.75} aria-hidden="true" /> WhatsApp
+                  </a>
+                )}
               </>
             )}
             <Link href={`/pedidos/novo?cliente=${c.id}`} className="btn btn-primary">

@@ -12,7 +12,7 @@ export default async function RoboWhatsapp() {
     <div className="mx-auto max-w-2xl">
       <PageHeader title="Robô do WhatsApp" />
       <p className="-mt-3 mb-6 text-muted">
-        Converse como o cliente. Pedido confirmado aqui cai em Entregas, marcado como teste.
+        Converse como o cliente. O pedido confirmado aqui é só de teste: não cai em Entregas.
       </p>
       <Simulador clientes={clientes} loja={user.tenantName} />
     </div>

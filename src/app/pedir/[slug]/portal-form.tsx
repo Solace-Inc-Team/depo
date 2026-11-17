@@ -91,7 +91,14 @@ export function PortalForm({
           return;
         }
         const fd = new FormData(e.currentTarget);
-        start(async () => setResult(await action(fd)));
+        start(async () => {
+          // sem internet a ação lança: o pedido fica na tela, preenchido, em vez de cair na página de erro
+          try {
+            setResult(await action(fd));
+          } catch {
+            setResult({ error: navigator.onLine ? "Não deu para enviar o pedido agora. Toque em Fazer pedido de novo." : "Sem internet. Seu pedido não foi enviado: quando a conexão voltar, toque em Fazer pedido de novo." });
+          }
+        });
       }}
     >
       <input type="hidden" name="items" value={JSON.stringify(items)} />
@@ -270,7 +277,7 @@ function Done({ number, totalCents, pix, pixAutomatico, pixNaEntrega, lines, aco
           {qr && <div className="w-fit rounded-md bg-white p-2" dangerouslySetInnerHTML={{ __html: qr }} />}
           <p className="num rounded-md bg-subtle p-2 text-[12px] break-all">{pix}</p>
           <CopyButton text={pix} />
-          <p className="text-[13px] text-muted">Copie o código e cole no app do seu banco, na opção Pix copia e cola. O pedido sai normalmente; a loja confere o Pix no extrato.</p>
+          <p className="text-[13px] text-muted">Copie o código e cole no app do seu banco, na opção Pix copia e cola.</p>
         </div>
       )}
     </section>

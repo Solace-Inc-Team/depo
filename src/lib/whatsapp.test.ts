@@ -6,6 +6,9 @@ test("whatsapp: link com o 55 do Brasil e a mensagem codificada; sem DDD não h�
   assert.equal(linkWhatsApp("(11) 98888-7777"), "https://wa.me/5511988887777");
   assert.equal(linkWhatsApp("+55 11 98888-7777", "Oi & tchau"), "https://wa.me/5511988887777?text=Oi%20%26%20tchau");
   assert.equal(linkWhatsApp("98888-7777"), null);
+  // fixo não tem WhatsApp: sem botão
+  assert.equal(linkWhatsApp("(11) 3455-6677"), null);
+  assert.equal(linkWhatsApp("0800 123 4567"), null);
   assert.equal(linkWhatsApp(null), null);
 });
 

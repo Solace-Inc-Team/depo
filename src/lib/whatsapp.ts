@@ -3,12 +3,15 @@ import { formatBRL } from "./money.ts";
 // Link do WhatsApp com a mensagem já escrita: abre a conversa no celular ou no computador e quem toca só envia.
 // Sem API e sem custo: sai pelo WhatsApp que a loja já usa.
 
-/** null quando o telefone não tem DDD (o botão nem aparece, para ninguém mandar para o número errado). */
+/**
+ * null quando não é celular com DDD (o botão nem aparece, para ninguém mandar para o número errado). Telefone
+ * fixo (10 dígitos, ou 11 sem o 9 depois do DDD) quase nunca tem WhatsApp e o link abriria uma conversa vazia.
+ */
 export function linkWhatsApp(telefone: string | null | undefined, texto?: string) {
-  const d = (telefone ?? "").replace(/\D/g, "");
-  if (d.length < 10) return null;
-  // número brasileiro sem o 55 ganha o código do país
-  const numero = d.length <= 11 ? `55${d}` : d;
+  let d = (telefone ?? "").replace(/\D/g, "");
+  if (d.length === 13 && d.startsWith("55")) d = d.slice(2);
+  if (d.length !== 11 || d[2] !== "9") return null;
+  const numero = `55${d}`;
   return `https://wa.me/${numero}${texto ? `?text=${encodeURIComponent(texto)}` : ""}`;
 }
 

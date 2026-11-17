@@ -5,7 +5,7 @@ import { formatarDinheiro, formatarTelefone, somenteNumeros } from "@/lib/mascar
 
 const formatos: Record<string, { formatar: (v: string) => string; conta: RegExp }> = {
   telefone: { formatar: formatarTelefone, conta: /\d/ },
-  // o ponto conta: ele vira a vírgula, e o cursor tem de ficar depois dela
+  // ponto e vírgula contam: o cursor tem de ficar depois deles
   dinheiro: { formatar: formatarDinheiro, conta: /[\d.,]/ },
   numero: { formatar: somenteNumeros, conta: /\d/ },
 };

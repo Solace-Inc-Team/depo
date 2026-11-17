@@ -28,9 +28,10 @@ test("dinheiro aceita só número e uma vírgula com dois centavos", () => {
   assert.equal(formatarDinheiro("50"), "50");
   assert.equal(formatarDinheiro("12,5"), "12,5");
   assert.equal(formatarDinheiro("12,567"), "12,56");
-  assert.equal(formatarDinheiro("1.234,56"), "1234,56");
-  assert.equal(formatarDinheiro("12.50"), "12,50");
-  assert.equal(formatarDinheiro("12."), "12,");
+  assert.equal(formatarDinheiro("1.234,56"), "1.234,56");
+  // tecla por tecla, o ponto não vira vírgula (antes "1.250,00" acabava em "1,25")
+  for (const v of ["1.", "1.2", "1.25", "1.250", "1.250,", "1.250,0", "1.250,00"]) assert.equal(formatarDinheiro(v), v);
+  assert.equal(formatarDinheiro("12.50"), "12.50");
   assert.equal(formatarDinheiro("R$ 3a0"), "30");
   assert.equal(formatarDinheiro("1,2,3"), "1,23");
 });

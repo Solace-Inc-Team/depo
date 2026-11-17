@@ -31,14 +31,13 @@ export function telefoneValido(v: string): boolean {
   return d.length === 10 || d.length === 11;
 }
 
-/** Valor em reais enquanto digita: só números, um separador decimal (vírgula) e no máximo dois centavos. */
+/** Valor em reais enquanto digita: só números, pontos, uma vírgula e no máximo dois centavos. */
 export function formatarDinheiro(v: string): string {
-  // com vírgula, o ponto é milhar e some ("1.234,56"); sem vírgula, o ponto é a vírgula de quem digita
-  // "12.50" (inclusive tecla por tecla, quando o valor ainda está em "12.")
-  let s = v.replace(/[^\d.,]/g, "");
-  s = s.includes(",") ? s.replace(/\./g, "") : s.replace(/\./g, ",");
+  // o ponto fica como foi digitado: tecla por tecla, "1.2" ainda pode virar "1.250" (milhar) ou "1.25"
+  // (centavos de quem usa ponto). Quem decide é o parseBRL, com o valor inteiro
+  const s = v.replace(/[^\d.,]/g, "");
   const [inteiro, ...resto] = s.split(",");
-  return resto.length ? `${inteiro},${resto.join("").slice(0, 2)}` : inteiro;
+  return resto.length ? `${inteiro},${resto.join("").replace(/\./g, "").slice(0, 2)}` : inteiro;
 }
 
 /** Só números (códigos de verificação). */

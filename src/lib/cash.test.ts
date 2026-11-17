@@ -34,6 +34,11 @@ test("parseBRL aceita formatos brasileiros e rejeita lixo", () => {
   assert.equal(parseBRL("110"), 11000);
   assert.equal(parseBRL("abc"), null);
   assert.equal(parseBRL("1,234"), null);
+  assert.equal(parseBRL("1.250"), 125000);
+  assert.equal(parseBRL("1.000.000"), 100000000);
+  assert.equal(parseBRL("1.250,00"), 125000);
+  assert.equal(parseBRL("12.50"), 1250);
+  assert.equal(parseBRL("12.5"), 1250);
 });
 
 test("desconto proporcional na entrega parcial", () => {
