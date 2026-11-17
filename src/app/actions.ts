@@ -594,8 +594,12 @@ export async function changePasswordAction(fd: FormData): Promise<ActionState> {
   const next = str(fd, "next");
   if (next.length < 8) return { error: "A nova senha precisa de ao menos 8 caracteres." };
   if (next !== str(fd, "confirm")) return { error: "A confirmação não bate com a nova senha." };
+  // mesma contagem da senha que confirma ações: computador aberto não vira tentativa sem fim
+  const key = `senha:${user.userId}`;
+  if (await attempt(key)) return { error: BLOCKED_MESSAGE };
   const [u] = await db.select({ hash: users.passwordHash }).from(users).where(eq(users.id, user.userId));
   if (!u || !(await verifyPassword(str(fd, "current"), u.hash))) return { error: "Senha atual incorreta." };
+  await clearFailures(key);
   await db.update(users).set({ passwordHash: await hashPassword(next) }).where(eq(users.id, user.userId));
   // derruba todo aparelho que estava logado com a senha antiga e abre uma sessão nova só para este
   await db.delete(sessions).where(eq(sessions.userId, user.userId));
@@ -614,7 +618,10 @@ export async function confirmTotpAction(fd: FormData): Promise<ActionState> {
   const user = await requireUser();
   const [u] = await db.select({ secret: users.totpSecret }).from(users).where(eq(users.id, user.userId));
   if (!u?.secret) return { error: "Comece a configuração de novo." };
+  const key = `totp:${user.userId}`;
+  if (await attempt(key)) return { error: BLOCKED_MESSAGE };
   if (!verifyTotp(u.secret, str(fd, "code"))) return { error: "Código inválido. Confira se o relógio do celular está certo." };
+  await clearFailures(key);
   await db.update(users).set({ totpEnabled: true }).where(eq(users.id, user.userId));
   revalidatePath("/", "layout");
   return { ok: "Verificação em duas etapas ativada." };
@@ -622,8 +629,11 @@ export async function confirmTotpAction(fd: FormData): Promise<ActionState> {
 
 export async function disableTotpAction(fd: FormData): Promise<ActionState> {
   const user = await requireUser();
+  const key = `senha:${user.userId}`;
+  if (await attempt(key)) return { error: BLOCKED_MESSAGE };
   const [u] = await db.select({ hash: users.passwordHash }).from(users).where(eq(users.id, user.userId));
   if (!u || !(await verifyPassword(str(fd, "password"), u.hash))) return { error: "Senha incorreta." };
+  await clearFailures(key);
   await db.update(users).set({ totpEnabled: false, totpSecret: null }).where(eq(users.id, user.userId));
   revalidatePath("/", "layout");
   return { ok: "Verificação em duas etapas desativada." };

@@ -17,8 +17,19 @@ export const avisosLigados = () => !!(chaves().publica && chaves().privada);
 let enviar: typeof webpush.sendNotification = (...a) => webpush.sendNotification(...a);
 export const usarEnvio = (f: typeof webpush.sendNotification) => void (enviar = f);
 
+// só os serviços de push dos navegadores: a inscrição vem de página pública, e o servidor faz POST no endereço
+const PUSH = ["fcm.googleapis.com", "push.services.mozilla.com", "notify.windows.com", "push.apple.com"];
+const ehPush = (u: string) => {
+  try {
+    const h = new URL(u).hostname;
+    return PUSH.some((d) => h === d || h.endsWith("." + d));
+  } catch {
+    return false;
+  }
+};
+
 export const inscricaoSchema = z.object({
-  endpoint: z.url().startsWith("https://").max(1000),
+  endpoint: z.url().startsWith("https://").max(1000).refine(ehPush, "Serviço de aviso desconhecido."),
   keys: z.object({ p256dh: z.string().min(20).max(200), auth: z.string().min(8).max(100) }),
 });
 

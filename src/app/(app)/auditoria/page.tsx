@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
+import { isUuid } from "@/lib/ctx";
 import { listAudit, listUsers } from "@/domain/queries";
 import { parsePeriod } from "@/lib/period";
 import { areas, descrever, type Area } from "@/lib/audit-text";
@@ -21,9 +22,9 @@ export default async function Auditoria({ searchParams }: PageProps<"/auditoria"
   const user = await requireUser("dono");
   const sp = await searchParams;
   const { fromStr, toStr, from, to } = parsePeriod(sp);
-  const pessoa = typeof sp.pessoa === "string" ? sp.pessoa : "";
-  const area = typeof sp.area === "string" && sp.area in areas ? (sp.area as Area) : "";
-  const pagina = Math.max(0, Number(sp.pagina) || 0);
+  const pessoa = typeof sp.pessoa === "string" && isUuid(sp.pessoa) ? sp.pessoa : "";
+  const area = typeof sp.area === "string" && Object.hasOwn(areas, sp.area) ? (sp.area as Area) : "";
+  const pagina = Math.min(10_000, Math.max(0, Math.floor(Number(sp.pagina)) || 0));
 
   const [equipe, { rows, nomes, more }] = await Promise.all([
     listUsers(user.tenantId),

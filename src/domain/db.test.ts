@@ -1115,7 +1115,7 @@ test("aviso no celular: o cliente se inscreve pelo link do pedido e recebe saiu 
   const esperar = async (n: number) => {
     for (let i = 0; i < 50 && enviados.length < n; i++) await new Promise((r) => setTimeout(r, 20));
   };
-  const insc = (n: string) => ({ endpoint: `https://push.exemplo.com/${n}`, keys: { p256dh: "B".repeat(87), auth: "a".repeat(22) } });
+  const insc = (n: string) => ({ endpoint: `https://fcm.googleapis.com/fcm/send/${n}`, keys: { p256dh: "B".repeat(87), auth: "a".repeat(22) } });
 
   const o = await m.orders.createOrder(A.ctx, {
     mode: "entrega", origin: "portal", customerId: A.customer.id, items: [{ productId: A.product.id, quantity: 1, returnsEmpty: true }],
@@ -1124,13 +1124,16 @@ test("aviso no celular: o cliente se inscreve pelo link do pedido e recebe saiu 
   // só pelo link certo, na loja certa, com uma inscrição válida
   await assert.rejects(m.portal.inscreverAviso(B.t.slug, o.trackingId, insc("x")), /não encontrado/);
   await assert.rejects(m.portal.inscreverAviso(A.t.slug, o.trackingId, { endpoint: "http://inseguro", keys: {} }));
+  // endereço que não é serviço de push: o servidor faria POST para dentro da rede
+  await assert.rejects(m.portal.inscreverAviso(A.t.slug, o.trackingId, { ...insc("x"), endpoint: "https://127.0.0.1:8080/x" }));
+  await assert.rejects(m.portal.inscreverAviso(A.t.slug, o.trackingId, { ...insc("x"), endpoint: "https://fcm.googleapis.com.mal.com/x" }));
   await m.portal.inscreverAviso(A.t.slug, o.trackingId, insc("celular"));
   await m.portal.inscreverAviso(A.t.slug, o.trackingId, insc("celular"));
   await m.portal.inscreverAviso(A.t.slug, o.trackingId, insc("velho"));
   assert.equal((await db.select().from(avisosPedido).where(eq(avisosPedido.orderId, o.id))).length, 2);
 
   // o navegador desfez uma inscrição (410): ela sai do banco no primeiro aviso
-  morto = "https://push.exemplo.com/velho";
+  morto = "https://fcm.googleapis.com/fcm/send/velho";
   await m.orders.dispatchOrder(A.ctx, o.id, A.driver.id);
   await esperar(1);
   await new Promise((r) => setTimeout(r, 100));
@@ -1293,7 +1296,9 @@ test("mensalidade: teste grátis no cadastro, Pix na conta da Solace, pago soma 
   });
 
   await assert.rejects(ass.pixAssinatura({ ...dono, role: "caixa" }), /Sem permissão/);
-  const pix = await ass.pixAssinatura(dono);
+  // dois cliques juntos: uma cobrança só no Mercado Pago
+  const [pix, pix2] = await Promise.all([ass.pixAssinatura(dono), ass.pixAssinatura(dono)]);
+  assert.equal(pix2.id, pix.id);
   assert.equal(pix.codigo, "000201SOLACE7000");
   assert.equal(pix.valorCents, PLANO.mensalCents);
   assert.equal((await ass.pixAssinatura(dono)).id, pix.id);

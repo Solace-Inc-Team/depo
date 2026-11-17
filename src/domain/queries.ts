@@ -8,6 +8,9 @@ import { todayISO } from "@/lib/period";
 import { isUuid } from "@/lib/ctx";
 import type { Metricas } from "@/lib/nota";
 
+// busca por trecho: % e _ digitados são letras, não curingas do LIKE
+const trecho = (s: string) => `%${s.replace(/[\\%_]/g, "\\$&")}%`;
+
 // Filial: as consultas da operação (estoque, pedidos, turnos, painel, relatórios) recebem a filial;
 // null quer dizer todas (só o dono, nos relatórios). Cliente, fiado e comodato são da empresa inteira.
 
@@ -44,7 +47,7 @@ export const listUsers = scoped((tenantId: string) =>
     .orderBy(asc(users.role), asc(users.name)));
 
 export const listCustomers = scoped(function listCustomers(tenantId: string, q: string = "") {
-  const term = `%${q.trim()}%`;
+  const term = trecho(q.trim());
   // telefone digitado só com números acha "(11) 98811-2034"
   const digits = q.replace(/\D/g, "");
   return db
@@ -141,7 +144,7 @@ export const listOrders = scoped(function listOrders(
         f.q?.trim()
           ? /^#?\d+$/.test(f.q.trim())
             ? eq(orders.number, Number(f.q.trim().replace("#", "")))
-            : ilike(customers.name, `%${f.q.trim()}%`)
+            : ilike(customers.name, trecho(f.q.trim()))
           : undefined,
       ),
     )

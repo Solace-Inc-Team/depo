@@ -1,14 +1,14 @@
 import { and, asc, eq, gte, lt } from "drizzle-orm";
 import { db } from "@/db";
 import { customers, orders, users } from "@/db/schema";
-import { getUser, pendingTerms } from "@/lib/auth";
+import { assinaturaBloqueada, getUser, pendingTerms } from "@/lib/auth";
 import { parsePeriod } from "@/lib/period";
 import { filialDoRelatorio } from "@/lib/filial";
 import { reais, toCsv } from "@/lib/csv";
 
 export async function GET(req: Request) {
   const user = await getUser();
-  if (!user || user.role === "entregador" || pendingTerms(user)) return new Response("Não autorizado", { status: 401 });
+  if (!user || user.role === "entregador" || pendingTerms(user) || assinaturaBloqueada(user)) return new Response("Não autorizado", { status: 401 });
   const sp = Object.fromEntries(new URL(req.url).searchParams);
   const { fromStr, toStr, from, to } = parsePeriod(sp);
   const filial = filialDoRelatorio(user, sp);

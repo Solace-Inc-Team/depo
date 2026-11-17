@@ -58,9 +58,21 @@ export async function emTesteGratis(tenantId: string) {
   return !pago;
 }
 
+// dois cliques ao mesmo tempo esperam o mesmo Pix em vez de criar duas cobranças no Mercado Pago.
+// shortcut: trava só dentro deste processo, trocar por lock no banco se o app rodar em mais de uma instância
+const gerando = new Map<string, Promise<typeof assinaturaPagamentos.$inferSelect>>();
+
 /** Gera (ou reaproveita) o Pix da mensalidade. Só o dono paga. */
 export async function pixAssinatura(ctx: Ctx) {
   assertRole(ctx, "dono");
+  const emAndamento = gerando.get(ctx.tenantId);
+  if (emAndamento) return emAndamento;
+  const p = gerarPix(ctx).finally(() => gerando.delete(ctx.tenantId));
+  gerando.set(ctx.tenantId, p);
+  return p;
+}
+
+async function gerarPix(ctx: Ctx) {
   const token = tokenSolace();
   if (!token) throw new DomainError("A cobrança ainda não está ligada. Fale com a Solace.");
   const aberto = await pixEmAberto(ctx.tenantId);

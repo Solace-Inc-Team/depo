@@ -136,6 +136,9 @@ async function renovarSessao() {
 /** Dono que ainda não aceitou a versão atual dos termos: só pode ver o aceite e sair. */
 export const pendingTerms = (u: SessionUser) => u.role === "dono" && !u.platformAdmin && u.termsVersion !== TERMS_VERSION;
 
+// venceu e passou da tolerância: o sistema pausa até pagar (os dados ficam; exportar continua liberado)
+export const assinaturaBloqueada = (u: SessionUser) => !u.platformAdmin && !!situacaoAssinatura(u.pagoAte, todayISO())?.bloqueado;
+
 export async function requireUser(...roles: Role[]): Promise<SessionUser> {
   const user = await getUser();
   if (user) await renovarSessao();
@@ -147,8 +150,7 @@ export async function requireUser(...roles: Role[]): Promise<SessionUser> {
     redirect(((await cookies()).has(COOKIE) ? "/login/sair" : "/login") + next);
   }
   if (pendingTerms(user)) redirect("/aceite");
-  // venceu e passou da tolerância: o sistema pausa até pagar (os dados ficam)
-  if (!user.platformAdmin && situacaoAssinatura(user.pagoAte, todayISO())?.bloqueado) redirect("/assinatura");
+  if (assinaturaBloqueada(user)) redirect("/assinatura");
   if (roles.length && !roles.includes(user.role)) redirect(user.role === "entregador" ? "/entregador" : "/");
   return user;
 }
