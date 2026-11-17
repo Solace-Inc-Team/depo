@@ -4,6 +4,9 @@ const iso = (d: Date) => new Date(d.getTime() - 3 * 3600e3).toISOString().slice(
 /** Data de hoje (YYYY-MM-DD) no fuso de Brasília. */
 export const todayISO = () => iso(new Date());
 
+/** "2026-11-30" mais 3 dias: "2026-12-03". Conta em UTC, então não sofre com fuso nem com horário de verão. */
+export const somaDias = (dia: string, n: number) => new Date(Date.parse(dia + "T00:00:00Z") + n * 86400e3).toISOString().slice(0, 10);
+
 export function parsePeriod(sp: Record<string, string | string[] | undefined>) {
   const ok = (v: unknown) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
   const today = iso(new Date());

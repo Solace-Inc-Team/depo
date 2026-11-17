@@ -3811,6 +3811,15 @@ body:has(.saida-grupo) .main-app {
   mask-image: linear-gradient(to bottom, transparent 0, #000 260px);
 }
 
+/* barras fixas (navegação do celular, avisos) com nome próprio: numa troca animada da tela elas ficam por cima do
+   que desliza, em vez de os cartões passarem por cima delas. Na troca de tema não (lá tudo entra no círculo) */
+html:not([data-trocando-tema]) .nav-inferior {
+  view-transition-name: nav-inferior;
+}
+html:not([data-trocando-tema]) .pilha-avisos {
+  view-transition-name: pilha-avisos;
+}
+
 /* pedido marcado para sair junto: a saída do próprio cartão apaga, quem manda agora é a barra do pé */
 .saida-unica {
   transition: opacity var(--dur) var(--ease-out);

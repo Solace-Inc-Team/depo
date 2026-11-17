@@ -24,6 +24,7 @@ let m: {
   exportTenant: typeof import("@/domain/export");
   monitoring: typeof import("@/domain/monitoring");
   portal: typeof import("@/domain/portal");
+  prog: typeof import("@/domain/programados");
 };
 
 type World = Awaited<ReturnType<typeof makeTenant>>;
@@ -77,6 +78,7 @@ before(async () => {
     exportTenant: await import("@/domain/export"),
     monitoring: await import("@/domain/monitoring"),
     portal: await import("@/domain/portal"),
+    prog: await import("@/domain/programados"),
   };
   await m.db.runMigrations();
   A = await makeTenant("A");
@@ -1510,4 +1512,64 @@ test("nota do entregador: viagem acertada com falta, demora para voltar pelo cel
   assert.deepEqual([depois.acertos, depois.acertosComFalta], [2, 1]);
   // outra empresa não vê ninguém daqui
   assert.equal((await m.q.metricasEntregadores(B.t.id, B.branch.id, desde, ate)).some((x) => x.id === driver.id), false);
+});
+
+test("pedido programado: lança no dia uma vez só, pula, pausa e some com o cliente anonimizado", async () => {
+  const { db } = m.db;
+  const { pedidosProgramados, orders, customers } = m.schema;
+  const { eq } = await import("drizzle-orm");
+  const { todayISO, somaDias } = await import("@/lib/period");
+  const hoje = todayISO();
+  const atendente = { ...A.ctx, role: "atendente" as const };
+  const [cliente] = await db.insert(customers).values({ tenantId: A.t.id, name: "Cliente Programado", address: "Rua do Teste, 10" }).returning();
+  const origem = await m.orders.createOrder(A.ctx, {
+    mode: "entrega", customerId: cliente.id, items: [{ productId: A.product.id, quantity: 2, returnsEmpty: true }],
+    paymentMethod: "dinheiro", deliveryFeeCents: 500, changeForCents: null, notes: "", driverId: null,
+  });
+
+  await assert.rejects(m.prog.programar(atendente, { orderId: origem.id, aCadaDias: 15, proxima: somaDias(hoje, -1) }), /antes de hoje/);
+  await assert.rejects(m.prog.programar(B.ctx, { orderId: origem.id, aCadaDias: 15, proxima: hoje }), /não encontrado/);
+  const p = await m.prog.programar(atendente, { orderId: origem.id, aCadaDias: 15, proxima: hoje });
+  assert.deepEqual(p.itens, [{ productId: A.product.id, quantity: 2, returnsEmpty: true }]);
+  assert.equal(p.deliveryFeeCents, 500);
+
+  const doDia = await m.q.programadosParaHoje(A.t.id, A.branch.id);
+  const meu = doDia.find((x) => x.id === p.id)!;
+  assert.ok(meu, "aparece na lista do dia");
+  assert.match(meu.resumo, /^2× /);
+  assert.equal(meu.endereco, "Rua do Teste, 10");
+  assert.equal((await m.q.programadosParaHoje(B.t.id, B.branch.id)).some((x) => x.id === p.id), false, "outra empresa não vê");
+
+  await assert.rejects(m.prog.lancarProgramado(B.ctx, p.id), /não encontrado/);
+  const { pedido, proxima } = await m.prog.lancarProgramado(atendente, p.id);
+  assert.equal(proxima, somaDias(hoje, 15));
+  const [novo] = await db.select().from(orders).where(eq(orders.id, pedido.id));
+  assert.equal(novo.origin, "programado");
+  assert.equal(novo.status, "aberto");
+  assert.equal(novo.totalCents, origem.totalCents, "mesmos itens e taxa, preço do dia");
+  // o segundo toque não lança outro
+  await assert.rejects(m.prog.lancarProgramado(atendente, p.id), /ainda não é para hoje/);
+  assert.equal((await m.q.programadosParaHoje(A.t.id, A.branch.id)).some((x) => x.id === p.id), false);
+
+  // atrasado: pular conta a partir de hoje, não acumula
+  await db.update(pedidosProgramados).set({ proxima: somaDias(hoje, -40) }).where(eq(pedidosProgramados.id, p.id));
+  assert.equal(await m.prog.pularProgramado(atendente, p.id), somaDias(hoje, 15));
+
+  // pausado não aparece; ao retomar com data vencida, volta para hoje
+  await db.update(pedidosProgramados).set({ proxima: somaDias(hoje, -3) }).where(eq(pedidosProgramados.id, p.id));
+  await m.prog.pausarProgramado(atendente, p.id, true);
+  assert.equal((await m.q.programadosParaHoje(A.t.id, A.branch.id)).some((x) => x.id === p.id), false);
+  await assert.rejects(m.prog.lancarProgramado(atendente, p.id), /pausado/);
+  await m.prog.pausarProgramado(atendente, p.id, false);
+  const [retomado] = await db.select().from(pedidosProgramados).where(eq(pedidosProgramados.id, p.id));
+  assert.equal(retomado.proxima, hoje);
+
+  await m.prog.alterarProgramado(atendente, p.id, { aCadaDias: 30, proxima: somaDias(hoje, 2) });
+  assert.equal((await m.q.programadosDoCliente(A.t.id, cliente.id))[0].aCadaDias, 30);
+
+  // anonimizar o cliente leva o programado junto (ele guarda endereço)
+  await m.orders.cancelOrder(A.ctx, origem.id, "teste");
+  await m.orders.cancelOrder(A.ctx, pedido.id, "teste");
+  await m.registry.anonymizeCustomer(A.ctx, cliente.id);
+  assert.equal((await db.select().from(pedidosProgramados).where(eq(pedidosProgramados.customerId, cliente.id))).length, 0);
 });

@@ -5,7 +5,9 @@ import { MessageCircle, Phone, Plus } from "lucide-react";
 import { notFound } from "next/navigation";
 import { isUuid } from "@/lib/ctx";
 import { requireUser } from "@/lib/auth";
-import { getCustomer, listAddresses, listOrders } from "@/domain/queries";
+import { getCustomer, itemsForOrders, listAddresses, listOrders, programadosDoCliente } from "@/domain/queries";
+import { todayISO } from "@/lib/period";
+import { ProgramadosCliente } from "./programados";
 import { ActionForm } from "@/components/action-form";
 import { CustomerFields } from "@/components/customer-fields";
 import { PopoverForm } from "@/components/popover-form";
@@ -29,11 +31,25 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
   if (!isUuid(id)) notFound();
   const c = await getCustomer(user.tenantId, id);
   if (!c) notFound();
-  const [orders, st, addresses] = await Promise.all([
+  const [orders, st, addresses, programados] = await Promise.all([
     listOrders(user.tenantId, { customerId: id }),
     customerStatement(user.tenantId, id),
     listAddresses(user.tenantId, [id]),
+    programadosDoCliente(user.tenantId, id),
   ]);
+  // o pedido que vira programação: o último que valeu (cancelado e estornado não)
+  const base = orders.find((o) => o.status !== "cancelado" && o.status !== "estornado");
+  const itensBase = base ? await itemsForOrders(user.tenantId, [base.id]) : [];
+  const ultimoPedido = base
+    ? {
+        id: base.id,
+        number: base.number,
+        resumo: itensBase.map((i) => `${i.quantity}× ${i.name}`).join(", "),
+        pagamento: paymentLabel[base.paymentMethod],
+        endereco: base.customerAddress,
+        taxaCents: base.deliveryFeeCents,
+      }
+    : null;
   // resumo do topo: o que antes era preciso somar de cabeça na lista de pedidos
   // shortcut: conta os 300 pedidos mais recentes (o limite de listOrders); cliente com mais que isso aparece com menos
   const entregues = orders.filter((o) => o.status === "entregue");
@@ -159,6 +175,7 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
             </section>
           ) : (
             <>
+              <ProgramadosCliente nome={c.name} programados={programados} ultimo={ultimoPedido} hoje={todayISO()} />
               {/* ficha de consulta: os dados em leitura, e o formulário só quando alguém vai editar */}
               <section className="panel p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
@@ -258,12 +275,16 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
               <tbody>
                 {orders.map((o) => (
                   <tr key={o.id}>
-                    <td className="num text-muted"><Link href={`/pedidos/${o.id}`} className="alvo hover:text-accent">#{o.number}</Link></td>
-                    <td>{fmtQuando(o.createdAt)}</td>
+                    {/* no celular a situação desce para baixo da data (uma coluna a menos): o valor saía cortado */}
+                    <td className="num whitespace-nowrap text-muted"><Link href={`/pedidos/${o.id}`} className="alvo hover:text-accent">#{o.number}</Link></td>
+                    <td className="w-full">
+                      {fmtQuando(o.createdAt)}
+                      <span className="mt-1 block sm:hidden"><StatusBadge status={o.status} /></span>
+                    </td>
                     {/* no celular a forma de pagamento sai: o resto cabe sem rolar */}
                     <td className="hidden sm:table-cell">{paymentLabel[o.paymentMethod]}</td>
-                    <td><StatusBadge status={o.status} /></td>
-                    <td className="text-right"><Money cents={o.totalCents} /></td>
+                    <td className="hidden whitespace-nowrap sm:table-cell"><StatusBadge status={o.status} /></td>
+                    <td className="whitespace-nowrap text-right"><Money cents={o.totalCents} /></td>
                   </tr>
                 ))}
               </tbody>

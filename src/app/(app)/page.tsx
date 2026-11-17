@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { requireUser } from "@/lib/auth";
-import { dashboard, listDrivers, primeirosPassos } from "@/domain/queries";
+import { dashboard, listDrivers, primeirosPassos, programadosParaHoje } from "@/domain/queries";
 import { cancelarPixVencidos } from "@/domain/pix";
 import { contasVencendo } from "@/domain/contas";
 import { todayISO } from "@/lib/period";
@@ -35,6 +35,7 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
   const testeAte = passos && user.pagoAte && (await emTesteGratis(user.tenantId)) ? user.pagoAte : null;
   // contas a pagar são de quem cuida do dinheiro: dono e caixa
   const contas = user.role === "dono" || user.role === "caixa" ? await contasVencendo(user.tenantId, user.branchId) : null;
+  const programados = await programadosParaHoje(user.tenantId, user.branchId);
   const ehHoje = dia === hojeISO;
   const filtrado = !ehHoje || !!entregador;
   const hoje = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Sao_Paulo" }).format(
@@ -59,6 +60,13 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
     alertas.push({ tom: "grave", texto: `${contas.vencidas} ${contas.vencidas === 1 ? "conta a pagar venceu" : "contas a pagar venceram"}`, href: "/despesas", acao: "Ver contas" });
   if (contas?.vencendo)
     alertas.push({ tom: "aviso", texto: `${contas.vencendo} ${contas.vencendo === 1 ? "conta vence" : "contas vencem"} hoje ou amanhã`, href: "/despesas", acao: "Ver contas" });
+  if (programados.length)
+    alertas.push({
+      tom: "aviso",
+      texto: `${programados.length} ${programados.length === 1 ? "entrega programada para hoje" : "entregas programadas para hoje"}`,
+      href: "/entregas",
+      acao: "Lançar",
+    });
   if (d.pixSite > 0)
     alertas.push({
       tom: "grave",

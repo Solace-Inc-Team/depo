@@ -2,13 +2,14 @@ import { ViewTransition } from "react";
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { withTenant } from "@/db";
-import { getSettings, listDrivers, listOrders, listShifts, listViagens } from "@/domain/queries";
+import { getSettings, listDrivers, listOrders, listShifts, listViagens, programadosParaHoje } from "@/domain/queries";
+import { todayISO } from "@/lib/period";
 import { ActionForm } from "@/components/action-form";
-import { confirmPixAction, dispatchAction } from "@/app/actions";
+import { confirmPixAction, dispatchAction, lancarProgramadoAction, pularProgramadoAction } from "@/app/actions";
 import { cancelarPixVencidos, PRAZO_PAGAR_MS } from "@/domain/pix";
 import { Empty, Money, PageHeader, SiteBadge, fmtTime, paymentLabel } from "@/components/ui";
 import { ResultadoRua } from "@/components/resultado-rua";
-import { Check, Printer } from "lucide-react";
+import { Check, Printer, Repeat } from "lucide-react";
 import { formatBRL } from "@/lib/money";
 import { cashOf, expectedCash } from "@/lib/cash";
 import { JanelaAcao } from "@/components/janela-acao";
@@ -45,7 +46,7 @@ export default async function Entregas() {
   const user = await requireUser("dono", "atendente", "caixa");
   // quem passou dos 15 minutos sem pagar sai antes de a fila ser montada
   await cancelarPixVencidos(user.tenantId);
-  const [aPagar, waiting, inRoute, drivers, open, settings, viagens] = await withTenant(user.tenantId, () =>
+  const [aPagar, waiting, inRoute, drivers, open, settings, viagens, programados] = await withTenant(user.tenantId, () =>
     Promise.all([
       listOrders(user.tenantId, { status: "aguardando_pagamento", branchId: user.branchId }),
       listOrders(user.tenantId, { status: "aberto", branchId: user.branchId }),
@@ -54,6 +55,7 @@ export default async function Entregas() {
       listShifts(user.tenantId, user.branchId, "aberto"),
       getSettings(user.tenantId),
       listViagens(user.tenantId, user.branchId),
+      programadosParaHoje(user.tenantId, user.branchId),
     ]),
   );
   const onShift = drivers.filter((d) => open.some((s) => s.driverId === d.id));
@@ -126,6 +128,54 @@ export default async function Entregas() {
         </section>
       )}
 
+      {/* entregas programadas do dia: a atendente lança com um toque (vai para a fila) ou pula para a próxima data */}
+      {/* a seção entra e sai animada, e as colunas de baixo deslizam junto quando ela encolhe ou some */}
+      {programados.length > 0 && (
+        <Desliza nome="programados">
+        <section className="panel mb-6">
+          <h2 className="h2 flex items-center gap-2 border-b border-line px-4 py-3">
+            <Repeat size={15} strokeWidth={1.75} className="text-muted" aria-hidden="true" />
+            Programados para hoje <span className="font-normal text-muted">({programados.length})</span>
+          </h2>
+          <ul>
+            {programados.map((p) => {
+              const atraso = Math.round((Date.parse(todayISO()) - Date.parse(p.proxima)) / 86400e3);
+              return (
+                <Desliza key={p.id} nome={`programado-${p.id}`}>
+                  <li className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line px-4 py-3 last:border-0">
+                    <div className="min-w-0">
+                      <Link href={`/clientes/${p.customerId}`} className="alvo font-semibold hover:text-accent">
+                        {p.clienteNome}
+                      </Link>
+                      {atraso > 0 && (
+                        <span className="ml-2 text-[13px] font-medium text-warn-fg">{atraso === 1 ? "era para ontem" : `atrasado ${atraso} dias`}</span>
+                      )}
+                      {/* como os cartões da fila: endereço, valor e pagamento; os itens embaixo */}
+                      <p className="text-sm text-muted">
+                        {p.endereco || "Sem endereço"}. <Money cents={p.totalCents} />, {paymentLabel[p.paymentMethod].toLowerCase()}
+                      </p>
+                      <p className="text-[13px] text-muted">{p.resumo}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <ActionForm action={pularProgramadoAction}>
+                        <input type="hidden" name="id" value={p.id} />
+                        <button className="btn">Pular</button>
+                      </ActionForm>
+                      <ActionForm action={lancarProgramadoAction}>
+                        <input type="hidden" name="id" value={p.id} />
+                        <button className="btn btn-primary">Lançar pedido</button>
+                      </ActionForm>
+                    </div>
+                  </li>
+                </Desliza>
+              );
+            })}
+          </ul>
+        </section>
+        </Desliza>
+      )}
+
+      <Desliza nome="entregas-colunas">
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="panel">
           <h2 className="h2 border-b border-line px-4 py-3">
@@ -289,6 +339,7 @@ export default async function Entregas() {
           )}
         </section>
       </div>
+      </Desliza>
       {/* com um entregador só em turno, a barra já vem com ele */}
       {podeJuntar && <SaidaEmGrupo entregadores={onShift.map((d) => ({ id: d.id, name: d.name }))} sugerido={onShift.length === 1 ? onShift[0].id : ""} />}
     </>

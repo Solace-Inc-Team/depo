@@ -1,8 +1,8 @@
 import "server-only";
-import { and, asc, desc, eq, gte, lt, inArray, isNull, sql, ilike, or, getTableColumns } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lt, lte, inArray, isNull, sql, ilike, or, getTableColumns } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db, scoped } from "@/db";
-import { branches, cashEntries, customerAddresses, customers, orderItems, orders, products, shifts, stockMovements, suppliers, tenants, users, auditLog } from "@/db/schema";
+import { pedidosProgramados, branches, cashEntries, customerAddresses, customers, orderItems, orders, products, shifts, stockMovements, suppliers, tenants, users, auditLog } from "@/db/schema";
 import { expectedCash, paymentSummary } from "@/lib/cash";
 import { todayISO } from "@/lib/period";
 import { isUuid } from "@/lib/ctx";
@@ -91,6 +91,7 @@ const orderCols = {
   paymentMethod: orders.paymentMethod,
   cashPartCents: orders.cashPartCents,
   totalCents: orders.totalCents,
+  deliveryFeeCents: orders.deliveryFeeCents,
   createdAt: orders.createdAt,
   deliveredAt: orders.deliveredAt,
   dispatchedAt: orders.dispatchedAt,
@@ -798,4 +799,59 @@ export const metricasEntregadores = scoped(async function metricasEntregadores(t
       ocorrencias: Object.fromEntries(ocorrencias.filter((o) => o.driver_id === d.id).map((o) => [o.tipo, o.n])),
     };
   });
+});
+
+/** Pedidos programados, com o nome dos itens ("2× Galão de água 20L") e do cliente. */
+async function comNomes(lista: (typeof pedidosProgramados.$inferSelect)[], tenantId: string) {
+  if (!lista.length) return [];
+  const prods = await db
+    .select({ id: products.id, name: products.name, priceCents: products.priceCents, containerPriceCents: products.containerPriceCents, returnable: products.returnable })
+    .from(products)
+    .where(eq(products.tenantId, tenantId));
+  const clientes = await db
+    .select({ id: customers.id, name: customers.name, address: customers.address })
+    .from(customers)
+    .where(inArray(customers.id, [...new Set(lista.map((p) => p.customerId))]));
+  return lista.map((p) => {
+    const c = clientes.find((x) => x.id === p.customerId);
+    return {
+      ...p,
+      clienteNome: c?.name ?? "Cliente",
+      endereco: p.address ?? c?.address ?? null,
+      resumo: p.itens.map((i) => `${i.quantity}× ${prods.find((x) => x.id === i.productId)?.name ?? "produto"}`).join(", "),
+      // valor com o preço de hoje, como o pedido vai sair (sem vazio para trocar, o casco entra junto)
+      totalCents:
+        p.deliveryFeeCents +
+        p.itens.reduce((s, i) => {
+          const pr = prods.find((x) => x.id === i.productId);
+          return s + (pr ? i.quantity * (pr.priceCents + (pr.returnable && !i.returnsEmpty ? pr.containerPriceCents : 0)) : 0);
+        }, 0),
+    };
+  });
+}
+
+export const programadosDoCliente = scoped(async function programadosDoCliente(tenantId: string, customerId: string) {
+  const lista = await db
+    .select()
+    .from(pedidosProgramados)
+    .where(and(eq(pedidosProgramados.tenantId, tenantId), eq(pedidosProgramados.customerId, customerId)))
+    .orderBy(asc(pedidosProgramados.createdAt));
+  return comNomes(lista, tenantId);
+});
+
+/** Os do dia na filial (e os que ficaram para trás), o mais atrasado primeiro. Pausados não entram. */
+export const programadosParaHoje = scoped(async function programadosParaHoje(tenantId: string, branchId: string | null) {
+  const lista = await db
+    .select()
+    .from(pedidosProgramados)
+    .where(
+      and(
+        eq(pedidosProgramados.tenantId, tenantId),
+        branchId ? eq(pedidosProgramados.branchId, branchId) : undefined,
+        eq(pedidosProgramados.pausado, false),
+        lte(pedidosProgramados.proxima, todayISO()),
+      ),
+    )
+    .orderBy(asc(pedidosProgramados.proxima), asc(pedidosProgramados.createdAt));
+  return comNomes(lista, tenantId);
 });

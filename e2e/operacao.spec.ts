@@ -101,6 +101,8 @@ test("portal: cliente pede pelo link e o pedido chega à fila com o selo do site
   await expect(page.getByText(/Pedido #\d+ recebido/)).toBeVisible();
   // o cliente acompanha pelo link: a página abre sem login com o pedido recebido
   await page.getByRole("link", { name: "Acompanhar pedido" }).click();
+  // espera a página nova: com a rota ainda compilando, o título lido era o da página de pedir
+  await page.waitForURL(/\/acompanhar\//);
   await expect(page.getByRole("heading", { level: 1 })).toContainText(/Pedido #\d+/);
   await expect(page.getByText("Recebido, a loja está separando")).toBeVisible();
 

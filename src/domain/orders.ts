@@ -19,7 +19,7 @@ export const newOrderSchema = z
       .min(1, "Adicione ao menos um item."),
     paymentMethod: z.enum(["dinheiro", "pix", "cartao", "fiado"]),
     cashPartCents: z.int().min(0).max(100_000_00, "Valor em dinheiro muito alto.").default(0),
-    origin: z.enum(["whatsapp", "telefone", "balcao", "portal"]).default("telefone"),
+    origin: z.enum(["whatsapp", "telefone", "balcao", "portal", "programado"]).default("telefone"),
     addressId: z.uuid().nullable().default(null),
     // endereço digitado na hora (portal); vale só para este pedido
     address: z.string().trim().max(200).optional(),
@@ -40,7 +40,7 @@ export const newOrderSchema = z
   })
   .refine((o) => !o.discountCents || o.discountReason.length >= 3, { message: "Informe o motivo do desconto." });
 
-export const originLabel = { whatsapp: "WhatsApp", telefone: "Telefone", balcao: "Balcão", portal: "Portal" } as const;
+export const originLabel = { whatsapp: "WhatsApp", telefone: "Telefone", balcao: "Balcão", portal: "Portal", programado: "Programado" } as const;
 
 export const occurrenceKinds = {
   ausente: "Cliente ausente",
@@ -72,119 +72,122 @@ async function loadOrder(tx: Tx, ctx: Ctx, orderId: string) {
 export async function createOrder(ctx: Ctx, raw: NewOrder) {
   assertRole(ctx, "dono", "atendente", "caixa");
   const input = newOrderSchema.parse(raw);
-  return tenantTransaction(ctx, async (tx) => {
-    // preço sempre do banco, nunca do form
-    const prods = await lockProducts(tx, ctx, [...new Set(input.items.map((i) => i.productId))]);
-    const items = input.items.map((i) => {
-      const p = prods.find((x) => x.id === i.productId && x.active);
-      if (!p) throw new DomainError("Produto indisponível.");
-      const returnsEmpty = p.returnable && i.returnsEmpty;
-      // sem vazio para trocar, o cliente compra o vasilhame junto (as revendas não emprestam casco)
-      const container = p.returnable && !returnsEmpty ? p.containerPriceCents : 0;
-      return { ...i, unitPriceCents: p.priceCents + container, returnsEmpty, name: p.name };
-    });
-    if (input.exigirEstoque) {
-      // com os produtos travados acima, dois pedidos ao mesmo tempo não levam o mesmo último galão
-      const livre = await disponivelNaLoja(tx, ctx.tenantId, ctx.branchId, [...new Set(items.map((i) => i.productId))]);
-      for (const id of livre.keys()) {
-        const pedido = items.filter((i) => i.productId === id).reduce((s, i) => s + i.quantity, 0);
-        const tem = Math.max(0, livre.get(id)!);
-        const nome = items.find((i) => i.productId === id)!.name;
-        if (pedido > tem) throw new DomainError(tem ? `Só temos ${tem} de ${nome} agora.` : `${nome} acabou. Escolha outro produto.`);
-      }
-    }
+  return tenantTransaction(ctx, (tx) => criarPedidoNaTx(tx, ctx, input));
+}
 
-    if (input.customerId) {
-      const [c] = await tx
-        .select({ id: customers.id })
-        .from(customers)
-        .where(and(eq(customers.id, input.customerId), eq(customers.tenantId, ctx.tenantId), isNull(customers.anonymizedAt)));
-      if (!c) throw new DomainError("Cliente não encontrado.");
-    }
-    let place: { address: string; reference: string } | null = input.address ? { address: input.address, reference: input.reference } : null;
-    if (input.mode === "entrega" && input.addressId && input.customerId && !place) {
-      [place] = await tx
-        .select({ address: customerAddresses.address, reference: customerAddresses.reference })
-        .from(customerAddresses)
-        .where(and(eq(customerAddresses.id, input.addressId), eq(customerAddresses.customerId, input.customerId)));
-      if (!place) throw new DomainError("Endereço de entrega não encontrado.");
-    }
-
-    // trava a empresa: dois pedidos ao mesmo tempo não pegam o mesmo número
-    const [house] = await tx
-      .select({ staffDiscountPct: tenants.staffDiscountPct })
-      .from(tenants)
-      .where(eq(tenants.id, ctx.tenantId))
-      .for("update");
-
-    const subtotal = itemsSubtotal(items);
-    if (input.discountCents > subtotal) throw new DomainError("O desconto não pode ser maior que o valor dos produtos.");
-    // desconto acima do limite da casa só com o dono
-    const limit = Math.floor((subtotal * house.staffDiscountPct) / 100);
-    if (ctx.role !== "dono" && input.discountCents > limit)
-      throw new DomainError(`Desconto acima do seu limite (${house.staffDiscountPct}%, até ${formatBRL(limit)} neste pedido). Peça ao dono para lançar.`);
-
-    const fee = input.mode === "balcao" ? 0 : input.deliveryFeeCents;
-    const total = orderTotal(items, fee, input.discountCents);
-    if (input.paymentMethod === "dinheiro" && input.changeForCents !== null && input.changeForCents < total)
-      throw new DomainError("O valor para troco é menor que o total.");
-    if (input.cashPartCents >= total && input.cashPartCents > 0)
-      throw new DomainError("A parte em dinheiro precisa ser menor que o total. Se for tudo em dinheiro, escolha Dinheiro.");
-
-    const [{ next }] = await tx
-      .select({ next: sql<number>`coalesce(max(${orders.number}), 0)::int + 1` })
-      .from(orders)
-      .where(eq(orders.tenantId, ctx.tenantId));
-
-    const now = new Date();
-    const [order] = await tx
-      .insert(orders)
-      .values({
-        tenantId: ctx.tenantId,
-        branchId: ctx.branchId,
-        number: next,
-        customerId: input.customerId,
-        paymentMethod: input.paymentMethod,
-        cashPartCents: input.cashPartCents,
-        origin: input.mode === "balcao" ? "balcao" : input.origin,
-        address: place?.address,
-        reference: place?.reference,
-        deliveryFeeCents: fee,
-        discountCents: input.discountCents,
-        discountReason: input.discountCents ? input.discountReason : null,
-        totalCents: total,
-        changeForCents: input.paymentMethod === "dinheiro" ? input.changeForCents : null,
-        notes: input.notes,
-        createdBy: ctx.userId,
-        ...(input.mode === "balcao" ? { status: "entregue" as const, deliveredAt: now } : {}),
-        // pedido do site pago no Pix só entra na fila de entrega depois que o Pix é confirmado
-        ...(input.mode === "entrega" && input.origin === "portal" && input.paymentMethod === "pix" ? { status: "aguardando_pagamento" as const } : {}),
-      })
-      .returning();
-
-    await tx.insert(orderItems).values(
-      items.map((i) => ({
-        tenantId: ctx.tenantId,
-        orderId: order.id,
-        productId: i.productId,
-        quantity: i.quantity,
-        unitPriceCents: i.unitPriceCents,
-        returnsEmpty: i.returnsEmpty,
-      })),
-    );
-
-    if (input.mode === "balcao") {
-      for (const i of items) {
-        const base = { productId: i.productId, driverId: null, orderId: order.id, reason: `venda balcão #${next}` };
-        await move(tx, ctx, { ...base, state: "cheio", quantity: -i.quantity }, i.name);
-        if (i.returnsEmpty) await move(tx, ctx, { ...base, state: "vazio", quantity: i.quantity }, i.name);
-      }
-    }
-
-    await audit(tx, ctx, "pedido.criar", "order", order.id, { number: next, total, mode: input.mode, discount: input.discountCents || undefined });
-    if (input.mode === "entrega" && input.driverId) await dispatchInTx(tx, ctx, order.id, input.driverId);
-    return order;
+/** O pedido criado dentro de uma transação já aberta (o pedido programado lança e avança a data juntos). */
+export async function criarPedidoNaTx(tx: Tx, ctx: Ctx, input: z.output<typeof newOrderSchema>) {
+  // preço sempre do banco, nunca do form
+  const prods = await lockProducts(tx, ctx, [...new Set(input.items.map((i) => i.productId))]);
+  const items = input.items.map((i) => {
+    const p = prods.find((x) => x.id === i.productId && x.active);
+    if (!p) throw new DomainError("Produto indisponível.");
+    const returnsEmpty = p.returnable && i.returnsEmpty;
+    // sem vazio para trocar, o cliente compra o vasilhame junto (as revendas não emprestam casco)
+    const container = p.returnable && !returnsEmpty ? p.containerPriceCents : 0;
+    return { ...i, unitPriceCents: p.priceCents + container, returnsEmpty, name: p.name };
   });
+  if (input.exigirEstoque) {
+    // com os produtos travados acima, dois pedidos ao mesmo tempo não levam o mesmo último galão
+    const livre = await disponivelNaLoja(tx, ctx.tenantId, ctx.branchId, [...new Set(items.map((i) => i.productId))]);
+    for (const id of livre.keys()) {
+      const pedido = items.filter((i) => i.productId === id).reduce((s, i) => s + i.quantity, 0);
+      const tem = Math.max(0, livre.get(id)!);
+      const nome = items.find((i) => i.productId === id)!.name;
+      if (pedido > tem) throw new DomainError(tem ? `Só temos ${tem} de ${nome} agora.` : `${nome} acabou. Escolha outro produto.`);
+    }
+  }
+
+  if (input.customerId) {
+    const [c] = await tx
+      .select({ id: customers.id })
+      .from(customers)
+      .where(and(eq(customers.id, input.customerId), eq(customers.tenantId, ctx.tenantId), isNull(customers.anonymizedAt)));
+    if (!c) throw new DomainError("Cliente não encontrado.");
+  }
+  let place: { address: string; reference: string } | null = input.address ? { address: input.address, reference: input.reference } : null;
+  if (input.mode === "entrega" && input.addressId && input.customerId && !place) {
+    [place] = await tx
+      .select({ address: customerAddresses.address, reference: customerAddresses.reference })
+      .from(customerAddresses)
+      .where(and(eq(customerAddresses.id, input.addressId), eq(customerAddresses.customerId, input.customerId)));
+    if (!place) throw new DomainError("Endereço de entrega não encontrado.");
+  }
+
+  // trava a empresa: dois pedidos ao mesmo tempo não pegam o mesmo número
+  const [house] = await tx
+    .select({ staffDiscountPct: tenants.staffDiscountPct })
+    .from(tenants)
+    .where(eq(tenants.id, ctx.tenantId))
+    .for("update");
+
+  const subtotal = itemsSubtotal(items);
+  if (input.discountCents > subtotal) throw new DomainError("O desconto não pode ser maior que o valor dos produtos.");
+  // desconto acima do limite da casa só com o dono
+  const limit = Math.floor((subtotal * house.staffDiscountPct) / 100);
+  if (ctx.role !== "dono" && input.discountCents > limit)
+    throw new DomainError(`Desconto acima do seu limite (${house.staffDiscountPct}%, até ${formatBRL(limit)} neste pedido). Peça ao dono para lançar.`);
+
+  const fee = input.mode === "balcao" ? 0 : input.deliveryFeeCents;
+  const total = orderTotal(items, fee, input.discountCents);
+  if (input.paymentMethod === "dinheiro" && input.changeForCents !== null && input.changeForCents < total)
+    throw new DomainError("O valor para troco é menor que o total.");
+  if (input.cashPartCents >= total && input.cashPartCents > 0)
+    throw new DomainError("A parte em dinheiro precisa ser menor que o total. Se for tudo em dinheiro, escolha Dinheiro.");
+
+  const [{ next }] = await tx
+    .select({ next: sql<number>`coalesce(max(${orders.number}), 0)::int + 1` })
+    .from(orders)
+    .where(eq(orders.tenantId, ctx.tenantId));
+
+  const now = new Date();
+  const [order] = await tx
+    .insert(orders)
+    .values({
+      tenantId: ctx.tenantId,
+      branchId: ctx.branchId,
+      number: next,
+      customerId: input.customerId,
+      paymentMethod: input.paymentMethod,
+      cashPartCents: input.cashPartCents,
+      origin: input.mode === "balcao" ? "balcao" : input.origin,
+      address: place?.address,
+      reference: place?.reference,
+      deliveryFeeCents: fee,
+      discountCents: input.discountCents,
+      discountReason: input.discountCents ? input.discountReason : null,
+      totalCents: total,
+      changeForCents: input.paymentMethod === "dinheiro" ? input.changeForCents : null,
+      notes: input.notes,
+      createdBy: ctx.userId,
+      ...(input.mode === "balcao" ? { status: "entregue" as const, deliveredAt: now } : {}),
+      // pedido do site pago no Pix só entra na fila de entrega depois que o Pix é confirmado
+      ...(input.mode === "entrega" && input.origin === "portal" && input.paymentMethod === "pix" ? { status: "aguardando_pagamento" as const } : {}),
+    })
+    .returning();
+
+  await tx.insert(orderItems).values(
+    items.map((i) => ({
+      tenantId: ctx.tenantId,
+      orderId: order.id,
+      productId: i.productId,
+      quantity: i.quantity,
+      unitPriceCents: i.unitPriceCents,
+      returnsEmpty: i.returnsEmpty,
+    })),
+  );
+
+  if (input.mode === "balcao") {
+    for (const i of items) {
+      const base = { productId: i.productId, driverId: null, orderId: order.id, reason: `venda balcão #${next}` };
+      await move(tx, ctx, { ...base, state: "cheio", quantity: -i.quantity }, i.name);
+      if (i.returnsEmpty) await move(tx, ctx, { ...base, state: "vazio", quantity: i.quantity }, i.name);
+    }
+  }
+
+  await audit(tx, ctx, "pedido.criar", "order", order.id, { number: next, total, mode: input.mode, discount: input.discountCents || undefined });
+  if (input.mode === "entrega" && input.driverId) await dispatchInTx(tx, ctx, order.id, input.driverId);
+  return order;
 }
 
 /**

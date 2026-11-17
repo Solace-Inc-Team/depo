@@ -307,6 +307,35 @@ export const orders = pgTable(
   ],
 );
 
+// pedido que se repete: o cliente que pede o mesmo a cada tantos dias. No dia, ele aparece em Entregas para a
+// atendente lançar com um toque (o sistema não cria o pedido sozinho: cliente viajando viraria pedido fantasma).
+// Os itens são os do pedido de origem; o preço é o do dia em que for lançado.
+export const pedidosProgramados = pgTable(
+  "pedidos_programados",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    branchId: branchId(),
+    customerId: uuid("customer_id")
+      .notNull()
+      .references(() => customers.id, { onDelete: "cascade" }),
+    aCadaDias: integer("a_cada_dias").notNull(),
+    proxima: date("proxima", { mode: "string" }).notNull(),
+    itens: jsonb("itens").$type<{ productId: string; quantity: number; returnsEmpty: boolean }[]>().notNull(),
+    paymentMethod: paymentMethodEnum("payment_method").notNull(),
+    // endereço do pedido de origem quando não era o principal do cliente
+    address: text("address"),
+    reference: text("reference").notNull().default(""),
+    deliveryFeeCents: integer("delivery_fee_cents").notNull().default(0),
+    pausado: boolean("pausado").notNull().default(false),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: createdAt(),
+  },
+  (t) => [index("pedidos_programados_dia_idx").on(t.tenantId, t.proxima), index("pedidos_programados_cliente_idx").on(t.customerId)],
+);
+
 // celular que pediu para ser avisado do andamento de um pedido (web push). Vale só para aquele pedido:
 // depois de entregue ou cancelado, a inscrição sai.
 export const avisosPedido = pgTable(

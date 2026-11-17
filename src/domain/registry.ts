@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { tenantTransaction } from "@/db";
-import { auditLog, customerAddresses, customers, orders, products, sessions, tenants, users } from "@/db/schema";
+import { auditLog, customerAddresses, customers, orders, products, sessions, tenants, users, pedidosProgramados } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
 import { telefoneSchema } from "./telefone";
 import { formatarTelefone, telefoneValido } from "@/lib/mascara";
@@ -63,6 +63,8 @@ export async function anonymizeCustomer(ctx: Ctx, customerId: string) {
       .set({ name: "Cliente removido", phone: "", address: "", reference: "", notes: "", anonymizedAt: new Date() })
       .where(eq(customers.id, c.id));
     await tx.delete(customerAddresses).where(eq(customerAddresses.customerId, c.id));
+    // o pedido programado guarda o endereço: sai junto
+    await tx.delete(pedidosProgramados).where(eq(pedidosProgramados.customerId, c.id));
     await tx.update(orders).set({ address: null, reference: null, notes: "" }).where(eq(orders.customerId, c.id));
     await tx.update(auditLog).set({ data: null }).where(and(eq(auditLog.entity, "customer"), eq(auditLog.entityId, c.id)));
     await audit(tx, ctx, "cliente.anonimizar", "customer", c.id);

@@ -14,12 +14,15 @@ export function JanelaAcao({
   titulo,
   primario = false,
   perigo = false,
+  icone,
   children,
 }: {
   label: string;
   titulo: string;
   primario?: boolean;
   perigo?: boolean;
+  /** ícone antes do rótulo, quando o botão fica ao lado de outros que têm */
+  icone?: ReactNode;
   children: ReactNode;
 }) {
   const janela = useRef<HTMLDialogElement>(null);
@@ -49,6 +52,7 @@ export function JanelaAcao({
         }}
         className={`btn ${primario ? "btn-primary" : ""} ${perigo ? "text-danger" : ""}`}
       >
+        {icone}
         {label}
       </button>
       <dialog

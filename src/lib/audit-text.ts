@@ -18,6 +18,7 @@ export const areas = {
   usuario: "Equipe e acessos",
   empresa: "Empresa e configurações",
   fornecedor: "Fornecedores",
+  programado: "Entregas programadas",
   termos: "Termos",
 } as const;
 export type Area = keyof typeof areas;
@@ -38,6 +39,7 @@ const resolucoes: Record<string, string> = {
 const din = (v: unknown) => (typeof v === "number" ? formatBRL(v) : "-");
 const num = (v: unknown) => (typeof v === "number" ? String(v) : "-");
 const txt = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : "");
+const diaMes = (v: unknown) => (typeof v === "string" ? v.split("-").reverse().slice(0, 2).join("/") : "-");
 const sinal = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${Math.abs(n)}` : "0");
 
 const camposProduto: [chave: string, rotulo: string, f: (v: unknown) => string][] = [
@@ -101,6 +103,42 @@ export function descrever(action: string, dados: Dados, nomes: Record<string, st
       l.titulo = `Estornou o pedido ${alvo}`;
       det(txt(d.reason) && `Motivo: ${txt(d.reason)}`);
       det(d.restock ? "Produtos voltaram ao estoque" : "Produtos não voltaram ao estoque");
+      break;
+
+    case "turno.acerto_volta": {
+      l.titulo = `Acertou a volta de ${alvo || "entregador"}`;
+      det(`Esperado ${din(d.esperado)}, entregou ${din(d.countedCashCents)}`);
+      const diff = typeof d.diff === "number" ? d.diff : 0;
+      det(diff < 0 ? `Faltou ${din(-diff)}` : diff > 0 ? `Sobrou ${din(diff)}` : "");
+      break;
+    }
+    case "programado.criar":
+      l.titulo = `Programou entrega para ${alvo || "cliente"}`;
+      det(`A cada ${num(d.aCadaDias)} dias, a partir de ${diaMes(d.proxima)}`);
+      break;
+    case "programado.alterar": {
+      l.titulo = `Alterou a entrega programada de ${alvo || "cliente"}`;
+      const antes = (d.antes ?? {}) as Record<string, unknown>;
+      const depois = (d.depois ?? {}) as Record<string, unknown>;
+      l.mudancas.push(["A cada", `${num(antes.aCadaDias)} dias`, `${num(depois.aCadaDias)} dias`], ["Próxima", diaMes(antes.proxima), diaMes(depois.proxima)]);
+      break;
+    }
+    case "programado.pausar":
+      l.titulo = `Pausou a entrega programada de ${alvo || "cliente"}`;
+      break;
+    case "programado.retomar":
+      l.titulo = `Retomou a entrega programada de ${alvo || "cliente"}`;
+      break;
+    case "programado.excluir":
+      l.titulo = `Excluiu a entrega programada de ${alvo || "cliente"}`;
+      break;
+    case "programado.pular":
+      l.titulo = `Pulou a entrega programada de ${alvo || "cliente"}`;
+      det(`Próxima: ${diaMes(d.proxima)}`);
+      break;
+    case "programado.lancar":
+      l.titulo = `Lançou o pedido programado ${alvo}`;
+      det(`Próxima: ${diaMes(d.proxima)}`);
       break;
 
     case "turno.abrir":

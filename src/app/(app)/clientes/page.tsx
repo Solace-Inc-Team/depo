@@ -80,7 +80,7 @@ export default async function Clientes({ searchParams }: PageProps<"/clientes">)
                     )}
                   </div>
                   {/* um botão de verdade: o "+" solto parecia "adicionar cliente" */}
-                  <Link href={`/pedidos/novo?cliente=${c.id}`} aria-label={`Novo pedido para ${c.name}`} className="btn btn-sm tap relative gap-1.5">
+                  <Link href={`/pedidos/novo?cliente=${c.id}`} aria-label={`Novo pedido para ${c.name}`} className="btn btn-sm tap relative gap-1.5 max-sm:min-w-11 max-sm:justify-center">
                     <Plus size={15} strokeWidth={1.75} aria-hidden="true" />
                     <span className="max-sm:hidden">Novo pedido</span>
                   </Link>

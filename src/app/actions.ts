@@ -29,6 +29,7 @@ import { resolveError, sendTestAlert } from "@/domain/monitoring";
 import { addAddress, addressSchema, removeAddress, saveSettings, settingsSchema, anonymizeCustomer, saveCustomer, customerSchema, saveProduct, productSchema, createUser, userSchema, setUserActive, resetUserPassword, acceptTerms } from "@/domain/registry";
 import { TERMS_VERSION } from "@/lib/legal";
 import { ativarFilial, criarFilial, mudarDeFilial } from "@/domain/filiais";
+import { alterarProgramado, alterarSchema, excluirProgramado, lancarProgramado, pausarProgramado, programar, programarSchema, pularProgramado } from "@/domain/programados";
 import { cookies } from "next/headers";
 import { FILIAL_COOKIE } from "@/lib/auth";
 import { todayISO } from "@/lib/period";
@@ -793,4 +794,52 @@ export async function conectarMercadoPagoAction(fd: FormData) {
 export async function desconectarMercadoPagoAction() {
   const user = await requireUser("dono");
   return run(() => desconectarMercadoPago(user), ["/"], "Mercado Pago desconectado.");
+}
+
+// ---------- pedidos programados ----------
+const diaBR = (iso: string) => iso.split("-").reverse().slice(0, 2).join("/");
+
+export async function programarAction(fd: FormData) {
+  const user = await requireUser("dono", "atendente", "caixa");
+  return run(
+    () => programar(user, programarSchema.parse({ orderId: str(fd, "orderId"), aCadaDias: Number(str(fd, "aCadaDias")), proxima: str(fd, "proxima") })),
+    ["/"],
+    str(fd, "proxima") <= todayISO()
+      ? "Programado. A entrega já aparece em Entregas hoje."
+      : `Programado. A primeira entrega aparece em Entregas no dia ${diaBR(str(fd, "proxima"))}.`,
+  );
+}
+
+export async function alterarProgramadoAction(fd: FormData) {
+  const user = await requireUser("dono", "atendente", "caixa");
+  return run(
+    () => alterarProgramado(user, str(fd, "id"), alterarSchema.parse({ aCadaDias: Number(str(fd, "aCadaDias")), proxima: str(fd, "proxima") })),
+    ["/"],
+    "Programação alterada.",
+  );
+}
+
+export async function pausarProgramadoAction(fd: FormData) {
+  const user = await requireUser("dono", "atendente", "caixa");
+  const pausar = str(fd, "pausar") === "1";
+  return run(() => pausarProgramado(user, str(fd, "id"), pausar), ["/"], pausar ? "Programação pausada." : "Programação retomada.");
+}
+
+export async function excluirProgramadoAction(fd: FormData) {
+  const user = await requireUser("dono", "atendente", "caixa");
+  return run(() => excluirProgramado(user, str(fd, "id")), ["/"], "Programação excluída.");
+}
+
+export async function lancarProgramadoAction(fd: FormData) {
+  const user = await requireUser("dono", "atendente", "caixa");
+  let proxima = "";
+  const r = await run(async () => ({ proxima } = await lancarProgramado(user, str(fd, "id"))), ["/"]);
+  return r?.error ? r : { ok: `Pedido lançado na fila. O próximo fica para ${diaBR(proxima)}.` };
+}
+
+export async function pularProgramadoAction(fd: FormData) {
+  const user = await requireUser("dono", "atendente", "caixa");
+  let proxima = "";
+  const r = await run(async () => (proxima = await pularProgramado(user, str(fd, "id"))), ["/"]);
+  return r?.error ? r : { ok: `Pulado. O próximo fica para ${diaBR(proxima)}.` };
 }

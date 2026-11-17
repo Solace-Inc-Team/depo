@@ -43,6 +43,16 @@ function tables(t: string): Record<string, { header: string[]; query: SQL }> {
         from customer_addresses a join customers c on c.id = a.customer_id
         where a.tenant_id = ${t} order by c.name`,
     },
+    "entregas_programadas.csv": {
+      header: ["Cliente", "A cada (dias)", "Próxima", "Itens", "Pagamento", "Endereço", "Taxa de entrega (R$)", "Pausada", "Criada em"],
+      query: sql`
+        select c.name, p.a_cada_dias, ${day("p.proxima")},
+          (select string_agg((i->>'quantity') || 'x ' || coalesce(pr.name, 'produto'), ', ')
+             from jsonb_array_elements(p.itens) i left join products pr on pr.id = (i->>'productId')::uuid),
+          p.payment_method, coalesce(p.address, c.address), ${money("p.delivery_fee_cents")}, ${yes("p.pausado")}, ${when("p.created_at")}
+        from pedidos_programados p join customers c on c.id = p.customer_id
+        where p.tenant_id = ${t} order by c.name`,
+    },
     "produtos.csv": {
       header: ["ID", "Nome", "Preço (R$)", "Preço do vasilhame (R$)", "Retornável", "Estoque mínimo", "À venda", "Criado em"],
       query: sql`select id, name, ${money("price_cents")}, ${money("container_price_cents")}, ${yes("returnable")}, min_stock, ${yes("active")}, ${when("created_at")} from products where tenant_id = ${t} order by name`,

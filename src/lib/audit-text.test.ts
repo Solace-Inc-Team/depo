@@ -38,3 +38,14 @@ test("quantidade no singular e no plural", () => {
   assert.deepEqual(descrever("estoque.avaria", { from: "vazio", quantity: 1, note: "trincado" }, {}, "Galão").detalhes, ["1 vazio", "trincado"]);
   assert.equal(descrever("estoque.compra", { full: 10 }, {}, "Gás P13").detalhes[0], "10 cheios");
 });
+
+test("auditoria: entrega programada e acerto da volta em português", () => {
+  const pular = descrever("programado.pular", { proxima: "2026-11-23" }, {}, "Ana Ribeiro");
+  assert.equal(pular.titulo, "Pulou a entrega programada de Ana Ribeiro");
+  assert.deepEqual(pular.detalhes, ["Próxima: 23/11"]);
+  const alt = descrever("programado.alterar", { antes: { aCadaDias: 15, proxima: "2026-11-20" }, depois: { aCadaDias: 7, proxima: "2026-11-18" } }, {}, "Ana");
+  assert.deepEqual(alt.mudancas, [["A cada", "15 dias", "7 dias"], ["Próxima", "20/11", "18/11"]]);
+  const volta = descrever("turno.acerto_volta", { esperado: 2200, countedCashCents: 2000, diff: -200 }, {}, "Carlos");
+  assert.equal(volta.titulo, "Acertou a volta de Carlos");
+  assert.equal(volta.detalhes[1], "Faltou R$\u00a02,00");
+});
