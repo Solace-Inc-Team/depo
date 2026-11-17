@@ -3,12 +3,12 @@ import { and, desc, eq, gt, isNotNull, isNull, sql } from "drizzle-orm";
 import { db, tenantTransaction, withTenant } from "@/db";
 import { assinaturaPagamentos, auditLog, tenants, users } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
-import { ErroMp, criarPixMp, pagamentoMp } from "@/lib/mercadopago";
+import { ErroMp, assinaturaDaCobrancaMp, assinaturaMp, cancelarAssinaturaMp, criarAssinaturaMp, criarPixMp, pagamentoMp } from "@/lib/mercadopago";
 import { PLANO } from "@/lib/plano";
 import { todayISO } from "@/lib/period";
 
-// Mensalidade do depo: um Pix por mês na conta do Mercado Pago da Solace (token em MP_TOKEN_SOLACE).
-// Pago, o acesso da empresa ganha mais um mês. Sem cartão e sem débito automático: o dono paga quando vence.
+// Mensalidade do depo, na conta do Mercado Pago da Solace (token em MP_TOKEN_SOLACE). Dois jeitos de pagar:
+// um Pix por mês, quando vence, ou o cartão, que o Mercado Pago cobra sozinho todo mês. Cada pagamento soma um mês.
 
 const tokenSolace = () => process.env.MP_TOKEN_SOLACE?.trim() ?? "";
 export const cobrancaLigada = () => !!tokenSolace();
@@ -157,4 +157,120 @@ export async function conferirAssinatura(tenantId: string): Promise<boolean> {
     caiu ||= ok;
   }
   return caiu;
+}
+
+// ---- Cartão: assinatura do Mercado Pago que cobra sozinha todo mês ----
+
+const referenciaCartao = (tenantId: string) => `assinatura-cartao:${tenantId}`;
+
+/**
+ * Situação da assinatura no cartão da empresa (null: não tem). Cada cobrança nova que o Mercado Pago fez desde a
+ * última conferência vira um mês a mais, contado do fim do período atual ou de hoje, o que vier depois.
+ * `caiu`: algum mês entrou agora.
+ */
+export async function conferirCartao(tenantId: string) {
+  const token = tokenSolace();
+  if (!token) return null;
+  const [t] = await withTenant(tenantId, () =>
+    db.select({ id: tenants.mpAssinaturaId, cobradas: tenants.mpAssinaturaCobradas }).from(tenants).where(eq(tenants.id, tenantId)),
+  );
+  if (!t?.id) return null;
+  let a: Awaited<ReturnType<typeof assinaturaMp>>;
+  try {
+    a = await assinaturaMp(token, t.id);
+  } catch (e) {
+    console.error(`[assinatura] consulta do cartão de ${tenantId} falhou:`, (e as Error).message);
+    return null;
+  }
+  // só vale a assinatura criada para esta empresa, com o valor do plano
+  if (a.referencia !== referenciaCartao(tenantId) || a.valorCents !== PLANO.mensalCents) return null;
+  const novas = a.cobradas - t.cobradas;
+  let caiu = false;
+  if (novas > 0) {
+    const hoje = todayISO();
+    caiu = await tenantTransaction({ tenantId }, async (tx) => {
+      // só uma conferência conta as cobranças: a tela e o aviso do Mercado Pago podem chegar juntos
+      const [marcado] = await tx
+        .update(tenants)
+        .set({
+          mpAssinaturaCobradas: a.cobradas,
+          pagoAte: sql`(greatest(coalesce(${tenants.pagoAte}, ${hoje}::date), ${hoje}::date) + make_interval(months => ${novas}::int))::date`,
+        })
+        .where(and(eq(tenants.id, tenantId), eq(tenants.mpAssinaturaId, a.id), eq(tenants.mpAssinaturaCobradas, t.cobradas)))
+        .returning({ id: tenants.id });
+      if (!marcado) return false;
+      const agora = new Date();
+      // entra na lista de pagamentos da tela, como o Pix
+      await tx.insert(assinaturaPagamentos).values(
+        Array.from({ length: novas }, (_, i) => ({ tenantId, mpPaymentId: `${a.id}:${t.cobradas + i + 1}`, codigo: "cartao", valorCents: a.valorCents, expiraEm: agora, pagoEm: agora })),
+      );
+      await tx.insert(auditLog).values({ tenantId, userId: null, action: "assinatura.pago", entity: "tenant", entityId: tenantId, data: { assinatura: a.id, cobrancas: novas, valor: a.valorCents } });
+      return true;
+    });
+  }
+  return { situacao: a.situacao, link: a.link, caiu };
+}
+
+/** Cria a assinatura no cartão e devolve o link do Mercado Pago onde o dono põe o cartão. Só o dono. */
+export async function assinarNoCartao(ctx: Ctx, email: string) {
+  assertRole(ctx, "dono");
+  const token = tokenSolace();
+  const site = process.env.APP_URL ?? "";
+  if (!token || !site.startsWith("https://")) throw new DomainError("A cobrança no cartão ainda não está ligada. Fale com a Solace.");
+  const [t] = await withTenant(ctx.tenantId, () =>
+    db.select({ nome: tenants.name, id: tenants.mpAssinaturaId }).from(tenants).where(eq(tenants.id, ctx.tenantId)),
+  );
+  const atual = await conferirCartao(ctx.tenantId);
+  if (atual?.situacao === "authorized") throw new DomainError("A cobrança no cartão já está ligada.");
+  // a que ficou pela metade sai antes de nascer outra: nunca duas cobrando a mesma empresa
+  if (t.id && atual?.situacao !== "cancelled") await cancelarAssinaturaMp(token, t.id).catch(() => {});
+  let nova: Awaited<ReturnType<typeof criarAssinaturaMp>>;
+  try {
+    nova = await criarAssinaturaMp(token, {
+      valorCents: PLANO.mensalCents,
+      referencia: referenciaCartao(ctx.tenantId),
+      emailPagador: email,
+      motivo: `depo: mensalidade de ${t.nome}`.slice(0, 120),
+      voltaPara: `${site}/assinatura`,
+      chave: randomUUID(),
+    });
+  } catch (e) {
+    console.error(`[assinatura] cartão de ${ctx.tenantId} falhou:`, (e as Error).message);
+    throw new DomainError(e instanceof ErroMp && e.tokenInvalido ? "A cobrança está fora do ar. Fale com a Solace." : "Não deu para abrir a assinatura agora. Confira o e-mail e tente de novo.");
+  }
+  await tenantTransaction(ctx, async (tx) => {
+    await tx.update(tenants).set({ mpAssinaturaId: nova.id, mpAssinaturaCobradas: 0 }).where(eq(tenants.id, ctx.tenantId));
+    await tx.insert(auditLog).values({ tenantId: ctx.tenantId, userId: ctx.userId, action: "assinatura.cartao", entity: "tenant", entityId: ctx.tenantId, data: { assinatura: nova.id } });
+  });
+  return nova.link!;
+}
+
+/** Desliga a cobrança no cartão. Os meses já pagos continuam valendo. Só o dono. */
+export async function cancelarCartao(ctx: Ctx) {
+  assertRole(ctx, "dono");
+  const token = tokenSolace();
+  const [t] = await withTenant(ctx.tenantId, () => db.select({ id: tenants.mpAssinaturaId }).from(tenants).where(eq(tenants.id, ctx.tenantId)));
+  if (!token || !t?.id) return;
+  try {
+    await cancelarAssinaturaMp(token, t.id);
+  } catch (e) {
+    console.error(`[assinatura] cancelar cartão de ${ctx.tenantId} falhou:`, (e as Error).message);
+    throw new DomainError("Não deu para desligar agora. Tente de novo em instantes.");
+  }
+  await tenantTransaction(ctx, async (tx) => {
+    await tx.update(tenants).set({ mpAssinaturaId: null }).where(eq(tenants.id, ctx.tenantId));
+    await tx.insert(auditLog).values({ tenantId: ctx.tenantId, userId: ctx.userId, action: "assinatura.cartao_desligado", entity: "tenant", entityId: ctx.tenantId, data: { assinatura: t.id } });
+  });
+}
+
+/** Aviso do Mercado Pago sobre a assinatura (ou sobre uma cobrança dela): acha a empresa e confere. */
+export async function avisoDoCartao(tipo: string, id: string) {
+  const token = tokenSolace();
+  if (!token) return;
+  let assinatura: string | null = null;
+  if (tipo === "subscription_preapproval" && /^[0-9a-f]{20,40}$/i.test(id)) assinatura = id;
+  else if (tipo === "subscription_authorized_payment" && /^\d{1,20}$/.test(id)) assinatura = await assinaturaDaCobrancaMp(token, id).catch(() => null);
+  if (!assinatura) return;
+  const [t] = await db.select({ id: tenants.id }).from(tenants).where(eq(tenants.mpAssinaturaId, assinatura));
+  if (t) await conferirCartao(t.id);
 }

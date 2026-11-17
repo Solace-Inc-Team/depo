@@ -207,7 +207,7 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
                   <tr key={o.id}>
                     <td className="num w-12 text-muted">#{o.number}</td>
                     <td>
-                      <Link href={`/pedidos/${o.id}`} className="font-medium hover:text-accent">
+                      <Link href={`/pedidos/${o.id}`} className="font-medium wrap-anywhere hover:text-accent">
                         {o.customerName ?? "Balcão"}
                       </Link>
                       <p className="text-sm text-muted">

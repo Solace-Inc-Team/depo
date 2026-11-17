@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, useTransition, type ReactNode } from "react";
-import { CircleAlert, CircleCheck } from "lucide-react";
+import { CircleAlert, CircleCheck, MessageCircle } from "lucide-react";
 import { progress } from "./nav-progress";
 import { confirmar } from "./confirm-dialog";
 import { recarregarSeVersaoNova } from "@/lib/versao-nova";
 import { useSaida } from "./saida";
+import { formatBRL, parseBRL } from "@/lib/money";
 
-export type ActionState = { error?: string; ok?: string } | undefined | void;
+/** `link`: o passo seguinte, como botão dentro do aviso de sucesso (ex.: avisar o cliente pelo WhatsApp). */
+export type ActionState = { error?: string; ok?: string; link?: { href: string; rotulo: string } } | undefined | void;
 
 const TOAST_EVENT = "deposito:toast";
 
@@ -21,6 +23,7 @@ function avisoDoCampo(campo: Campo) {
   // "no campo", "do campo", "neste campo": a preposição muda com o artigo, então cada frase tem a sua
   const c = (no: string, neste: string) => (rotulo ? `${no} campo "${rotulo}"` : neste);
   const v = campo.validity;
+  if (v.customError) return campo.validationMessage;
   if (v.valueMissing) return campo instanceof HTMLSelectElement ? `Escolha uma opção ${c("no", "neste campo")}.` : `Preencha ${c("o", "este campo")}.`;
   if (v.typeMismatch && campo.type === "email") return "Digite um e-mail válido, como nome@empresa.com.";
   if (v.tooShort && "minLength" in campo) return `${c("No", "Neste campo")}, use pelo menos ${campo.minLength} caracteres.`;
@@ -41,6 +44,15 @@ export function tremerCampo(campo: Campo) {
 }
 
 export function validarCampos(form: HTMLFormElement): string | null {
+  // campo de dinheiro com limites (data-min / data-max em centavos): confere antes de perguntar ou enviar
+  for (const el of form.querySelectorAll<HTMLInputElement>("input[data-mascara=dinheiro][data-max], input[data-mascara=dinheiro][data-min]")) {
+    const v = parseBRL(el.value);
+    const min = Number(el.dataset.min ?? -Infinity);
+    const max = Number(el.dataset.max ?? Infinity);
+    el.setCustomValidity(
+      !el.value.trim() || v == null ? "" : v < min ? (min <= 1 ? "O valor precisa ser maior que zero." : `O valor mínimo é ${formatBRL(min)}.`) : v > max ? (el.dataset.avisoMax ?? "O valor passa de") + ` ${formatBRL(max)}.` : "",
+    );
+  }
   const campo = form.querySelector<Campo>(":invalid:not(fieldset)");
   if (!campo) return null;
   tremerCampo(campo);
@@ -49,15 +61,20 @@ export function validarCampos(form: HTMLFormElement): string | null {
   return avisoDoCampo(campo);
 }
 
-export const toast = (message: string) => window.dispatchEvent(new CustomEvent(TOAST_EVENT, { detail: message }));
+type Link = NonNullable<Exclude<ActionState, void>["link"]>;
+export const toast = (message: string, link?: Link) => window.dispatchEvent(new CustomEvent(TOAST_EVENT, { detail: { message, link } }));
 
 // onSubmit manual em vez de action={...}: o React limpa o form depois da action, e em caso de erro
 // a gente quer manter o que foi digitado
-// o texto da confirmação com o que foi digitado: "Receber R$ {amount}?" vira "Receber R$ 84,00?"
+// o texto da confirmação com o que foi digitado: "Receber {amount}?" vira "Receber R$ 1.084,00?" (dinheiro sai formatado)
 const preencher = (texto: string, form: HTMLFormElement) =>
   texto.replace(/\{(\w+)\}/g, (_, nome: string) => {
     const el = form.elements.namedItem(nome);
     if (el instanceof HTMLSelectElement) return el.selectedOptions[0]?.text ?? "";
+    if (el instanceof HTMLInputElement && el.dataset.mascara === "dinheiro") {
+      const v = parseBRL(el.value);
+      return v == null ? el.value.trim() : formatBRL(v);
+    }
     return el instanceof HTMLInputElement ? el.value.trim() : "";
   });
 
@@ -191,7 +208,7 @@ export function ActionForm({
               alvo?.classList.remove("salvou");
               void (alvo as HTMLElement | null)?.offsetWidth;
               alvo?.classList.add("salvou");
-            } else if (r?.ok) toast(r.ok);
+            } else if (r?.ok) toast(r.ok, r.link);
             const menu = form.closest("details");
             if (menu) menu.open = false;
             // dentro de uma JanelaAcao: deu certo, a janela fecha
@@ -234,7 +251,7 @@ function soltar(button: Element | null | undefined) {
 }
 
 /** Mostra os avisos de sucesso das ações. Fica no layout raiz. */
-type Toast = { id: number; message: string; leaving?: boolean; vez?: number };
+type Toast = { id: number; message: string; link?: Link; leaving?: boolean; vez?: number };
 
 export function Toaster() {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -258,17 +275,20 @@ export function Toaster() {
       ]);
     };
     const show = (e: Event) => {
-      const message = (e as CustomEvent<string>).detail;
+      const { message, link } = (e as CustomEvent<{ message: string; link?: Link }>).detail;
+      // aviso com botão fica mais tempo: dá para ler e tocar
+      const tempo = link ? 9000 : 3500;
       // a mesma mensagem de novo (despachos seguidos): o aviso que está na tela dá um pulinho e ganha mais tempo
-      const igual = atual.find((t) => t.message === message && !t.leaving);
+      // (com botão não junta: cada um leva ao seu cliente)
+      const igual = !link && atual.find((t) => t.message === message && !t.link && !t.leaving);
       if (igual) {
         set((l) => l.map((t) => (t.id === igual.id ? { ...t, vez: (t.vez ?? 0) + 1 } : t)));
-        sair(igual.id, 3500);
+        sair(igual.id, tempo);
         return;
       }
       const id = ++seq;
-      set((l) => [...l, { id, message }]);
-      sair(id, 3500);
+      set((l) => [...l, { id, message, link }]);
+      sair(id, tempo);
       // no máximo três na tela: o mais antigo sai animado, não some de uma vez
       const visiveis = atual.filter((t) => !t.leaving);
       if (visiveis.length > 3) sair(visiveis[0].id);
@@ -317,7 +337,12 @@ export function Toaster() {
         >
           <CircleCheck size={16} strokeWidth={2} className="text-ok" aria-hidden="true" />
           {/* a chave muda a cada repetição: o texto dá o mesmo pulinho dos números (.bump) */}
-          <span key={current.vez ?? 0} className={current.vez ? "bump" : undefined}>{current.message}</span>
+          <span key={current.vez ?? 0} className={`min-w-0 flex-1 ${current.vez ? "bump" : ""}`}>{current.message}</span>
+          {current.link && (
+            <a href={current.link.href} target="_blank" rel="noopener noreferrer" className="btn btn-sm tap shrink-0">
+              <MessageCircle size={14} strokeWidth={1.75} aria-hidden="true" /> {current.link.rotulo}
+            </a>
+          )}
         </p>
       ))}
     </div>

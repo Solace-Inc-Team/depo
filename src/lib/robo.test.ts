@@ -43,10 +43,26 @@ test("robô: outro pedido passa por produto, quantidade, vazio, pagamento e conf
   assert.equal(r.estado?.etapa, "vazio", "galão cobra o vasilhame: pergunta se tem o vazio");
   r = responder(r.estado, { id: "v:nao" }, ctx());
   r = responder(r.estado, { id: "pg:dinheiro" }, ctx({ taxaCents: 300 }));
-  // 5 x (14 + 20 do vasilhame) + 3 de taxa
-  assert.match(textos(r.saidas), /5x Galão de água 20L com vasilhame\nTaxa de entrega: R\$\s3,00\nTotal: R\$\s173,00 em dinheiro/);
+  // em dinheiro pergunta o troco, com as notas acima do total (5 x (14 + 20 do vasilhame) + 3 de taxa = 173)
+  assert.equal(r.estado?.etapa, "troco");
+  assert.deepEqual(ids(r.saidas[0]), ["t:0", "t:20000"]);
+  const menor = responder(r.estado, { texto: "100" }, ctx({ taxaCents: 300 }));
+  assert.match(textos(menor.saidas), /menor que o total de R\$\s173,00/);
+  assert.equal(menor.estado?.etapa, "troco");
+  r = responder(r.estado, { texto: "200" }, ctx({ taxaCents: 300 }));
+  assert.match(textos(r.saidas), /5x Galão de água 20L com vasilhame\nTaxa de entrega: R\$\s3,00\nTotal: R\$\s173,00 em dinheiro\nTroco para R\$\s200,00/);
   const fim = responder(r.estado, { id: "confirmar" }, ctx({ taxaCents: 300 }));
-  assert.deepEqual(fim.lancar, { itens: [{ productId: "g", quantity: 5, returnsEmpty: false }], pagamento: "dinheiro" });
+  assert.deepEqual(fim.lancar, { itens: [{ productId: "g", quantity: 5, returnsEmpty: false }], pagamento: "dinheiro", trocoCents: 20000 });
+});
+
+test("robô: repetir pedido em dinheiro pergunta o troco antes de anotar", () => {
+  const din = ctx({ ultimo: { itens: [{ productId: "g", quantity: 2, returnsEmpty: true }], pagamento: "dinheiro", endereco: "Rua A" } });
+  let r = responder({ etapa: "menu" }, { id: "repetir" }, din);
+  assert.equal(r.lancar, undefined);
+  assert.deepEqual(ids(r.saidas[0]), ["t:0", "t:5000", "t:10000"], "total 28: notas de 50 e 100");
+  r = responder(r.estado, { id: "t:0" }, din);
+  assert.doesNotMatch(textos(r.saidas), /Troco/);
+  assert.deepEqual(responder(r.estado, { id: "confirmar" }, din).lancar, { itens: [{ productId: "g", quantity: 2, returnsEmpty: true }], pagamento: "dinheiro" });
 });
 
 test("robô: produto sem preço de vasilhame não pergunta do vazio, e não passa do que há na loja", () => {

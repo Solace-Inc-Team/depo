@@ -117,11 +117,12 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                 <Money cents={st.owed} className={`text-2xl font-semibold tracking-[-0.03em] ${st.owed > 0 ? "text-danger" : ""}`} />
               </div>
               {st.owed > 0 && (
-                <ActionForm key={st.owed} action={receivePaymentAction} confirm={`Receber R$ {amount} de ${c.name} ({method})?`} className="grid gap-3 border-b border-line p-4 sm:grid-cols-2 sm:items-end">
+                <ActionForm key={st.owed} action={receivePaymentAction} confirm={`Receber {amount} de ${c.name} ({method})?`} className="grid gap-3 border-b border-line p-4 sm:grid-cols-2 sm:items-end">
                   <input type="hidden" name="customerId" value={c.id} />
                   <div>
                     <label className="label" htmlFor="amount">Valor recebido</label>
-                    <input id="amount" name="amount" inputMode="decimal" data-mascara="dinheiro" required defaultValue={centsToInput(st.owed)} className="input num" />
+                    {/* zero ou acima do saldo para no campo, antes da pergunta de confirmar */}
+                    <input id="amount" name="amount" inputMode="decimal" data-mascara="dinheiro" data-min={1} data-max={st.owed} data-aviso-max="O valor passa do saldo devedor de" required defaultValue={centsToInput(st.owed)} className="input num" />
                   </div>
                   <div>
                     <label className="label" htmlFor="method">Forma</label>

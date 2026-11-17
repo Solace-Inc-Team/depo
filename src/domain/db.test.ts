@@ -1327,6 +1327,89 @@ test("mensalidade: teste grátis no cadastro, Pix na conta da Solace, pago soma 
   delete process.env.MP_TOKEN_SOLACE;
 });
 
+test("mensalidade no cartão: cada cobrança do Mercado Pago soma um mês, uma vez só; desligar mantém o que foi pago", async () => {
+  const { db } = m.db;
+  const { tenants, branches } = m.schema;
+  const { eq } = await import("drizzle-orm");
+  const mp = await import("@/lib/mercadopago");
+  const ass = await import("@/domain/assinatura");
+  const { somarDias, PLANO } = await import("@/lib/plano");
+  const { todayISO } = await import("@/lib/period");
+  const hoje = todayISO();
+  const { tenant, ownerId } = await m.platform.cadastrarEmpresa(
+    m.platform.cadastroSchema.parse({ company: "Gás no Cartão", ownerName: "Lia", email: `lia-${Date.now()}@cadastro.test`, password: "senha-boa-1", vende: "gas" }),
+    "v1",
+  );
+  const [filial] = await db.select().from(branches).where(eq(branches.tenantId, tenant.id));
+  const dono = { tenantId: tenant.id, userId: ownerId, role: "dono" as const, branchId: filial.id };
+  const pagoAte = async () => (await db.select({ p: tenants.pagoAte }).from(tenants).where(eq(tenants.id, tenant.id)))[0].p;
+  const mais = (meses: number) => {
+    const d = new Date(Date.parse(`${somarDias(hoje, PLANO.diasGratis)}T00:00:00Z`));
+    d.setUTCMonth(d.getUTCMonth() + meses);
+    return d.toISOString().slice(0, 10);
+  };
+
+  process.env.MP_TOKEN_SOLACE = "APP_USR-solace";
+  const antes = process.env.APP_URL;
+  process.env.APP_URL = "https://depo.test";
+  const assinaturas = new Map<string, { ref: string; valor: number; situacao: string; cobradas: number; email: string }>();
+  mp.usarRede(async (url, init) => {
+    if (new Headers(init?.headers).get("Authorization") !== "Bearer APP_USR-solace") return new Response("{}", { status: 401 });
+    const json = (o: unknown) => new Response(JSON.stringify(o), { status: 200 });
+    const caminho = String(url).replace("https://api.mercadopago.com", "");
+    if (caminho === "/preapproval" && init?.method === "POST") {
+      const b = JSON.parse(String(init.body));
+      const id = `2c938084${String(assinaturas.size).padStart(24, "0")}`;
+      assinaturas.set(id, { ref: b.external_reference, valor: Math.round(b.auto_recurring.transaction_amount * 100), situacao: "pending", cobradas: 0, email: b.payer_email });
+      return json({ id, status: "pending", init_point: `https://www.mercadopago.com.br/subscriptions/checkout?preapproval_id=${id}` });
+    }
+    if (caminho.startsWith("/authorized_payments/")) return json({ preapproval_id: [...assinaturas.keys()].at(-1) });
+    const a = assinaturas.get(caminho.split("/").pop()!);
+    if (!a) return new Response("{}", { status: 404 });
+    if (init?.method === "PUT") a.situacao = JSON.parse(String(init.body)).status;
+    return json({ id: caminho.split("/").pop(), status: a.situacao, external_reference: a.ref, auto_recurring: { transaction_amount: a.valor / 100 }, summarized: { charged_quantity: a.cobradas } });
+  });
+
+  await assert.rejects(ass.assinarNoCartao({ ...dono, role: "caixa" }, "lia@mp.test"), /Sem permissão/);
+  const link = await ass.assinarNoCartao(dono, "lia@mp.test");
+  assert.match(link, /^https:\/\/www\.mercadopago\.com\.br\//);
+  const [id1] = assinaturas.keys();
+  assert.equal(assinaturas.get(id1)!.email, "lia@mp.test");
+  assert.equal(assinaturas.get(id1)!.valor, PLANO.mensalCents);
+  assert.equal((await ass.conferirCartao(tenant.id))?.situacao, "pending");
+
+  // começar de novo cancela a que ficou pela metade: nunca duas cobrando
+  await ass.assinarNoCartao(dono, "lia@mp.test");
+  const id2 = [...assinaturas.keys()][1];
+  assert.equal(assinaturas.get(id1)!.situacao, "cancelled");
+
+  // autorizou e o Mercado Pago cobrou: o aviso da cobrança soma um mês, e repetir não soma de novo
+  Object.assign(assinaturas.get(id2)!, { situacao: "authorized", cobradas: 1 });
+  const aviso = await import("@/app/api/mercadopago/route");
+  const avisar = (type: string, id: string) => aviso.POST(new Request("http://x/api/mercadopago", { method: "POST", body: JSON.stringify({ type, data: { id } }) }));
+  await Promise.all([avisar("subscription_authorized_payment", "123456"), avisar("subscription_preapproval", id2)]);
+  assert.equal(await pagoAte(), mais(1));
+  assert.equal((await ass.conferirCartao(tenant.id))?.caiu, false);
+  assert.equal(await pagoAte(), mais(1));
+  await assert.rejects(ass.assinarNoCartao(dono, "lia@mp.test"), /já está ligada/);
+
+  // dois meses depois, sem aviso: a conferência da tela conta os dois
+  assinaturas.get(id2)!.cobradas = 3;
+  assert.equal((await ass.conferirCartao(tenant.id))?.caiu, true);
+  assert.equal(await pagoAte(), mais(3));
+  assert.equal((await ass.pagamentosFeitos(tenant.id)).length, 3);
+
+  // outra empresa não pega a assinatura desta, nem com o aviso
+  assert.equal(await ass.conferirCartao(A.t.id), null);
+
+  await ass.cancelarCartao(dono);
+  assert.equal(assinaturas.get(id2)!.situacao, "cancelled");
+  assert.equal(await ass.conferirCartao(tenant.id), null);
+  assert.equal(await pagoAte(), mais(3), "o que já foi pago continua");
+  delete process.env.MP_TOKEN_SOLACE;
+  process.env.APP_URL = antes;
+});
+
 test("admin da Solace nasce com filial: sem ela o login quebrava ao procurar onde a pessoa trabalha", async () => {
   const { eq } = await import("drizzle-orm");
   const { db } = m.db;

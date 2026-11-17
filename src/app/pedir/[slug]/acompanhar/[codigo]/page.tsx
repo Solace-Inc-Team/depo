@@ -128,6 +128,7 @@ export default async function Acompanhar({ params }: PageProps<"/pedir/[slug]/ac
           <span className="text-muted">{pagamento[p.paymentMethod]}</span>
           <span className="num text-xl font-semibold">{formatBRL(p.totalCents)}</span>
         </div>
+        {p.paymentMethod === "dinheiro" && p.changeForCents ? <p className="mt-1 text-[13px] text-muted">Troco para {formatBRL(p.changeForCents)}</p> : null}
         {p.paymentMethod === "pix" && p.pixConfirmedAt && (
           <p className="mt-2 flex items-center gap-2 text-[13px] text-ok">
             <CheckSucesso size={18} />

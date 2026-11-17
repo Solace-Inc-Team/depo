@@ -64,6 +64,9 @@ export const tenants = pgTable("tenants", {
   portalEnabled: boolean("portal_enabled").notNull().default(false),
   // assinatura: o acesso vale até este dia (teste grátis ou mês pago). Vazio = sem cobrança (empresas da Solace e as criadas por ela)
   pagoAte: date("pago_ate", { mode: "string" }),
+  // mensalidade no cartão (assinatura do Mercado Pago na conta da Solace) e quantas cobranças dela já viraram mês
+  mpAssinaturaId: text("mp_assinatura_id"),
+  mpAssinaturaCobradas: integer("mp_assinatura_cobradas").notNull().default(0),
   createdAt: createdAt(),
 });
 

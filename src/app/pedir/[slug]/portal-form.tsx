@@ -1,17 +1,49 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import Link from "next/link";
 import QRCode from "qrcode";
-import { ArrowRight, CircleAlert } from "lucide-react";
+import { ArrowRight, CircleAlert, MapPin, Phone, RotateCcw } from "lucide-react";
 import { CopyButton } from "@/components/copy-button";
-import { formatBRL } from "@/lib/money";
+import { formatBRL, parseBRL } from "@/lib/money";
 import { LiveNumber } from "@/components/live-number";
 import { CheckSucesso } from "@/components/check-sucesso";
 import { validarCampos } from "@/components/action-form";
 import type { PortalResult } from "@/app/actions";
 import { Aparece, useSaida } from "@/components/saida";
 import { Marcar } from "@/components/controles";
+import { linkWhatsApp } from "@/lib/whatsapp";
+
+// o último pedido fica guardado só neste aparelho: quem compra toda semana não digita tudo de novo
+type Salvo = {
+  nome: string;
+  fone: string;
+  endereco: string;
+  referencia: string;
+  itens: { productId: string; quantity: number; returnsEmpty: boolean }[];
+  pagamento: string;
+  numero?: number;
+  acompanhar?: string;
+};
+const chaveSalvo = (slug: string) => `depo:pedir:${slug}`;
+const semAssinatura = () => () => {};
+function lerBruto(slug: string) {
+  try {
+    return localStorage.getItem(chaveSalvo(slug));
+  } catch {
+    return null;
+  }
+}
+function lerSalvo(bruto: string | null): Salvo | null {
+  try {
+    const j = JSON.parse(bruto ?? "null");
+    return j && typeof j.nome === "string" && Array.isArray(j.itens) ? j : null;
+  } catch {
+    return null;
+  }
+}
+
+type Enviado = { endereco: string; referencia: string; pagamento: string; troco: string };
 
 type Product = { id: string; name: string; priceCents: number; returnable: boolean; containerPriceCents: number; disponivel: number };
 
@@ -22,13 +54,17 @@ const payments = [
 ] as const;
 
 export function PortalForm({
+  slug,
   action,
   products,
   pixEnabled,
+  loja,
 }: {
+  slug: string;
   action: (fd: FormData) => Promise<PortalResult>;
   products: Product[];
   pixEnabled: boolean;
+  loja: { phone: string; address: string };
 }) {
   const [qty, setQty] = useState<Record<string, number>>({});
   const [noBottle, setNoBottle] = useState<Record<string, boolean>>({});
@@ -36,6 +72,60 @@ export function PortalForm({
   const [result, setResult] = useState<PortalResult>();
   const [pending, start] = useTransition();
   const errorRef = useRef<HTMLParagraphElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  // dados da última compra neste aparelho (lidos só no navegador; o texto guardado é o que muda, não o objeto)
+  const bruto = useSyncExternalStore(
+    semAssinatura,
+    () => lerBruto(slug),
+    () => null,
+  );
+  const [esquecido, setEsquecido] = useState(false);
+  const salvo = useMemo(() => (esquecido ? null : lerSalvo(bruto)), [bruto, esquecido]);
+  const [enviado, setEnviado] = useState<Enviado>();
+
+  // preenche a entrega com os dados guardados (só os campos ainda vazios)
+  useEffect(() => {
+    const s = salvo;
+    if (!s) return;
+    const f = formRef.current;
+    if (!f) return;
+    const por = (n: string, v: string) => {
+      const el = f.elements.namedItem(n);
+      if (el instanceof HTMLInputElement && !el.value) el.value = v;
+    };
+    por("name", s.nome);
+    por("phone", s.fone);
+    por("address", s.endereco);
+    por("reference", s.referencia);
+  }, [salvo]);
+
+  const repetir = (s: Salvo) => {
+    const q: Record<string, number> = {};
+    const b: Record<string, boolean> = {};
+    for (const i of s.itens) {
+      const p = products.find((x) => x.id === i.productId);
+      if (!p || p.disponivel === 0) continue;
+      q[p.id] = Math.min(i.quantity, 20, p.disponivel);
+      if (p.returnable && !i.returnsEmpty) b[p.id] = true;
+    }
+    setQty(q);
+    setNoBottle(b);
+    if (s.pagamento === "dinheiro" || s.pagamento === "cartao" || (s.pagamento === "pix" && pixEnabled)) setPayment(s.pagamento);
+  };
+  const esquecer = () => {
+    try {
+      localStorage.removeItem(chaveSalvo(slug));
+    } catch {}
+    setEsquecido(true);
+    for (const n of ["name", "phone", "address", "reference"]) {
+      const el = formRef.current?.elements.namedItem(n);
+      if (el instanceof HTMLInputElement) el.value = "";
+    }
+  };
+  // o que dá para repetir do último pedido (produto que saiu da loja ou acabou fica de fora)
+  const repetivel = salvo?.itens.filter((i) => products.some((p) => p.id === i.productId && p.disponivel > 0)) ?? [];
+  const resumoRepetir = repetivel.map((i) => `${i.quantity} x ${products.find((p) => p.id === i.productId)!.name}`).join(", ");
+  const primeiroNome = salvo?.nome.trim().split(/\s+/)[0] ?? "";
 
   useEffect(() => {
     if (result?.error) errorRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -72,12 +162,15 @@ export function PortalForm({
         pixAutomatico={!!result.pixAutomatico}
         pixNaEntrega={!!result.pixNaEntrega}
         acompanhar={result.acompanhar}
+        enviado={enviado}
+        loja={loja}
         lines={products.filter((p) => qty[p.id] > 0).map((p) => `${qty[p.id]} x ${p.name}`)}
       />
     );
 
   return (
     <form
+      ref={formRef}
       method="post"
       noValidate
       // com a barra do total embaixo no celular, o fim da página ganha espaço para ela não cobrir o botão
@@ -91,10 +184,19 @@ export function PortalForm({
           return;
         }
         const fd = new FormData(e.currentTarget);
+        const campo = (n: string) => String(fd.get(n) ?? "").trim();
         start(async () => {
           // sem internet a ação lança: o pedido fica na tela, preenchido, em vez de cair na página de erro
           try {
-            setResult(await action(fd));
+            const r = await action(fd);
+            if (r.number) {
+              setEnviado({ endereco: campo("address"), referencia: campo("reference"), pagamento: payment, troco: payment === "dinheiro" && parseBRL(campo("changeFor")) ? formatBRL(parseBRL(campo("changeFor"))!) : "" });
+              const novo: Salvo = { nome: campo("name"), fone: campo("phone"), endereco: campo("address"), referencia: campo("reference"), itens: items, pagamento: payment, numero: r.number, acompanhar: r.acompanhar };
+              try {
+                localStorage.setItem(chaveSalvo(slug), JSON.stringify(novo));
+              } catch {}
+            }
+            setResult(r);
           } catch {
             setResult({ error: navigator.onLine ? "Não deu para enviar o pedido agora. Toque em Fazer pedido de novo." : "Sem internet. Seu pedido não foi enviado: quando a conexão voltar, toque em Fazer pedido de novo." });
           }
@@ -107,6 +209,33 @@ export function PortalForm({
       <input name="site" tabIndex={-1} autoComplete="off" aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 opacity-0" />
 
       <fieldset disabled={pending} className="space-y-6">
+        {/* quem já comprou neste aparelho: repetir com um toque e voltar ao último pedido */}
+        <Aparece quando={!!salvo && !items.length && (repetivel.length > 0 || !!salvo.acompanhar)}>
+          {salvo && (
+            <section className="panel space-y-3 p-4">
+              <div>
+                <h2 className="h2">Olá de novo, {primeiroNome}</h2>
+                {repetivel.length > 0 && <p className="mt-1 text-[13px] text-muted">Último pedido: {resumoRepetir}</p>}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {repetivel.length > 0 && (
+                  <button type="button" className="btn btn-primary h-11 flex-1 whitespace-nowrap" onClick={() => repetir(salvo)}>
+                    <RotateCcw size={16} strokeWidth={1.75} aria-hidden="true" /> Pedir de novo
+                  </button>
+                )}
+                {salvo.acompanhar && (
+                  <Link href={salvo.acompanhar} className="btn h-11 flex-1 whitespace-nowrap">
+                    Ver pedido #{salvo.numero} <ArrowRight className="size-4" aria-hidden="true" />
+                  </Link>
+                )}
+              </div>
+              {/* aparelho de outra pessoa: apaga o que ficou guardado aqui */}
+              <button type="button" className="btn h-9 text-[13px]" onClick={esquecer}>
+                Não sou {primeiroNome}
+              </button>
+            </section>
+          )}
+        </Aparece>
         {/* cada produto num cartão: o fundo (fios, fixo na tela) aparece entre eles e deixa claro que são eles que se tocam */}
         <section>
           <h2 className="h2 px-1 pb-2.5">Produtos</h2>
@@ -237,7 +366,30 @@ export function PortalForm({
   );
 }
 
-function Done({ number, totalCents, pix, pixAutomatico, pixNaEntrega, lines, acompanhar }: { number: number; totalCents: number; pix: string | null; pixAutomatico: boolean; pixNaEntrega: boolean; lines: string[]; acompanhar?: string }) {
+const nomePagamento: Record<string, string> = { pix: "Pix", dinheiro: "Dinheiro na entrega", cartao: "Cartão na entrega" };
+
+function Done({
+  number,
+  totalCents,
+  pix,
+  pixAutomatico,
+  pixNaEntrega,
+  lines,
+  acompanhar,
+  enviado,
+  loja,
+}: {
+  number: number;
+  totalCents: number;
+  pix: string | null;
+  pixAutomatico: boolean;
+  pixNaEntrega: boolean;
+  lines: string[];
+  acompanhar?: string;
+  enviado?: Enviado;
+  loja: { phone: string; address: string };
+}) {
+  const zap = linkWhatsApp(loja.phone, `Olá! Sobre o pedido #${number} feito pelo site:`);
   const [qr, setQr] = useState<string>();
   useEffect(() => {
     if (pix) QRCode.toString(pix, { type: "svg", margin: 1, width: 200 }).then(setQr);
@@ -253,6 +405,22 @@ function Done({ number, totalCents, pix, pixAutomatico, pixNaEntrega, lines, aco
           <li key={l}>{l}</li>
         ))}
       </ul>
+      {/* o que foi enviado, para o cliente ver na hora se errou o endereço ou o troco */}
+      {enviado && (
+        <div className="space-y-1 border-t border-line pt-4 text-[14px]">
+          <p className="flex gap-2">
+            <MapPin size={16} strokeWidth={1.75} className="mt-0.5 shrink-0 text-muted" aria-hidden="true" />
+            <span className="min-w-0 [overflow-wrap:anywhere]">
+              {enviado.endereco}
+              {enviado.referencia && <span className="text-muted"> ({enviado.referencia})</span>}
+            </span>
+          </p>
+          <p className="pl-6 text-muted">
+            {nomePagamento[enviado.pagamento] ?? enviado.pagamento}
+            {enviado.troco && `, troco para ${enviado.troco}`}
+          </p>
+        </div>
+      )}
       <p>
         Total de <b className="num">{formatBRL(totalCents)}</b>.{" "}
         {/* no Pix o pedido só vai para a fila depois de pago: o cliente precisa saber que o próximo passo é dele */}
@@ -269,6 +437,22 @@ function Done({ number, totalCents, pix, pixAutomatico, pixNaEntrega, lines, aco
         <Link href={acompanhar} className="btn btn-primary h-11 w-full">
           Acompanhar pedido <ArrowRight className="size-4" aria-hidden="true" />
         </Link>
+      )}
+      {/* errou algo: o caminho é falar com a loja, que ajusta o pedido */}
+      {loja.phone && (
+        <div className="space-y-2 border-t border-line pt-4">
+          <p className="text-[13px] text-muted">Errou o endereço ou quer mudar algo? Fale com a loja.</p>
+          <div className="flex flex-wrap gap-2">
+            <a href={`tel:+55${loja.phone.replace(/\D/g, "")}`} className="btn h-11 flex-1">
+              <Phone size={16} strokeWidth={1.75} aria-hidden="true" /> Ligar
+            </a>
+            {zap && (
+              <a href={zap} target="_blank" rel="noopener noreferrer" className="btn h-11 flex-1">
+                WhatsApp
+              </a>
+            )}
+          </div>
+        </div>
       )}
       {pix && (
         <div style={{ animationDelay: "350ms" }} className="enter space-y-3 border-t border-line pt-4">

@@ -1,18 +1,18 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getUser, pendingTerms } from "@/lib/auth";
-import { logout, pixAssinaturaAction } from "@/app/actions";
+import { cartaoAssinaturaAction, desligarCartaoAction, logout, pixAssinaturaAction } from "@/app/actions";
 import { ActionForm } from "@/components/action-form";
 import { AtualizaSozinho } from "@/components/atualiza-sozinho";
 import { MarcaDaSessao } from "@/components/logo";
 import { PixBox } from "@/components/pix-box";
 import { fmtDateTime, fmtTime } from "@/components/ui";
-import { cobrancaLigada, conferirAssinatura, pagamentosFeitos, pixEmAberto } from "@/domain/assinatura";
+import { cobrancaLigada, conferirAssinatura, conferirCartao, pagamentosFeitos, pixEmAberto } from "@/domain/assinatura";
 import { formatBRL } from "@/lib/money";
 import { PLANO, dataBR, situacaoAssinatura } from "@/lib/plano";
 import { todayISO } from "@/lib/period";
 import { INCLUSO } from "@/app/inicio/contato";
-import { ArrowLeft, Check, LogOut } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CreditCard, LogOut } from "lucide-react";
 import { TextoQueTroca } from "@/components/texto-que-troca";
 
 export const metadata = { title: "Assinatura" };
@@ -28,8 +28,14 @@ export default async function Assinatura() {
   const dono = user.role === "dono";
   if (!dono && !sit.bloqueado) redirect(casa);
 
-  // o Pix pode ter caído agora: confere antes de mostrar, e com mês novo a página recomeça com a data certa
+  // o Pix ou a cobrança do cartão podem ter caído agora: confere antes de mostrar, e com mês novo a página recomeça
+  // com a data certa (o cartão para qualquer perfil: com o acesso pausado, a cobrança dele destrava todo mundo)
   if (dono && (await conferirAssinatura(user.tenantId))) redirect("/assinatura");
+  const cartao = await conferirCartao(user.tenantId);
+  if (cartao?.caiu) redirect("/assinatura");
+  const cartaoLigado = cartao?.situacao === "authorized";
+  const cartaoPendente = cartao?.situacao === "pending" && cartao.link;
+  const cartaoDisponivel = cobrancaLigada() && (process.env.APP_URL ?? "").startsWith("https://");
   const [aberto, feitos] = dono ? await Promise.all([pixEmAberto(user.tenantId), pagamentosFeitos(user.tenantId)]) : [null, []];
   const emTeste = feitos.length === 0;
   const venceu = sit.dias < 0;
@@ -44,7 +50,7 @@ export default async function Assinatura() {
         ? `Venceu em ${dataBR(sit.pagoAte)}. Sem o pagamento, o sistema pausa em ${dataBR(sit.pausaEm)}.`
         : emTeste
           ? `Seu teste vai até ${dataBR(sit.pagoAte)}. Depois, ${valor} por mês.`
-          : `Pago até ${dataBR(sit.pagoAte)}.`;
+          : `Pago até ${dataBR(sit.pagoAte)}.${cartaoLigado ? " O cartão é cobrado sozinho todo mês." : ""}`;
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-6 py-16">
@@ -90,7 +96,7 @@ export default async function Assinatura() {
               <PixBox code={aberto.codigo} />
               <AtualizaSozinho ativo />
             </section>
-          ) : cobrancaLigada() ? (
+          ) : cartaoLigado ? null : cobrancaLigada() ? (
             <ActionForm action={pixAssinaturaAction} className="mt-8">
               <button className="btn btn-primary h-11 w-full">Pagar {valor} com Pix</button>
               {/* pagar antes do vencimento não perde dias: o mês novo começa onde o atual termina */}
@@ -99,6 +105,45 @@ export default async function Assinatura() {
           ) : (
             <p className="mt-8 rounded-lg border border-line px-4 py-3 text-[13px] text-muted">A cobrança ainda não está ligada. Fale com a Solace.</p>
           ))}
+
+        {/* cartão: o Mercado Pago cobra sozinho todo mês; ligado, o Pix sai de cena para ninguém pagar duas vezes */}
+        {dono && cartaoDisponivel && (
+          <section className="mt-8 border-t border-line pt-6">
+            <h2 className="flex items-center gap-2 font-semibold">
+              <CreditCard size={17} strokeWidth={1.75} className="text-muted" aria-hidden="true" />
+              {cartaoLigado ? "Cobrança no cartão ligada" : "Prefere no cartão?"}
+            </h2>
+            <p className="mt-1 text-[13px] text-muted">
+              {cartaoLigado
+                ? `O Mercado Pago cobra ${valor} todo mês. Cada cobrança soma um mês ao seu acesso.`
+                : `O Mercado Pago cobra ${valor} todo mês, sem você precisar lembrar. Dá para desligar quando quiser.`}
+            </p>
+            {cartaoLigado ? (
+              <ActionForm action={desligarCartaoAction} confirm="Desligar a cobrança no cartão? Os meses já pagos continuam valendo." className="mt-4">
+                <button className="btn h-11 w-full">Desligar cobrança no cartão</button>
+              </ActionForm>
+            ) : (
+              <>
+                {/* começou e não terminou: volta para a mesma página do Mercado Pago */}
+                {cartaoPendente && (
+                  <a href={cartao!.link!} className="btn btn-primary mt-4 h-11 w-full">
+                    Continuar no Mercado Pago <ArrowRight size={15} strokeWidth={1.75} aria-hidden="true" />
+                  </a>
+                )}
+                <ActionForm action={cartaoAssinaturaAction} className="mt-4 space-y-3">
+                  <div>
+                    {/* o Mercado Pago pede que o e-mail seja o da conta em que o dono vai entrar para pôr o cartão */}
+                    <label className="label" htmlFor="mp-email">E-mail da sua conta do Mercado Pago</label>
+                    <input id="mp-email" name="email" type="email" required maxLength={200} autoComplete="email" defaultValue={user.email} className="input" />
+                  </div>
+                  <button className="btn h-11 w-full">
+                    <CreditCard size={15} strokeWidth={1.75} aria-hidden="true" /> {cartaoPendente ? "Começar de novo" : "Assinar no cartão"}
+                  </button>
+                </ActionForm>
+              </>
+            )}
+          </section>
+        )}
 
         {feitos.length > 0 && (
           <section className="mt-8">

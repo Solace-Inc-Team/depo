@@ -1,4 +1,4 @@
-import { formatBRL } from "./money.ts";
+import { formatBRL, parseBRL } from "./money.ts";
 
 // O robô do WhatsApp: uma conversa só de botões, sem IA. Esta parte só decide o que responder (sem banco, para ser
 // testada); quem busca o cliente, guarda o andamento e lança o pedido é o domain/robo.ts.
@@ -26,7 +26,8 @@ export type Estado =
   | { etapa: "quantidade"; productId: string }
   | { etapa: "vazio"; productId: string; quantity: number }
   | { etapa: "pagamento"; itens: Item[] }
-  | { etapa: "confirmar"; itens: Item[]; pagamento: Pagamento }
+  | { etapa: "troco"; itens: Item[] }
+  | { etapa: "confirmar"; itens: Item[]; pagamento: Pagamento; trocoCents?: number | null }
   | { etapa: "loja" };
 
 /** O que o cliente mandou: texto digitado ou o id do botão / linha da lista que tocou. */
@@ -37,7 +38,7 @@ export type Saida =
   | { tipo: "botoes"; texto: string; botoes: { id: string; titulo: string }[] }
   | { tipo: "lista"; texto: string; botao: string; itens: { id: string; titulo: string; descricao?: string }[] };
 
-export type Resposta = { saidas: Saida[]; estado: Estado | null; lancar?: { itens: Item[]; pagamento: Pagamento } };
+export type Resposta = { saidas: Saida[]; estado: Estado | null; lancar?: { itens: Item[]; pagamento: Pagamento; trocoCents?: number | null } };
 
 const MAX_QTD = 20;
 const comoPaga: Record<Pagamento, string> = { pix: "no Pix", dinheiro: "em dinheiro", cartao: "no cartão" };
@@ -59,7 +60,10 @@ function total(ctx: Contexto, itens: Item[]) {
   );
 }
 
-function resumo(ctx: Contexto, itens: Item[], pagamento?: Pagamento | "fiado") {
+// cédulas para o troco: o robô oferece as duas primeiras acima do total
+const NOTAS = [2000, 5000, 10000, 20000];
+
+function resumo(ctx: Contexto, itens: Item[], pagamento?: Pagamento | "fiado", trocoCents?: number | null) {
   const linhas = itens.map((i) => {
     const p = produto(ctx, i.productId)!;
     return `${i.quantity}x ${p.nome}${p.retornavel && !i.returnsEmpty && p.vasilhameCents ? " com vasilhame" : ""}`;
@@ -67,6 +71,7 @@ function resumo(ctx: Contexto, itens: Item[], pagamento?: Pagamento | "fiado") {
   if (ctx.taxaCents) linhas.push(`Taxa de entrega: ${formatBRL(ctx.taxaCents)}`);
   // fiado não se pede pelo robô: no resumo do último pedido vai só o valor
   linhas.push(`Total: ${formatBRL(total(ctx, itens))}${pagamento && pagamento !== "fiado" ? ` ${comoPaga[pagamento]}` : ""}`);
+  if (trocoCents) linhas.push(`Troco para ${formatBRL(trocoCents)}`);
   linhas.push(`Entrega: ${endereco(ctx)}`);
   return linhas.join("\n");
 }
@@ -135,11 +140,22 @@ function pergunta(estado: Estado, ctx: Contexto): Saida[] {
           botoes: [{ id: "pg:pix", titulo: "Pix" }, { id: "pg:dinheiro", titulo: "Dinheiro" }, { id: "pg:cartao", titulo: "Cartão" }],
         },
       ];
+    case "troco": {
+      const t = total(ctx, estado.itens);
+      const notas = NOTAS.filter((n) => n > t).slice(0, 2);
+      return [
+        {
+          tipo: "botoes",
+          texto: `Vai precisar de troco? O total é ${formatBRL(t)}.\nSe for outro valor, escreva quanto vai pagar (ex.: 200).`,
+          botoes: [{ id: "t:0", titulo: "Não preciso" }, ...notas.map((n) => ({ id: `t:${n}`, titulo: `Para ${formatBRL(n)}` }))],
+        },
+      ];
+    }
     case "confirmar":
       return [
         {
           tipo: "botoes",
-          texto: `Confere seu pedido:\n\n${resumo(ctx, estado.itens, estado.pagamento)}`,
+          texto: `Confere seu pedido:\n\n${resumo(ctx, estado.itens, estado.pagamento, estado.trocoCents)}`,
           botoes: [{ id: "confirmar", titulo: "Confirmar pedido" }, { id: "inicio", titulo: "Começar de novo" }, LOJA],
         },
       ];
@@ -178,6 +194,8 @@ export function responder(estado: Estado | null, entrada: Entrada, ctx: Contexto
       if (id === "repetir") {
         // fiado não se pede pelo robô: repete os produtos e pergunta como vai pagar
         if (u.pagamento === "fiado") return vaiPara({ etapa: "pagamento", itens: u.itens }, ctx);
+        // em dinheiro o entregador precisa saber o troco: pergunta antes de anotar
+        if (u.pagamento === "dinheiro") return vaiPara({ etapa: "troco", itens: u.itens }, ctx);
         return { saidas: [], estado: null, lancar: { itens: u.itens, pagamento: u.pagamento } };
       }
       if (id === "outro") return vaiPara({ etapa: "produto" }, ctx);
@@ -206,11 +224,21 @@ export function responder(estado: Estado | null, entrada: Entrada, ctx: Contexto
     case "pagamento": {
       const pg = id.slice(3) as Pagamento;
       if (!id.startsWith("pg:") || !Object.hasOwn(comoPaga, pg)) return naoEntendi();
+      if (pg === "dinheiro") return vaiPara({ etapa: "troco", itens: estado.itens }, ctx);
       return vaiPara({ etapa: "confirmar", itens: estado.itens, pagamento: pg }, ctx);
+    }
+    case "troco": {
+      if (estado.itens.some((i) => !produto(ctx, i.productId))) return inicio(ctx);
+      const valor = id.startsWith("t:") ? Number(id.slice(2)) : texto ? parseBRL(texto) : null;
+      if (valor == null || !Number.isInteger(valor) || valor < 0) return naoEntendi();
+      const t = total(ctx, estado.itens);
+      if (valor > 0 && valor < t) return { saidas: [{ tipo: "texto", texto: `Esse valor é menor que o total de ${formatBRL(t)}.` }, ...pergunta(estado, ctx)], estado };
+      return vaiPara({ etapa: "confirmar", itens: estado.itens, pagamento: "dinheiro", trocoCents: valor > t ? valor : null }, ctx);
     }
     case "confirmar": {
       if (estado.itens.some((i) => !produto(ctx, i.productId))) return inicio(ctx);
-      if (id === "confirmar") return { saidas: [], estado: null, lancar: { itens: estado.itens, pagamento: estado.pagamento } };
+      if (id === "confirmar")
+        return { saidas: [], estado: null, lancar: { itens: estado.itens, pagamento: estado.pagamento, ...(estado.trocoCents ? { trocoCents: estado.trocoCents } : {}) } };
       return naoEntendi();
     }
   }

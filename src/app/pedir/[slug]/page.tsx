@@ -35,12 +35,12 @@ export default async function Pedir({ params, searchParams }: PageProps<"/pedir/
       <ContatoLoja phone={t.phone} address={t.address} />
       <div className="mb-6" />
       {products.length ? (
-        <PortalForm action={portalOrderAction.bind(null, slug, typeof filial === "string" ? filial : "")} products={products} pixEnabled={!!t.pixKey || t.mp} />
+        <PortalForm slug={slug} loja={{ phone: t.phone, address: t.address }} action={portalOrderAction.bind(null, slug, typeof filial === "string" ? filial : "")} products={products} pixEnabled={!!t.pixKey || t.mp} />
       ) : (
         <p className="panel p-4 text-muted">Nenhum produto disponível agora. Ligue para a loja.</p>
       )}
       <p className="mt-8 text-[13px] text-muted">
-        Usamos seu nome, telefone e endereço só para entregar o pedido e falar com você sobre ele. Veja a{" "}
+        Usamos seu nome, telefone e endereço só para entregar o pedido e falar com você sobre ele. Eles ficam guardados neste aparelho para o próximo pedido. Veja a{" "}
         <Link href="/privacidade" className="underline">política de privacidade</Link>.
       </p>
     </main>

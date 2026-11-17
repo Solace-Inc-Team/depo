@@ -178,7 +178,7 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
         </div>
 
         <div className="space-y-6">
-          <section className="panel p-4">
+          <section className="panel min-w-0 p-4 wrap-anywhere">
             <h2 className="h2 mb-2">Cliente</h2>
             {o.customerName ? (
               <>

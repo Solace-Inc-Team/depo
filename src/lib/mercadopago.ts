@@ -95,6 +95,59 @@ export async function criarPixMp(token: string, p: NovoPix) {
   return { id: r.id, codigo };
 }
 
+// Assinatura no cartão (API de Preapproval): o dono autoriza na página do Mercado Pago e ele cobra todo mês sozinho.
+// Os avisos chegam pelos eventos "Planos e assinaturas" da aplicação; quem diz quantas cobranças caíram é a consulta.
+type Preapproval = {
+  id: string;
+  status: string;
+  external_reference?: string;
+  init_point?: string;
+  auto_recurring?: { transaction_amount?: number };
+  summarized?: { charged_quantity?: number | null };
+};
+const assinaturaDe = (r: Preapproval) => ({
+  id: r.id,
+  /** pending (falta autorizar), authorized (cobrando), paused, cancelled */
+  situacao: r.status,
+  referencia: r.external_reference ?? "",
+  valorCents: Math.round(Number(r.auto_recurring?.transaction_amount ?? 0) * 100),
+  /** cobranças que já caíram desde o começo da assinatura */
+  cobradas: r.summarized?.charged_quantity ?? 0,
+  link: r.init_point ?? null,
+});
+
+/** Cria a assinatura mensal e devolve o link do Mercado Pago onde o dono põe o cartão e autoriza. */
+export async function criarAssinaturaMp(token: string, p: { valorCents: number; referencia: string; emailPagador: string; motivo: string; voltaPara: string; chave: string }) {
+  const r = await chamar<Preapproval>(token, "/preapproval", {
+    method: "POST",
+    headers: { "X-Idempotency-Key": p.chave },
+    body: JSON.stringify({
+      reason: p.motivo,
+      external_reference: p.referencia,
+      payer_email: p.emailPagador,
+      back_url: p.voltaPara,
+      status: "pending",
+      auto_recurring: { frequency: 1, frequency_type: "months", transaction_amount: p.valorCents / 100, currency_id: "BRL" },
+    }),
+  });
+  const a = assinaturaDe(r);
+  if (!a.link) throw new ErroMp("O Mercado Pago não devolveu o link da assinatura.");
+  return a;
+}
+
+export const assinaturaMp = async (token: string, id: string) => assinaturaDe(await chamar<Preapproval>(token, `/preapproval/${encodeURIComponent(id)}`));
+
+/** Para as cobranças: o que já foi pago continua valendo. */
+export async function cancelarAssinaturaMp(token: string, id: string) {
+  await chamar(token, `/preapproval/${encodeURIComponent(id)}`, { method: "PUT", body: JSON.stringify({ status: "cancelled" }) });
+}
+
+/** Cada cobrança mensal tem o próprio id; o aviso dela traz esse id e a consulta diz de qual assinatura é. */
+export async function assinaturaDaCobrancaMp(token: string, id: string) {
+  const r = await chamar<{ preapproval_id?: string }>(token, `/authorized_payments/${encodeURIComponent(id)}`);
+  return r.preapproval_id ?? null;
+}
+
 /** Situação da cobrança: "processed" é Pix pago. */
 export async function pagamentoMp(token: string, id: string) {
   const r = await pedidoMp(token, id);

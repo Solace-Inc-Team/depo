@@ -23,7 +23,7 @@ import { createExpense, expenseSchema, voidExpense } from "@/domain/expenses";
 import { openShift, closeShift, addCashEntry, cashEntrySchema, voidCashEntry, resolveDifference, settleTrip } from "@/domain/shifts";
 import { receivePurchase, markDamaged, runInventory, saveSupplier, supplierSchema, transferirEstoque } from "@/domain/stock";
 import { receivePayment, paymentSchema, voidPayment } from "@/domain/receivables";
-import { pixAssinatura } from "@/domain/assinatura";
+import { assinarNoCartao, cancelarCartao, pixAssinatura } from "@/domain/assinatura";
 import { cadastrarEmpresa, cadastroSchema, createTenant, deleteTenant, newTenantSchema, resetOwnerAccess, setTenantActive } from "@/domain/platform";
 import { resolveError, sendTestAlert } from "@/domain/monitoring";
 import { addAddress, addressSchema, removeAddress, saveSettings, settingsSchema, anonymizeCustomer, saveCustomer, customerSchema, saveProduct, productSchema, createUser, userSchema, setUserActive, resetUserPassword, acceptTerms } from "@/domain/registry";
@@ -35,6 +35,8 @@ import { conversar, recomecarConversa } from "@/domain/robo";
 import type { Saida } from "@/lib/robo";
 import { FILIAL_COOKIE } from "@/lib/auth";
 import { todayISO } from "@/lib/period";
+import { getOrder, getSettings } from "@/domain/queries";
+import { linkWhatsApp, mensagemSaida } from "@/lib/whatsapp";
 
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 const optId = (fd: FormData, k: string) => str(fd, k) || null;
@@ -125,6 +127,27 @@ export async function pixAssinaturaAction(): Promise<ActionState> {
   const user = await getUser();
   if (!user) redirect("/login");
   return run(() => pixAssinatura(user), ["/assinatura"]);
+}
+
+/** Mensalidade no cartão: cria a assinatura e leva o dono à página do Mercado Pago para pôr o cartão. */
+export async function cartaoAssinaturaAction(fd: FormData): Promise<ActionState> {
+  const user = await getUser();
+  if (!user) redirect("/login");
+  const email = z.email().max(200).safeParse(str(fd, "email").toLowerCase());
+  if (!email.success) return { error: "Digite o e-mail da sua conta do Mercado Pago, como nome@empresa.com." };
+  let link = "";
+  const r = await run(async () => void (link = await assinarNoCartao(user, email.data)), ["/assinatura"]);
+  if (r?.error) return r;
+  // só segue para o próprio Mercado Pago
+  const host = new URL(link).hostname;
+  if (!/(^|\.)mercadopago\.com(\.br)?$/.test(host)) return { error: "Não deu para abrir a assinatura agora. Tente de novo em instantes." };
+  redirect(link);
+}
+
+export async function desligarCartaoAction(): Promise<ActionState> {
+  const user = await getUser();
+  if (!user) redirect("/login");
+  return run(() => cancelarCartao(user), ["/assinatura"], "Cobrança no cartão desligada. Os meses já pagos continuam valendo.");
 }
 
 /** Cadastro público: o dono cria a empresa e já entra logado. */
@@ -220,7 +243,14 @@ export async function dispatchAction(fd: FormData) {
   // vários "orderId" no mesmo formulário: os pedidos marcados na fila saem juntos, numa viagem só
   const ids = fd.getAll("orderId").map(String).filter((v) => z.uuid().safeParse(v).success);
   if (!ids.length) return { error: "Escolha os pedidos que vão sair." };
-  return run(() => dispatchOrders(user, ids, driverId), ["/"], ids.length === 1 ? "Pedido saiu para entrega." : `${ids.length} pedidos saíram para entrega.`);
+  const r = await run(() => dispatchOrders(user, ids, driverId), ["/"], ids.length === 1 ? "Pedido saiu para entrega." : `${ids.length} pedidos saíram para entrega.`);
+  if (r?.error || ids.length > 1) return r;
+  // um pedido só: o aviso já traz o "Avisar cliente", que antes ficava lá embaixo, dentro do entregador
+  const [o, loja, h] = await Promise.all([getOrder(user.tenantId, ids[0]), getSettings(user.tenantId), headers()]);
+  if (!o?.customerName) return r;
+  const link = `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}/pedir/${loja.slug}/acompanhar/${o.trackingId}`;
+  const zap = linkWhatsApp(o.customerPhone, mensagemSaida({ cliente: o.customerName, loja: loja.name, numero: o.number, entregador: o.driverName, link }));
+  return zap ? { ...r, ok: `Pedido #${o.number} saiu para entrega.`, link: { href: zap, rotulo: "Avisar cliente" } } : r;
 }
 
 export async function deliverAction(fd: FormData) {

@@ -1,6 +1,16 @@
 "use client";
 
-import { useDeferredValue, useEffect, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useRef, useState, useSyncExternalStore } from "react";
+
+// o canal guardado neste aparelho só é lido no navegador; no servidor vale "telefone"
+const semAssinatura = () => () => {};
+const canalGuardado = () => {
+  try {
+    return localStorage.getItem("depo:canal") === "whatsapp" ? "whatsapp" : "telefone";
+  } catch {
+    return "telefone";
+  }
+};
 import { ActionForm } from "@/components/action-form";
 import { createOrderAction } from "@/app/actions";
 import { formatBRL, parseBRL } from "@/lib/money";
@@ -38,6 +48,8 @@ export function NewOrderForm({
   const [customer, setCustomer] = useState<Customer | undefined>(initialCustomer);
   const [search, setSearch] = useState("");
   const [matches, setMatches] = useState<{ q: string; list: Customer[] }>({ q: "", list: [] });
+  // resultado marcado pelas setas (volta ao primeiro a cada busca nova)
+  const [ativo, setAtivo] = useState(0);
   const [creating, setCreating] = useState(false);
   const [payment, setPayment] = useState<(typeof payments)[number][0]>("dinheiro");
   const [fee, setFee] = useState("");
@@ -71,7 +83,10 @@ export function NewOrderForm({
     const t = setTimeout(() => {
       fetch(`/clientes/busca?q=${encodeURIComponent(q)}`, { signal: ctrl.signal })
         .then((r) => (r.ok ? r.json() : []))
-        .then((list: Customer[]) => setMatches({ q, list }))
+        .then((list: Customer[]) => {
+          setMatches({ q, list });
+          setAtivo(0);
+        })
         .catch(() => {});
     }, 200);
     return () => {
@@ -81,6 +96,22 @@ export function NewOrderForm({
   }, [search]);
   const q = search.trim();
   const shown = q.length >= 2 ? matches.list : [];
+  // ↑ ↓ andam pelos resultados e Enter escolhe: quem atende com o telefone no ombro não larga o teclado
+  const escolher = (c: Customer) => {
+    setCustomer(c);
+    setSearch("");
+  };
+
+  // de onde veio o pedido: começa no último canal usado neste aparelho (WhatsApp vindo sempre marcado errava o relatório)
+  const guardado = useSyncExternalStore(semAssinatura, canalGuardado, () => "telefone" as const);
+  const [escolhido, setOrigin] = useState<"telefone" | "whatsapp">();
+  const origin = escolhido ?? guardado;
+  const mudarCanal = (c: "telefone" | "whatsapp") => {
+    setOrigin(c);
+    try {
+      localStorage.setItem("depo:canal", c);
+    } catch {}
+  };
   const nothingFound = q.length >= 2 && matches.q === q && matches.list.length === 0;
 
   const items = products
@@ -108,6 +139,7 @@ export function NewOrderForm({
       <input type="hidden" name="items" value={JSON.stringify(items)} />
       <input type="hidden" name="customerId" value={creating ? "" : (customer?.id ?? "")} />
       <input type="hidden" name="paymentMethod" value={payment} />
+      {mode === "entrega" && <input type="hidden" name="origin" value={origin} />}
 
       <div className="space-y-6">
         <div role="tablist" aria-label="Tipo de venda" className="relative grid grid-cols-2 rounded-lg bg-subtle p-1 sm:inline-grid">
@@ -132,7 +164,26 @@ export function NewOrderForm({
         </div>
 
         <section className="panel p-4">
-          <h2 className="h2 mb-3">Cliente{mode === "balcao" && <span className="text-base font-normal text-muted"> (opcional)</span>}</h2>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h2 className="h2">Cliente{mode === "balcao" && <span className="text-base font-normal text-muted"> (opcional)</span>}</h2>
+            {/* o canal fica junto do cliente, à vista: lá embaixo ninguém mudava */}
+            {mode === "entrega" && (
+              <div role="group" aria-label="Pedido chegou por" className="flex items-center gap-1.5">
+                <span className="text-[13px] text-muted">Chegou por</span>
+                {(["telefone", "whatsapp"] as const).map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    aria-pressed={origin === c}
+                    onClick={() => mudarCanal(c)}
+                    className={`btn btn-sm tap ${origin === c ? "border-accent bg-accent/10 hover:bg-accent/10" : ""}`}
+                  >
+                    {c === "telefone" ? "Telefone" : "WhatsApp"}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           {customer && !creating ? (
             // cada estado do quadro (buscar, cadastrar, escolhido) chega com movimento quando toma o lugar do outro
             <div className="enter flex items-start justify-between gap-3 rounded-md bg-accent-soft p-3">
@@ -165,13 +216,13 @@ export function NewOrderForm({
                 <label className="label" htmlFor="nc-phone">Telefone</label>
                 <input id="nc-phone" name="newCustomerPhone" inputMode="tel" data-mascara="telefone" className="input" />
               </div>
-              <div>
-                <label className="label" htmlFor="nc-ref">Referência</label>
-                <input id="nc-ref" name="newCustomerReference" maxLength={200} className="input" />
-              </div>
               <div className="sm:col-span-2">
                 <label className="label" htmlFor="nc-addr">Endereço</label>
                 <input id="nc-addr" name="newCustomerAddress" maxLength={200} className="input" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="label" htmlFor="nc-ref">Referência</label>
+                <input id="nc-ref" name="newCustomerReference" maxLength={200} className="input" />
               </div>
               <button type="button" className="btn btn-sm tap w-fit" onClick={() => setCreating(false)}>
                 Buscar cliente cadastrado
@@ -180,16 +231,40 @@ export function NewOrderForm({
           ) : (
             <div className="enter">
               <label className="label" htmlFor="busca">Buscar por nome, telefone ou endereço <span className="hidden font-normal text-muted lg:inline">(atalho: /)</span></label>
-              <input id="busca" ref={searchRef} value={search} onChange={(e) => setSearch(e.target.value)} className="input" autoComplete="off" />
+              <input
+                id="busca"
+                ref={searchRef}
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                    if (!shown.length) return;
+                    e.preventDefault();
+                    setAtivo((a) => (a + (e.key === "ArrowDown" ? 1 : shown.length - 1)) % shown.length);
+                  } else if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
+                    // Enter na busca escolhe o cliente marcado; nunca lança o pedido pela metade
+                    e.preventDefault();
+                    if (shown[ativo]) escolher(shown[ativo]);
+                  }
+                }}
+                role="combobox"
+                aria-expanded={shown.length > 0}
+                aria-controls="busca-resultados"
+                aria-activedescendant={shown[ativo] ? `cli-${shown[ativo].id}` : undefined}
+                className="input"
+                autoComplete="off"
+              />
               {shown.length > 0 && (
-                <ul className="mt-2 divide-y divide-line rounded-md border border-line">
+                <ul id="busca-resultados" role="listbox" className="mt-2 divide-y divide-line rounded-md border border-line">
                   {shown.map((c, i) => (
                     // resultados chegam em sequência rápida; quem já estava na lista não anima de novo
-                    <li key={c.id} className="enter" style={{ animationDelay: `${i * 30}ms` }}>
+                    <li key={c.id} id={`cli-${c.id}`} role="option" aria-selected={i === ativo} className="enter" style={{ animationDelay: `${i * 30}ms` }}>
                       <button
                         type="button"
-                        onClick={() => { setCustomer(c); setSearch(""); }}
-                        className="block w-full px-3 py-2 text-left hover:bg-subtle"
+                        tabIndex={-1}
+                        onClick={() => escolher(c)}
+                        onMouseEnter={() => setAtivo(i)}
+                        className={`block w-full px-3 py-2 text-left hover:bg-subtle ${i === ativo ? "bg-subtle" : ""}`}
                       >
                         <span className="font-medium">{c.name}</span>
                         <span className="block text-sm text-muted">{c.address} {c.phone && `(${c.phone})`}</span>
@@ -259,13 +334,6 @@ export function NewOrderForm({
           </div>
           {/* trocar Entrega e Balcão recolhe e abre os campos da entrega no lugar */}
           <Aparece quando={mode === "entrega"} className="space-y-3">
-              <div>
-                <label className="label" htmlFor="origin">Pedido chegou por</label>
-                <select id="origin" name="origin" className="input" defaultValue="whatsapp">
-                  <option value="whatsapp">WhatsApp</option>
-                  <option value="telefone">Telefone</option>
-                </select>
-              </div>
               <div>
                 <label className="label" htmlFor="fee">Taxa de entrega</label>
                 <input id="fee" name="deliveryFee" maxLength={12} value={fee} onChange={(e) => setFee(e.target.value)} inputMode="decimal" data-mascara="dinheiro" className="input" placeholder="0,00" />

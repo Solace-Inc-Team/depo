@@ -134,7 +134,7 @@ async function lancar(
   tx: Tx,
   tenantId: string,
   branchId: string,
-  p: { customerId: string; itens: Item[]; pagamento: Pagamento; taxaCents: number; endereco: string; referencia: string; teste: boolean },
+  p: { customerId: string; itens: Item[]; pagamento: Pagamento; trocoCents?: number | null; taxaCents: number; endereco: string; referencia: string; teste: boolean },
 ) {
   // como no pedido do site: fica em nome do dono, e a origem "whatsapp" mostra de onde veio
   const [dono] = await tx
@@ -152,7 +152,7 @@ async function lancar(
     items: p.itens,
     paymentMethod: p.pagamento,
     deliveryFeeCents: p.taxaCents,
-    changeForCents: null,
+    changeForCents: p.pagamento === "dinheiro" ? (p.trocoCents ?? null) : null,
     address: p.endereco,
     reference: p.referencia,
     notes: p.teste ? "Teste do robô do WhatsApp: pode cancelar" : "Pedido pelo robô do WhatsApp",

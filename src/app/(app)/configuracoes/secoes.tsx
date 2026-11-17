@@ -245,6 +245,12 @@ export async function secoesConfig(tenantId: string, pagoAte: string | null) {
               </Linha>
             </Grupo>
           </ActionForm>
+          {/* sem telefone, o cliente que errou o endereço não tem como falar com a loja */}
+          {s.portalEnabled && !s.phone && (
+            <p className="rounded-lg bg-warn-soft px-4 py-3 text-[13px] text-warn-fg">
+              Seu cliente não vê nenhum telefone da loja no site. Preencha o telefone em Empresa para ele poder ligar se errar o endereço.
+            </p>
+          )}
           {links.map((l) => (
             <Grupo key={l.id} titulo={l.nome ? `Link da filial ${l.nome}` : "Seu link"}>
               <div className="ajuste-linha" data-campo>

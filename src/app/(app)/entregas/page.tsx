@@ -107,7 +107,7 @@ export default async function Entregas() {
             {[...aPagar].reverse().map((o) => (
               <Card key={o.id} id={o.id}>
                 <li className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line px-4 py-3 last:border-0">
-                  <div className="min-w-0">
+                  <div className="min-w-0 wrap-anywhere">
                     <Link href={`/pedidos/${o.id}`} className="font-medium hover:text-accent">
                       <span className="num text-muted">#{o.number}</span> {o.customerName ?? "Cliente"}
                     </Link>
@@ -197,7 +197,7 @@ export default async function Entregas() {
                           <Marcar form={FORM_GRUPO} name="orderId" value={o.id} aria-label={`Marcar o pedido #${o.number} para sair junto`} />
                         </label>
                       )}
-                      <Link href={`/pedidos/${o.id}`} className="alvo mr-auto font-semibold hover:text-accent">
+                      <Link href={`/pedidos/${o.id}`} className="alvo mr-auto min-w-0 font-semibold wrap-anywhere hover:text-accent">
                         <span className="num text-muted">#{o.number}</span> {o.customerName ?? "Cliente"}
                         {o.origin === "portal" && <SiteBadge />}
                       </Link>
@@ -205,7 +205,7 @@ export default async function Entregas() {
                         {late(o) ? "Atrasado, " : ""}{ha(minutesSince(o.createdAt))}
                       </span>
                     </div>
-                    <p className="text-sm text-muted">
+                    <p className="text-sm text-muted wrap-anywhere">
                       {o.customerAddress || "Sem endereço"}. <Money cents={o.totalCents} />, {paymentLabel[o.paymentMethod].toLowerCase()}
                     </p>
                     {o.occurrence && <p className="mt-1 text-sm font-medium text-warn-fg">Voltou da rua: {o.occurrence}</p>}
@@ -281,7 +281,7 @@ export default async function Entregas() {
                         <div className="viagem-entregue flex flex-wrap items-center justify-between gap-x-3 border-b border-line/60 px-4 py-2.5 last:border-0">
                           <Link href={`/pedidos/${o.id}`} className="-my-3 flex min-w-0 items-center gap-1.5 py-3 hover:text-fg">
                             <Check size={14} strokeWidth={2} className="shrink-0 self-center text-ok" aria-hidden="true" />
-                            <span className="min-w-0">
+                            <span className="min-w-0 wrap-anywhere">
                               <span className="num">#{o.number}</span> {o.customerName ?? "Cliente"}
                             </span>
                           </Link>
@@ -293,7 +293,7 @@ export default async function Entregas() {
                       ) : (
                       <div className={`border-b border-line/60 px-4 py-2.5 last:border-0 ${minutesSince(o.dispatchedAt) < 1 ? "row-new" : ""}`}>
                         <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                          <Link href={`/pedidos/${o.id}`} className="min-w-0 hover:text-accent">
+                          <Link href={`/pedidos/${o.id}`} className="min-w-0 wrap-anywhere hover:text-accent">
                             <span className="num text-muted">#{o.number}</span> {o.customerName ?? "Cliente"}
                             <span className="block text-sm text-muted">{o.customerAddress}</span>
                           </Link>

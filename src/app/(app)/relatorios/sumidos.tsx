@@ -21,7 +21,12 @@ export async function ClientesSumidos({ tenantId, filial, loja }: { tenantId: st
   return (
     <section className="panel mb-6">
       <h2 className="h2 flex items-baseline justify-between gap-3 border-b border-line px-4 py-3">
-        Pararam de comprar <span className="text-[13px] font-normal text-muted">{lista.length}</span>
+        <span>
+          Pararam de comprar
+          {/* a lista olha o ritmo de cada cliente até hoje: o período escolhido no topo não muda nada aqui */}
+          <span className="block text-[13px] font-normal text-muted">Não depende do período escolhido acima</span>
+        </span>
+        <span className="text-[13px] font-normal text-muted">{lista.length}</span>
       </h2>
       <ul>
         {lista.slice(0, LIMITE).map((c) => {
@@ -33,7 +38,7 @@ export async function ClientesSumidos({ tenantId, filial, loja }: { tenantId: st
                   {c.nome}
                 </Link>
                 <p className="text-[13px] text-muted">
-                  Comprava a cada {c.s!.intervalo} {c.s!.intervalo === 1 ? "dia" : "dias"}, está há {c.s!.semComprar} sem comprar.{" "}
+                  Comprava a cada {c.s!.intervalo} {c.s!.intervalo === 1 ? "dia" : "dias"}, está há {c.s!.semComprar} {c.s!.semComprar === 1 ? "dia" : "dias"} sem comprar.{" "}
                   <Money cents={c.totalCents} /> no total.
                 </p>
               </div>
