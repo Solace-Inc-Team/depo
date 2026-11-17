@@ -3,6 +3,12 @@ import { db } from "@/db";
 import { assinaturaPagamentos, orders } from "@/db/schema";
 import { conferirPixMp } from "@/domain/pix";
 import { avisoDoCartao, conferirAssinatura } from "@/domain/assinatura";
+import { assinaturaDoAvisoOk } from "@/lib/aviso-mp";
+import { attempt } from "@/lib/rate-limit";
+import { clientIp } from "@/lib/request";
+
+// avisos de cobrança do cartão por IP a cada 15 minutos: cada um custa uma consulta ao Mercado Pago com o token da Solace
+const MAX_AVISOS_CARTAO = 120;
 
 // Aviso do Mercado Pago de que uma cobrança (order) mudou, configurado na aplicação "depo app" (evento
 // "Order"). O aviso é só um toque: nada do que vem nele é aceito como verdade. O id precisa ser de uma
@@ -12,8 +18,13 @@ export async function POST(req: Request) {
   const corpo = (await req.json().catch(() => ({}))) as { type?: string; data?: { id?: string | number } };
   const id = String(corpo.data?.id ?? url.searchParams.get("data.id") ?? "");
   const tipo = String(corpo.type ?? url.searchParams.get("type") ?? "");
+  // shortcut: por enquanto a assinatura só é registrada; depois de ver nos logs que os avisos verdadeiros passam,
+  // recusar os que falham (responder 200 sem fazer nada)
+  const assinado = assinaturaDoAvisoOk(process.env.MP_AVISO_SEGREDO?.trim() ?? "", req.headers, url.searchParams.get("data.id") ?? id);
+  if (assinado === false) console.warn(`[mercadopago] aviso com assinatura que não confere (tipo ${tipo || "?"}, id ${id.slice(0, 40)})`);
   // mensalidade no cartão (eventos "Planos e assinaturas"): a consulta ao Mercado Pago diz quantas cobranças caíram
   if (tipo.startsWith("subscription_")) {
+    if (tipo === "subscription_authorized_payment" && (await attempt(`aviso-mp:${await clientIp(req.headers)}`, MAX_AVISOS_CARTAO))) return new Response(null, { status: 200 });
     await avisoDoCartao(tipo, id).catch((e) => console.error("[assinatura] aviso do cartão falhou:", (e as Error).message));
   } else if (/^ORD[0-9A-Z]{10,40}$/.test(id)) {
     const [o] = await db.select({ id: orders.id, tenantId: orders.tenantId }).from(orders).where(eq(orders.mpPaymentId, id));

@@ -278,6 +278,9 @@ export const orders = pgTable(
     // Pix só conta como recebido depois que alguém confere no extrato do banco
     pixConfirmedAt: timestamp("pix_confirmed_at", { withTimezone: true }),
     pixConfirmedBy: uuid("pix_confirmed_by").references(() => users.id),
+    // Pix já pago que precisa voltar ao cliente (pedido cancelado ou entrega parcial depois do pagamento).
+    // Zera quando a loja marca que devolveu; a devolução é feita fora do depo, pelo banco.
+    pixDevolverCents: integer("pix_devolver_cents").notNull().default(0),
     // cobrança Pix no Mercado Pago: o código copia e cola dela e o valor que cobra. Se o total muda
     // (entrega parcial) ou ela vence, nasce outra.
     mpPaymentId: text("mp_payment_id"),

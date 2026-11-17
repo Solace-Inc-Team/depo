@@ -1,4 +1,4 @@
-import { and, eq, isNotNull, isNull, lt } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { db, tenantTransaction, withTenant } from "@/db";
 import { auditLog, orders, tenants } from "@/db/schema";
 import { type Ctx, DomainError, assertRole, isUuid } from "@/lib/ctx";
@@ -18,6 +18,8 @@ const PRAZO_MS = 24 * 60 * 60 * 1000;
 export const PRAZO_PAGAR_MS = 15 * 60 * 1000;
 // folga antes de cancelar: um Pix pago no último minuto ainda pode estar sendo processado
 const FOLGA_MS = 2 * 60 * 1000;
+// a cobrança no Mercado Pago vale no mínimo 30 minutos (lib/mercadopago.ts), mesmo com o prazo do pedido sendo 15
+const COBRANCA_MIN_MS = 30 * 60 * 1000;
 
 /** Código Pix na chave da empresa (sem confirmação automática). */
 export function orderPix(t: { pixKey: string; pixName: string; pixCity: string }, order: { number: number; totalCents: number }) {
@@ -192,11 +194,17 @@ export async function conferirPixMp(tenantId: string, orderId: string): Promise<
   const liberado = await tenantTransaction({ tenantId }, async (tx) => {
     const [ok] = await tx
       .update(orders)
-      .set({ pixConfirmedAt: new Date(), pixConfirmedBy: null, status: liberaParaFila })
+      .set({
+        pixConfirmedAt: new Date(),
+        pixConfirmedBy: null,
+        status: liberaParaFila,
+        // pago depois de cancelado (o Mercado Pago estava fora quando o prazo venceu): o valor volta ao cliente
+        pixDevolverCents: sql`case when ${orders.status} = 'cancelado' then ${p.valorCents} else 0 end`,
+      })
       .where(and(eq(orders.id, orderId), eq(orders.mpPaymentId, o.mpPaymentId!), isNull(orders.pixConfirmedAt)))
-      .returning({ id: orders.id });
+      .returning({ id: orders.id, devolver: orders.pixDevolverCents });
     // sem pessoa: quem confirmou foi o Mercado Pago
-    if (ok) await tx.insert(auditLog).values({ tenantId, userId: null, action: "pedido.pix_mercadopago", entity: "order", entityId: orderId, data: { pagamento: o.mpPaymentId, valor: p.valorCents } });
+    if (ok) await tx.insert(auditLog).values({ tenantId, userId: null, action: "pedido.pix_mercadopago", entity: "order", entityId: orderId, data: { pagamento: o.mpPaymentId, valor: p.valorCents, ...(ok.devolver ? { pixDevolver: ok.devolver } : {}) } });
     return !!ok;
   });
   // o pedido que esperava o Pix foi para a fila: o cliente fica sabendo
@@ -238,7 +246,7 @@ export const liberarSemPix = (tenantId: string, orderId: string) =>
 export async function cancelarPixVencidos(tenantId: string) {
   const vencidos = await withTenant(tenantId, () =>
     db
-      .select({ id: orders.id, number: orders.number })
+      .select({ id: orders.id, number: orders.number, createdAt: orders.createdAt })
       .from(orders)
       .where(
         and(
@@ -253,8 +261,13 @@ export async function cancelarPixVencidos(tenantId: string) {
     if (await conferirPixMp(tenantId, v.id)) continue;
     // a cobrança no Mercado Pago dura no mínimo 30 minutos: cancela lá para ninguém pagar um pedido cancelado.
     // Se o cancelamento falhar porque o Pix caiu agora, a conferência de novo pega.
-    if (!(await cancelarCobranca(tenantId, v.id)) && (await conferirPixMp(tenantId, v.id))) continue;
-    await tenantTransaction({ tenantId }, async (tx) => {
+    if (!(await cancelarCobranca(tenantId, v.id))) {
+      if (await conferirPixMp(tenantId, v.id)) continue;
+      // Mercado Pago fora: a cobrança ainda pode ser paga até vencer lá (no mínimo 30 minutos depois de criada).
+      // Cancelar antes disso arrisca um pedido cancelado com Pix pago; espera a cobrança vencer e tenta de novo.
+      if (v.createdAt.getTime() > Date.now() - COBRANCA_MIN_MS - FOLGA_MS) continue;
+    }
+    const cancelou = await tenantTransaction({ tenantId }, async (tx) => {
       const [ok] = await tx
         .update(orders)
         .set({ status: "cancelado", cancelReason: "Pix não pago em 15 minutos" })
@@ -262,7 +275,9 @@ export async function cancelarPixVencidos(tenantId: string) {
         .returning({ id: orders.id });
       // sem pessoa: quem cancelou foi o prazo
       if (ok) await tx.insert(auditLog).values({ tenantId, userId: null, action: "pedido.pix_vencido", entity: "order", entityId: v.id, data: { number: v.number } });
+      return !!ok;
     });
-    void avisarCliente(tenantId, v.id, "cancelado");
+    // duas telas podem conferir o mesmo pedido ao mesmo tempo: só quem cancelou de fato avisa o cliente
+    if (cancelou) void avisarCliente(tenantId, v.id, "cancelado");
   }
 }

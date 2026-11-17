@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { tenantTransaction, type Tx } from "@/db";
 import { orders, orderItems, customers, customerAddresses, shifts, expenses, tenants, cashEntries } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
@@ -368,18 +368,25 @@ export async function deliverOrder(ctx: Ctx, orderId: string, partial?: { delive
       const delivered = got.map((i) => ({ quantity: i.got, unitPriceCents: i.unitPriceCents }));
       const discount = partialDiscount(o.discountCents, itemsSubtotal(items), itemsSubtotal(delivered));
       const total = orderTotal(delivered, o.deliveryFeeCents, discount);
+      // Pix já pago antes da entrega: ele cobre o novo total primeiro; o que passar volta ao cliente,
+      // e o que faltar continua em dinheiro com o entregador
+      const pixPago = o.paymentMethod === "pix" && o.pixConfirmedAt ? o.totalCents - o.cashPartCents : null;
       Object.assign(changes, {
         totalCents: total,
         discountCents: discount,
         // a conta mudou: troco e divisão do pagamento combinados antes deixam de valer
         changeForCents: null,
         // se a parte em dinheiro cobre o novo total, o pedido passou a ser todo em dinheiro
-        ...(o.cashPartCents >= total && o.cashPartCents > 0 ? { paymentMethod: "dinheiro" as const, cashPartCents: 0 } : {}),
+        ...(pixPago !== null
+          ? { cashPartCents: Math.max(0, total - pixPago), pixDevolverCents: Math.max(0, pixPago - total) }
+          : o.cashPartCents >= total && o.cashPartCents > 0
+            ? { paymentMethod: "dinheiro" as const, cashPartCents: 0 }
+            : {}),
         notes: [o.notes, `Entrega parcial: ${partial!.note.trim()}`].filter(Boolean).join(" | "),
       });
     }
     await tx.update(orders).set(changes).where(eq(orders.id, o.id));
-    await audit(tx, ctx, isPartial ? "pedido.entrega_parcial" : "pedido.entregue", "order", o.id, isPartial ? { before: o.totalCents, after: changes.totalCents, note: partial!.note } : undefined);
+    await audit(tx, ctx, isPartial ? "pedido.entrega_parcial" : "pedido.entregue", "order", o.id, isPartial ? { before: o.totalCents, after: changes.totalCents, note: partial!.note, pixDevolver: changes.pixDevolverCents || undefined } : undefined);
     return changes.totalCents ?? o.totalCents;
   });
   void avisarCliente(ctx.tenantId, orderId, "entregue");
@@ -396,10 +403,33 @@ export async function cancelOrder(ctx: Ctx, orderId: string, reason: string) {
     if (o.status === "estornado") throw new DomainError("Pedido já estornado.");
     if (o.status === "cancelado") throw new DomainError("Pedido já cancelado.");
     if (o.status === "em_rota" && o.driverId) await returnToStore(tx, loaded, `retorno cancelamento #${o.number}`);
-    await tx.update(orders).set({ status: "cancelado", cancelReason: reason.trim() }).where(eq(orders.id, o.id));
-    await audit(tx, ctx, "pedido.cancelar", "order", o.id, { reason, previous: o.status });
+    // Pix já pago: o cliente tem esse valor a receber de volta, e o pedido mostra isso até a loja devolver
+    const devolver = o.pixConfirmedAt ? o.totalCents - o.cashPartCents : 0;
+    await tx.update(orders).set({ status: "cancelado", cancelReason: reason.trim(), pixDevolverCents: devolver }).where(eq(orders.id, o.id));
+    await audit(tx, ctx, "pedido.cancelar", "order", o.id, { reason, previous: o.status, ...(devolver ? { pixDevolver: devolver } : {}) });
   });
   void avisarCliente(ctx.tenantId, orderId, "cancelado");
+}
+
+/** A loja devolveu ao cliente, pelo banco, o Pix pago a mais: o pedido deixa de cobrar a devolução. */
+export async function marcarPixDevolvido(ctx: Ctx, orderId: string) {
+  assertRole(ctx, "dono", "caixa");
+  await tenantTransaction(ctx, async (tx) => {
+    const [o] = await tx
+      .update(orders)
+      .set({ pixDevolverCents: 0 })
+      .where(
+        and(
+          eq(orders.id, orderId),
+          eq(orders.tenantId, ctx.tenantId),
+          ctx.role === "dono" ? undefined : eq(orders.branchId, ctx.branchId),
+          gt(orders.pixDevolverCents, 0),
+        ),
+      )
+      .returning({ id: orders.id });
+    if (!o) throw new DomainError("Este pedido não tem Pix a devolver.");
+    await audit(tx, ctx, "pedido.pix_devolvido", "order", o.id);
+  });
 }
 
 /**

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import { listDrivers, listShifts } from "@/domain/queries";
+import { listDrivers, listPixDevolver, listShifts } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
 import { openShiftAction } from "@/app/actions";
 import { JanelaAcao } from "@/components/janela-acao";
@@ -10,10 +10,11 @@ export const metadata = { title: "Caixa e acertos" };
 
 export default async function Caixa() {
   const user = await requireUser("dono", "atendente", "caixa");
-  const [open, closed, drivers] = await Promise.all([
+  const [open, closed, drivers, devolver] = await Promise.all([
     listShifts(user.tenantId, user.branchId, "aberto"),
     listShifts(user.tenantId, user.branchId, "fechado"),
     listDrivers(user.tenantId, user.branchId),
+    listPixDevolver(user.tenantId, user.branchId),
   ]);
   const free = drivers.filter((d) => !open.some((s) => s.driverId === d.id));
   const canSettle = user.role === "dono" || user.role === "caixa";
@@ -73,7 +74,24 @@ export default async function Caixa() {
         )}
       </section>
 
-
+      {devolver.length > 0 && (
+        <section className="panel mt-6 border-warn/40">
+          <h2 className="h2 border-b border-line px-4 py-3">Pix a devolver</h2>
+          <ul>
+            {devolver.map((d) => (
+              <li key={d.id} className="border-b border-line last:border-0">
+                <Link href={`/pedidos/${d.id}`} className="flex items-baseline justify-between gap-3 px-4 py-3 hover:bg-subtle active:bg-subtle">
+                  <span className="min-w-0 wrap-anywhere">
+                    <span className="font-medium">Pedido #{d.number}</span>
+                    {d.customerName && <span className="text-muted">, {d.customerName}</span>}
+                  </span>
+                  <Money cents={d.cents} className="shrink-0 font-semibold" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="panel mt-6 overflow-x-auto">
         <h2 className="h2 border-b border-line px-4 py-3">Acertos fechados</h2>

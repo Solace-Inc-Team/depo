@@ -263,13 +263,16 @@ export async function cancelarCartao(ctx: Ctx) {
   });
 }
 
+const algumCartaoLigado = async () => (await db.select({ id: tenants.id }).from(tenants).where(isNotNull(tenants.mpAssinaturaId)).limit(1)).length > 0;
+
 /** Aviso do Mercado Pago sobre a assinatura (ou sobre uma cobrança dela): acha a empresa e confere. */
 export async function avisoDoCartao(tipo: string, id: string) {
   const token = tokenSolace();
   if (!token) return;
   let assinatura: string | null = null;
   if (tipo === "subscription_preapproval" && /^[0-9a-f]{20,40}$/i.test(id)) assinatura = id;
-  else if (tipo === "subscription_authorized_payment" && /^\d{1,20}$/.test(id)) assinatura = await assinaturaDaCobrancaMp(token, id).catch(() => null);
+  // só pergunta ao Mercado Pago se alguma empresa tem cartão ligado: sem isso, aviso falso não gasta a cota do token
+  else if (tipo === "subscription_authorized_payment" && /^\d{1,20}$/.test(id) && (await algumCartaoLigado())) assinatura = await assinaturaDaCobrancaMp(token, id).catch(() => null);
   if (!assinatura) return;
   const [t] = await db.select({ id: tenants.id }).from(tenants).where(eq(tenants.mpAssinaturaId, assinatura));
   if (t) await conferirCartao(t.id);

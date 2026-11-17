@@ -1082,6 +1082,28 @@ test("Mercado Pago: conecta com o token da loja, cobra o Pix do pedido, confirma
   await pix.cancelarPixVencidos(B.t.id);
   assert.equal((await m.q.getOrder(A.t.id, s4.id))!.status, "aguardando_pagamento");
 
+  // Mercado Pago fora no vencimento: não cancela enquanto a cobrança ainda pode ser paga lá (30 minutos)
+  const s6 = await doSite();
+  await pix.pixDoPedido(A.t.id, s6.id);
+  await db.update(orders).set({ createdAt: vinteMinAtras }).where(eq(orders.id, s6.id));
+  fora = true;
+  await pix.cancelarPixVencidos(A.t.id);
+  assert.equal((await m.q.getOrder(A.t.id, s6.id))!.status, "aguardando_pagamento");
+  // passou da validade da cobrança: aí cancela, mesmo sem conseguir falar com o Mercado Pago
+  await db.update(orders).set({ createdAt: new Date(Date.now() - 40 * 60_000) }).where(eq(orders.id, s6.id));
+  await pix.cancelarPixVencidos(A.t.id);
+  assert.equal((await m.q.getOrder(A.t.id, s6.id))!.status, "cancelado");
+  fora = false;
+  // e se o Pix tinha caído: continua cancelado, mas o valor fica para devolver ao cliente
+  const [p6] = await db.select({ id: orders.mpPaymentId }).from(orders).where(eq(orders.id, s6.id));
+  cobrancas.get(p6.id!.replace(/^ORD0+/, ""))!.pago = true;
+  assert.equal(await pix.conferirPixMp(A.t.id, s6.id), true);
+  const v6 = (await m.q.getOrder(A.t.id, s6.id))!;
+  assert.equal(v6.status, "cancelado");
+  assert.equal(v6.pixDevolverCents, v6.totalCents);
+  // o pedido que entrou na fila normalmente não tem nada a devolver
+  assert.equal((await m.q.getOrder(A.t.id, s3.id))!.pixDevolverCents, 0);
+
   // desconectado: volta a conferência à mão e o token some do banco
   await pix.desconectarMercadoPago(A.ctx);
   const [semMp] = await db.select({ enc: tenants.mpTokenEnc }).from(tenants).where(eq(tenants.id, A.t.id));
@@ -1099,6 +1121,65 @@ test("Mercado Pago: conecta com o token da loja, cobra o Pix do pedido, confirma
   const conferido = (await m.q.getOrder(A.t.id, s5.id))!;
   assert.equal(conferido.status, "aberto");
   assert.ok(conferido.pixConfirmedAt);
+});
+
+test("Pix já pago: cancelar ou entregar menos deixa o valor a devolver no pedido até a loja marcar", async () => {
+  const { db } = m.db;
+  const { users } = m.schema;
+  const [d] = await db.insert(users).values({ tenantId: A.t.id, name: "devolve", email: `devolve@${A.t.id}.test`, role: "entregador", passwordHash: "x" }).returning();
+  await m.stock.receivePurchase(A.ctx, { productId: A.product.id, full: 20, emptiesReturned: 0, note: "carga do teste" });
+  await m.shifts.openShift(A.ctx, d.id, 0);
+  const caixa = { ...A.ctx, role: "caixa" as const };
+  const entregador = { tenantId: A.t.id, userId: d.id, role: "entregador" as const, branchId: A.branch.id };
+  const pedido = (quantity: number, cashPartCents: number, driverId: string | null) =>
+    m.orders.createOrder(A.ctx, {
+      mode: "entrega", customerId: A.customer.id, items: [{ productId: A.product.id, quantity, returnsEmpty: true }],
+      paymentMethod: "pix", cashPartCents, deliveryFeeCents: 0, changeForCents: null, notes: "", driverId,
+    });
+  const parcial = async (id: string, n: number) => {
+    const [item] = (await m.q.getOrder(A.t.id, id))!.items;
+    return m.orders.deliverOrder(entregador, id, { delivered: { [item.id]: n }, note: "cliente quis menos" });
+  };
+
+  // 3 x 110 = 330, sendo 100 em dinheiro e 230 no Pix já pago; chega só 1 (110): o Pix cobre tudo e sobram 120
+  const a = await pedido(3, 10000, d.id);
+  await m.orders.confirmPix(caixa, a.id);
+  await parcial(a.id, 1);
+  const pa = (await m.q.getOrder(A.t.id, a.id))!;
+  assert.equal(pa.totalCents, 11000);
+  assert.equal(pa.paymentMethod, "pix");
+  assert.equal(pa.cashPartCents, 0);
+  assert.equal(pa.pixDevolverCents, 12000);
+
+  // 300 em dinheiro e 30 no Pix pago; chega 1 (110): o entregador cobra só os 80 que faltam, nada a devolver
+  const b = await pedido(3, 30000, d.id);
+  await m.orders.confirmPix(caixa, b.id);
+  await parcial(b.id, 1);
+  const pb = (await m.q.getOrder(A.t.id, b.id))!;
+  assert.equal(pb.cashPartCents, 8000);
+  assert.equal(pb.pixDevolverCents, 0);
+
+  // cancelado depois do Pix conferido: o Pix inteiro volta
+  const c = await pedido(1, 0, null);
+  await m.orders.confirmPix(caixa, c.id);
+  await m.orders.cancelOrder({ ...A.ctx, role: "atendente" }, c.id, "cliente desistiu");
+  assert.equal((await m.q.getOrder(A.t.id, c.id))!.pixDevolverCents, 11000);
+  // cancelado sem Pix pago: nada a devolver
+  const e = await pedido(1, 0, null);
+  await m.orders.cancelOrder(A.ctx, e.id, "lançado errado");
+  assert.equal((await m.q.getOrder(A.t.id, e.id))!.pixDevolverCents, 0);
+
+  // a lista do caixa mostra os dois a devolver, e outra empresa não vê nada
+  const lista = await m.q.listPixDevolver(A.t.id, A.branch.id);
+  assert.deepEqual(lista.filter((l) => [a.id, c.id].includes(l.id)).map((l) => l.cents).sort(), [11000, 12000]);
+  assert.equal((await m.q.listPixDevolver(B.t.id, null)).some((l) => l.id === a.id), false);
+
+  // só dono ou caixa marca como devolvido, uma vez só, e outra empresa não mexe
+  await assert.rejects(m.orders.marcarPixDevolvido({ ...A.ctx, role: "atendente" }, c.id), /Sem permissão/);
+  await assert.rejects(m.orders.marcarPixDevolvido(B.ctx, c.id), /não tem Pix a devolver/);
+  await m.orders.marcarPixDevolvido(caixa, c.id);
+  assert.equal((await m.q.getOrder(A.t.id, c.id))!.pixDevolverCents, 0);
+  await assert.rejects(m.orders.marcarPixDevolvido(caixa, c.id), /não tem Pix a devolver/);
 });
 
 test("aviso no celular: o cliente se inscreve pelo link do pedido e recebe saiu e entregue; ao terminar, a inscrição sai", async () => {

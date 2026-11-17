@@ -8,7 +8,7 @@ import { getOrder, getSettings, listDrivers, listShifts } from "@/domain/queries
 import { conferirPixMp, pixDoPedido } from "@/domain/pix";
 import { PixBox } from "@/components/pix-box";
 import { ActionForm } from "@/components/action-form";
-import { cancelAction, confirmPixAction, deliverAction, dispatchAction, reassignAction, refundOrderAction } from "@/app/actions";
+import { cancelAction, confirmPixAction, pixDevolvidoAction, deliverAction, dispatchAction, reassignAction, refundOrderAction } from "@/app/actions";
 import { DeliveryExceptions } from "@/components/delivery-forms";
 import { originLabel } from "@/domain/orders";
 import { Money, StatusBadge, fmtQuando, paymentLabel } from "@/components/ui";
@@ -38,6 +38,8 @@ const actionLabel: Record<string, string> = {
   "pedido.pix_conferido": "Pix conferido no extrato",
   "pedido.pix_mercadopago": "Pix confirmado pelo Mercado Pago",
   "pedido.cancelar": "Pedido cancelado",
+  "pedido.pix_vencido": "Cancelado: Pix não pago no prazo",
+  "pedido.pix_devolvido": "Pix devolvido ao cliente",
   "pedido.estornar": "Pedido estornado",
 };
 
@@ -225,6 +227,21 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
                 <ActionForm action={confirmPixAction} confirm={pix?.automatico ? "Marcar como pago à mão? Faça isso só se viu o valor no extrato." : undefined}>
                   <input type="hidden" name="orderId" value={o.id} />
                   <button className={`btn w-full ${pix?.automatico ? "" : "btn-primary"}`}>Pix conferido no extrato</button>
+                </ActionForm>
+              )}
+            </section>
+          )}
+          {o.pixDevolverCents > 0 && (
+            <section className="panel border-warn/40 p-4">
+              <h2 className="h2 mb-1">Devolver <Money cents={o.pixDevolverCents} /> ao cliente</h2>
+              <p className="mb-3 text-sm text-muted">
+                {o.status === "cancelado" ? "O Pix deste pedido foi pago e o pedido foi cancelado." : "O Pix foi pago antes da entrega parcial e cobriu mais do que o cliente recebeu."}{" "}
+                Devolva pelo app do banco e marque aqui.
+              </p>
+              {(user.role === "dono" || user.role === "caixa") && (
+                <ActionForm action={pixDevolvidoAction} confirm="Marcar como devolvido? Faça isso só depois de devolver o valor pelo banco.">
+                  <input type="hidden" name="orderId" value={o.id} />
+                  <button className="btn w-full">Já devolvi</button>
                 </ActionForm>
               )}
             </section>

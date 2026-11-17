@@ -198,6 +198,7 @@ export const getOrder = scoped(async function getOrder(tenantId: string, id: str
       occurrenceAt: orders.occurrenceAt,
       pixConfirmedAt: orders.pixConfirmedAt,
       pixConfirmedBy: orders.pixConfirmedBy,
+      pixDevolverCents: orders.pixDevolverCents,
       changeForCents: orders.changeForCents,
       notes: orders.notes,
       cancelReason: orders.cancelReason,
@@ -397,6 +398,17 @@ const listShiftOrders = (tenantId: string, shiftId: string) =>
     .leftJoin(customers, eq(customers.id, orders.customerId))
     .where(and(eq(orders.tenantId, tenantId), eq(orders.shiftId, shiftId)))
     .orderBy(asc(orders.number));
+
+/** Pedidos com Pix pago a devolver ao cliente (cancelado ou entrega parcial depois do pagamento). */
+export const listPixDevolver = scoped(async function listPixDevolver(tenantId: string, branchId: string | null) {
+  return db
+    .select({ id: orders.id, number: orders.number, cents: orders.pixDevolverCents, customerName: customers.name })
+    .from(orders)
+    .leftJoin(customers, eq(customers.id, orders.customerId))
+    .where(and(eq(orders.tenantId, tenantId), branchId ? eq(orders.branchId, branchId) : undefined, sql`${orders.pixDevolverCents} > 0`))
+    .orderBy(asc(orders.number))
+    .limit(50);
+});
 
 export const listShifts = scoped(async function listShifts(tenantId: string, branchId: string | null, status?: "aberto" | "fechado") {
   const rows = await db

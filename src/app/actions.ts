@@ -15,7 +15,7 @@ import { DomainError } from "@/lib/ctx";
 import { formatBRL, parseBRL } from "@/lib/money";
 import { clientIp } from "@/lib/request";
 import type { ActionState } from "@/components/action-form";
-import { createOrder, dispatchOrders, deliverOrder, cancelOrder, refundOrder, newOrderSchema, reportOccurrence, reassignOrder, confirmPix } from "@/domain/orders";
+import { createOrder, dispatchOrders, deliverOrder, cancelOrder, refundOrder, newOrderSchema, reportOccurrence, reassignOrder, confirmPix, marcarPixDevolvido } from "@/domain/orders";
 import { inscreverAviso, placePortalOrder, portalOrderSchema, portalTenant } from "@/domain/portal";
 import { conectarMercadoPago, desconectarMercadoPago, liberarSemPix, pixDoPedido } from "@/domain/pix";
 import { cancelarConta, criarConta, pagarConta } from "@/domain/contas";
@@ -288,6 +288,11 @@ export async function reassignAction(fd: FormData) {
 export async function confirmPixAction(fd: FormData) {
   const user = await requireUser("dono", "caixa");
   return run(() => confirmPix(user, str(fd, "orderId")), ["/"], "Pix conferido.");
+}
+
+export async function pixDevolvidoAction(fd: FormData) {
+  const user = await requireUser("dono", "caixa");
+  return run(() => marcarPixDevolvido(user, str(fd, "orderId")), ["/"], "Devolução registrada.");
 }
 
 /** O cliente aceitou ser avisado no celular do andamento deste pedido. Público, então com limite por IP. */
