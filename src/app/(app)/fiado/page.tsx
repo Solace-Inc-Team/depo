@@ -1,7 +1,9 @@
 import Link from "next/link";
-import { HandCoins } from "lucide-react";
+import { HandCoins, MessageCircle } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { listDebtors } from "@/domain/receivables";
+import { getSettings } from "@/domain/queries";
+import { linkWhatsApp, mensagemFiado } from "@/lib/whatsapp";
 import { Money, PageHeader, fmtQuando } from "@/components/ui";
 
 export const metadata = { title: "Fiado" };
@@ -10,7 +12,7 @@ const daysSince = (d: string | Date) => Math.floor((Date.now() - new Date(d).get
 
 export default async function Fiado() {
   const user = await requireUser("dono", "atendente", "caixa");
-  const debtors = await listDebtors(user.tenantId);
+  const [debtors, settings] = await Promise.all([listDebtors(user.tenantId), getSettings(user.tenantId)]);
   const total = debtors.reduce((s, d) => s + d.owed, 0);
 
   return (
@@ -59,7 +61,19 @@ export default async function Fiado() {
                     <td data-rotulo="Último pagamento" className="text-muted">{d.last_payment ? fmtQuando(new Date(d.last_payment)) : "nunca"}</td>
                     <td data-rotulo="Saldo" className="text-right font-medium"><Money cents={d.owed} /></td>
                     <td className="text-right max-sm:pt-2">
-                      <Link href={`/clientes/${d.id}#receber`} className="btn tap text-[13px] sm:h-8">Receber</Link>
+                      <span className="inline-flex flex-wrap justify-end gap-2">
+                        {(() => {
+                          const zap = linkWhatsApp(d.phone, mensagemFiado({ cliente: d.name, loja: settings.name, devendoCents: d.owed, pixKey: settings.pixKey }));
+                          return (
+                            zap && (
+                              <a href={zap} target="_blank" rel="noopener noreferrer" className="btn tap text-[13px] sm:h-8" aria-label={`Cobrar ${d.name} no WhatsApp`}>
+                                <MessageCircle size={14} strokeWidth={1.75} aria-hidden="true" /> Cobrar
+                              </a>
+                            )
+                          );
+                        })()}
+                        <Link href={`/clientes/${d.id}#receber`} className="btn tap text-[13px] sm:h-8">Receber</Link>
+                      </span>
                     </td>
                   </tr>
                 );

@@ -5,7 +5,8 @@ import { MessageCircle, Phone, Plus } from "lucide-react";
 import { notFound } from "next/navigation";
 import { isUuid } from "@/lib/ctx";
 import { requireUser } from "@/lib/auth";
-import { getCustomer, itemsForOrders, listAddresses, listOrders, programadosDoCliente } from "@/domain/queries";
+import { getCustomer, getSettings, itemsForOrders, listAddresses, listOrders, programadosDoCliente } from "@/domain/queries";
+import { linkWhatsApp, mensagemFiado } from "@/lib/whatsapp";
 import { todayISO } from "@/lib/period";
 import { ProgramadosCliente } from "./programados";
 import { ActionForm } from "@/components/action-form";
@@ -31,12 +32,14 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
   if (!isUuid(id)) notFound();
   const c = await getCustomer(user.tenantId, id);
   if (!c) notFound();
-  const [orders, st, addresses, programados] = await Promise.all([
+  const [orders, st, addresses, programados, settings] = await Promise.all([
     listOrders(user.tenantId, { customerId: id }),
     customerStatement(user.tenantId, id),
     listAddresses(user.tenantId, [id]),
     programadosDoCliente(user.tenantId, id),
+    getSettings(user.tenantId),
   ]);
+  const cobrar = st.owed > 0 && !c.anonymizedAt ? linkWhatsApp(c.phone, mensagemFiado({ cliente: c.name, loja: settings.name, devendoCents: st.owed, pixKey: settings.pixKey })) : null;
   // o pedido que vira programação: o último que valeu (cancelado e estornado não)
   const base = orders.find((o) => o.status !== "cancelado" && o.status !== "estornado");
   const itensBase = base ? await itemsForOrders(user.tenantId, [base.id]) : [];
@@ -74,7 +77,7 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                 <a href={`tel:+55${fone}`} className="btn">
                   <Phone size={15} strokeWidth={1.75} aria-hidden="true" /> Ligar
                 </a>
-                <a href={`https://wa.me/${fone.length <= 11 ? "55" + fone : fone}`} target="_blank" rel="noopener noreferrer" className="btn">
+                <a href={linkWhatsApp(fone)!} target="_blank" rel="noopener noreferrer" className="btn">
                   <MessageCircle size={15} strokeWidth={1.75} aria-hidden="true" /> WhatsApp
                 </a>
               </>
@@ -129,7 +132,15 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                     <label className="label" htmlFor="pay-note">Observação (opcional)</label>
                     <input id="pay-note" name="note" maxLength={200} className="input" />
                   </div>
-                  <button className="btn btn-primary">Registrar</button>
+                  <div className="flex flex-wrap gap-2 sm:col-span-2">
+                    <button className="btn btn-primary">Registrar</button>
+                    {/* cobrança educada, com o valor e a chave Pix, pelo WhatsApp da loja */}
+                    {cobrar && (
+                      <a href={cobrar} target="_blank" rel="noopener noreferrer" className="btn">
+                        <MessageCircle size={15} strokeWidth={1.75} aria-hidden="true" /> Cobrar no WhatsApp
+                      </a>
+                    )}
+                  </div>
                 </ActionForm>
               )}
               <ul>

@@ -3,6 +3,7 @@ import { MessageCircle } from "lucide-react";
 import { Money } from "@/components/ui";
 import { comprasPorCliente } from "@/domain/queries";
 import { sumido } from "@/lib/relatorios";
+import { linkWhatsApp } from "@/lib/whatsapp";
 
 const LIMITE = 12;
 
@@ -24,8 +25,7 @@ export async function ClientesSumidos({ tenantId, filial, loja }: { tenantId: st
       </h2>
       <ul>
         {lista.slice(0, LIMITE).map((c) => {
-          const fone = c.telefone?.replace(/\D/g, "") ?? "";
-          const msg = `Olá, ${c.nome.split(" ")[0]}! Aqui é da ${loja}. Está precisando de água ou gás? É só responder esta mensagem que a gente leva.`;
+          const zap = linkWhatsApp(c.telefone, `Olá, ${c.nome.split(" ")[0]}! Aqui é da ${loja}. Está precisando de água ou gás? É só responder esta mensagem que a gente leva.`);
           return (
             <li key={c.id} className="flex items-center justify-between gap-4 border-b border-line px-4 py-3 last:border-0">
               <div className="min-w-0">
@@ -37,9 +37,9 @@ export async function ClientesSumidos({ tenantId, filial, loja }: { tenantId: st
                   <Money cents={c.totalCents} /> no total.
                 </p>
               </div>
-              {fone.length >= 10 && (
+              {zap && (
                 <a
-                  href={`https://wa.me/${fone.length <= 11 ? "55" + fone : fone}?text=${encodeURIComponent(msg)}`}
+                  href={zap}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn shrink-0"

@@ -1,6 +1,7 @@
 import { Revelar } from "@/components/revelar";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { linkWhatsApp, mensagemSaida } from "@/lib/whatsapp";
 import { isUuid } from "@/lib/ctx";
 import { requireUser } from "@/lib/auth";
 import { getOrder, getSettings, listDrivers, listShifts } from "@/domain/queries";
@@ -61,11 +62,15 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
     o.customerName && ["aberto", "em_rota"].includes(o.status)
       ? `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}/pedir/${settings.slug}/acompanhar/${o.trackingId}`
       : null;
-  const fone = o.customerPhone?.replace(/\D/g, "") ?? "";
-  const zap =
-    acompanhar && fone.length >= 10
-      ? `https://wa.me/${fone.length <= 11 ? "55" + fone : fone}?text=${encodeURIComponent(`Seu pedido #${o.number} na ${user.tenantName}: acompanhe aqui ${acompanhar}`)}`
-      : null;
+  // na rua, a mensagem já avisa que saiu e com quem
+  const zap = acompanhar
+    ? linkWhatsApp(
+        o.customerPhone,
+        o.status === "em_rota"
+          ? mensagemSaida({ cliente: o.customerName!, loja: user.tenantName, numero: o.number, entregador: o.driverName, link: acompanhar })
+          : `Seu pedido #${o.number} na ${user.tenantName}: acompanhe aqui ${acompanhar}`,
+      )
+    : null;
   // estorno de venda em dinheiro precisa do acerto do turno feito antes
   const refundBlocked = (o.paymentMethod === "dinheiro" || o.cashPartCents > 0) && open.some((s) => s.id === o.shiftId);
 

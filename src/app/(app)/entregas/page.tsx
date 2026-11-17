@@ -9,7 +9,9 @@ import { confirmPixAction, dispatchAction, lancarProgramadoAction, pularPrograma
 import { cancelarPixVencidos, PRAZO_PAGAR_MS } from "@/domain/pix";
 import { Empty, Money, PageHeader, SiteBadge, fmtTime, paymentLabel } from "@/components/ui";
 import { ResultadoRua } from "@/components/resultado-rua";
-import { Check, Printer, Repeat } from "lucide-react";
+import { Check, MessageCircle, Printer, Repeat } from "lucide-react";
+import { headers } from "next/headers";
+import { linkWhatsApp, mensagemSaida } from "@/lib/whatsapp";
 import { formatBRL } from "@/lib/money";
 import { cashOf, expectedCash } from "@/lib/cash";
 import { JanelaAcao } from "@/components/janela-acao";
@@ -58,6 +60,8 @@ export default async function Entregas() {
       programadosParaHoje(user.tenantId, user.branchId),
     ]),
   );
+  const h = await headers();
+  const base = `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`;
   const onShift = drivers.filter((d) => open.some((s) => s.driverId === d.id));
   // mais antigo primeiro: é o próximo a sair
   const queue = [...waiting].reverse();
@@ -298,8 +302,24 @@ export default async function Entregas() {
                           </span>
                         </div>
                         {/* o entregador voltou ou ligou: a loja lança o que aconteceu */}
-                        <div className="mt-2">
+                        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                           <ResultadoRua id={o.id} numero={o.number} totalCents={o.totalCents} pagamento={paymentLabel[o.paymentMethod]} />
+                          {/* o cliente fica sabendo que saiu, com o link para acompanhar: menos ligação perguntando */}
+                          {(() => {
+                            const zap = o.customerName
+                              ? linkWhatsApp(
+                                  o.customerPhone,
+                                  mensagemSaida({ cliente: o.customerName, loja: settings.name, numero: o.number, entregador: o.driverName, link: `${base}/pedir/${settings.slug}/acompanhar/${o.trackingId}` }),
+                                )
+                              : null;
+                            return (
+                              zap && (
+                                <a href={zap} target="_blank" rel="noopener noreferrer" className="btn h-11 px-4 text-[13px] sm:h-8 sm:px-3">
+                                  <MessageCircle size={14} strokeWidth={1.75} aria-hidden="true" /> Avisar cliente
+                                </a>
+                              )
+                            );
+                          })()}
                         </div>
                       </div>
                       )}

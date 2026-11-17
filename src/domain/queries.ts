@@ -98,6 +98,7 @@ const orderCols = {
   origin: orders.origin,
   occurrence: orders.occurrence,
   customerName: customers.name,
+  customerPhone: customers.phone,
   // endereço escolhido no pedido, ou o principal do cliente
   customerAddress: sql<string | null>`coalesce(${orders.address}, ${customers.address})`,
   driverName: driver.name,
@@ -187,7 +188,6 @@ export const getOrder = scoped(async function getOrder(tenantId: string, id: str
     .select({
       ...orderCols,
       customerId: orders.customerId,
-      customerPhone: customers.phone,
       customerReference: sql<string | null>`case when ${orders.address} is null then ${customers.reference} else ${orders.reference} end`,
       deliveryFeeCents: orders.deliveryFeeCents,
       discountCents: orders.discountCents,
