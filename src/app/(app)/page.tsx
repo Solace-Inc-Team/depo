@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { requireUser } from "@/lib/auth";
-import { dashboard, listDrivers, primeirosPassos, programadosParaHoje } from "@/domain/queries";
+import { dashboard, listDrivers, primeirosPassos, programadosParaHoje, vendidosPorProduto } from "@/domain/queries";
+import { previsao, vaziosFaltando } from "@/lib/relatorios";
 import { cancelarPixVencidos } from "@/domain/pix";
 import { contasVencendo } from "@/domain/contas";
 import { todayISO } from "@/lib/period";
@@ -81,8 +82,14 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
       href: "/pedidos?status=entregue",
       acao: "Conferir",
     });
-  for (const p of d.lowStock)
-    alertas.push({ tom: "aviso", texto: `${p.name}: ${p.fullStore} cheios na loja (mínimo ${p.minStock})`, href: "/estoque", acao: "Ver estoque" });
+  // na hora de repor, avisa também se faltam vazios para a troca com o fornecedor (mesma conta da tela de Estoque)
+  const vendidos = d.lowStock.length ? await vendidosPorProduto(user.tenantId, user.branchId, 28) : [];
+  for (const p of d.lowStock) {
+    const pr = previsao(p.fullStore, vendidos.find((v) => v.productId === p.id)?.n ?? 0);
+    const faltam = p.returnable ? vaziosFaltando(p, pr?.pedirSemana) : 0;
+    const vazios = faltam ? `, faltam ${faltam} ${faltam === 1 ? "vazio" : "vazios"} para trocar` : "";
+    alertas.push({ tom: "aviso", texto: `${p.name}: ${p.fullStore} cheios na loja (mínimo ${p.minStock})${vazios}`, href: "/estoque", acao: "Ver estoque" });
+  }
 
   return (
     <>

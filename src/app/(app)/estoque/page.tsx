@@ -2,7 +2,7 @@ import { requireUser } from "@/lib/auth";
 import Link from "next/link";
 import { Package } from "lucide-react";
 import { listProducts, listSuppliers, recentMovements, stockOverview, vendidosPorProduto } from "@/domain/queries";
-import { previsao } from "@/lib/relatorios";
+import { previsao, vaziosFaltando } from "@/lib/relatorios";
 import { ActionForm } from "@/components/action-form";
 import { damagedAction, purchaseAction, transferirAction } from "@/app/actions";
 import { JanelaAcao } from "@/components/janela-acao";
@@ -136,7 +136,12 @@ export default async function Estoque() {
             </tr>
           </thead>
           <tbody>
-            {stock.filter((p) => p.active).map((p, i) => (
+            {stock.filter((p) => p.active).map((p, i) => {
+              // previsão pela venda média dos últimos 28 dias: quanto dura e quanto pedir para cobrir a semana
+              const pr = previsao(p.fullStore, vendidos.find((v) => v.productId === p.id)?.n ?? 0);
+              // o fornecedor troca cheio por vazio: sem vazio suficiente, o que falta sai com o casco pago
+              const faltamVazios = p.returnable ? vaziosFaltando(p, pr?.pedirSemana) : 0;
+              return (
               <tr key={p.id}>
                 {/* a coluna do produto não espreme: o nome quebrava em quatro linhas ao lado de colunas de um número só */}
                 <td className="font-medium sm:min-w-[13rem]">
@@ -156,25 +161,27 @@ export default async function Estoque() {
                 <td data-rotulo="Cheios na loja" className={`num text-right text-xl font-semibold ${p.low ? "text-danger" : ""}`}>
                   {p.fullStore}
                   {p.low && <span className="block text-sm font-medium whitespace-nowrap">abaixo do mínimo ({p.minStock})</span>}
-                  {(() => {
-                    // previsão pela venda média dos últimos 28 dias: quanto dura e quanto pedir para cobrir a semana
-                    const pr = p.active ? previsao(p.fullStore, vendidos.find((v) => v.productId === p.id)?.n ?? 0) : null;
-                    // só quando acaba em até um mês: "dura 245 dias" em produto parado era só ruído
-                    if (!pr || pr.dias > 30) return null;
-                    return (
-                      <span className={`block text-sm font-normal whitespace-nowrap ${pr.dias <= 3 && !p.low ? "text-warn-fg" : "text-muted"}`}>
-                        {pr.dias === 0 ? "acaba hoje" : `dura ${pr.dias} ${pr.dias === 1 ? "dia" : "dias"}`}
-                        {pr.pedirSemana > 0 && <span className="block">peça {pr.pedirSemana} para a semana</span>}
-                      </span>
-                    );
-                  })()}
+                  {/* só quando acaba em até um mês: "dura 245 dias" em produto parado era só ruído */}
+                  {pr && pr.dias <= 30 && (
+                    <span className={`block text-sm font-normal whitespace-nowrap ${pr.dias <= 3 && !p.low ? "text-warn-fg" : "text-muted"}`}>
+                      {pr.dias === 0 ? "acaba hoje" : `dura ${pr.dias} ${pr.dias === 1 ? "dia" : "dias"}`}
+                      {pr.pedirSemana > 0 && <span className="block">peça {pr.pedirSemana} para a semana</span>}
+                    </span>
+                  )}
                   {p.reserved > 0 && (
                     <span className="block text-sm font-normal whitespace-nowrap text-muted" title="Já separados para pedidos que ainda não saíram">
                       {p.reserved} {p.reserved === 1 ? "reservado" : "reservados"}
                     </span>
                   )}
                 </td>
-                <td data-rotulo="Vazios na loja" className="num text-right text-xl">{p.returnable ? p.emptyStore : "-"}</td>
+                <td data-rotulo="Vazios na loja" className="num text-right text-xl">
+                  {p.returnable ? p.emptyStore : "-"}
+                  {faltamVazios > 0 && (
+                    <span className="block text-sm font-medium whitespace-nowrap text-warn-fg" title="Para trocar com o fornecedor o que precisa pedir">
+                      faltam {faltamVazios} para trocar
+                    </span>
+                  )}
+                </td>
                 <td data-rotulo="Cheios em rota" className="num text-right text-xl">{p.fullTransit}</td>
                 <td data-rotulo="Vazios em rota" className="num text-right text-xl">{p.returnable ? p.emptyTransit : "-"}</td>
                 {/* traço só quando não se aplica (produto que não volta); zero é zero */}
@@ -183,7 +190,8 @@ export default async function Estoque() {
                   {p.returnable ? p.fullStore + p.emptyStore + p.fullTransit + p.emptyTransit + p.damaged : "-"}
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
         <p className="border-t border-line px-4 py-3 text-sm text-muted">

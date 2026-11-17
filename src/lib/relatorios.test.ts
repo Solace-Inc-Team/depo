@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { pico, previsao, sumido } from "./relatorios.ts";
+import { pico, previsao, sumido, vaziosFaltando } from "./relatorios.ts";
 
 const dia = (n: number) => new Date(Date.UTC(2026, 10, 1) + n * 86400e3);
 
@@ -23,6 +23,14 @@ test("previsão: dura tantos dias e quanto pedir para a semana", () => {
   assert.equal(previsao(9, 56)!.pedirSemana, 5);
   assert.equal(previsao(30, 56)!.pedirSemana, 0, "já cobre a semana");
   assert.equal(previsao(10, 0), null, "sem venda, sem previsão");
+});
+
+test("vazios: faltam para trocar o que precisa pedir", () => {
+  const p = (fullStore: number, emptyStore: number, minStock = 10) => ({ fullStore, emptyStore, minStock });
+  assert.equal(vaziosFaltando(p(4, 2)), 4, "repor até o mínimo pede 6, só há 2 vazios");
+  assert.equal(vaziosFaltando(p(4, 2), 9), 7, "a semana pede mais que o mínimo");
+  assert.equal(vaziosFaltando(p(4, 8)), 0, "vazios bastam");
+  assert.equal(vaziosFaltando(p(30, 0)), 0, "logo depois da troca: muito cheio e nenhum vazio está certo");
 });
 
 test("pico: a hora mais forte e as vizinhas perto dela", () => {

@@ -24,6 +24,14 @@ export function previsao(cheios: number, vendidosNoPeriodo: number, diasDoPeriod
   return { porDia, dias: Math.max(0, Math.floor(cheios / porDia)), pedirSemana: Math.max(0, Math.ceil(porDia * 7 - cheios)) };
 }
 
+/**
+ * Vazios que faltam para trocar com o fornecedor o que precisa pedir agora: repor o mínimo ou cobrir a semana.
+ * Logo depois da troca sobram poucos vazios e está tudo certo, por isso não há um mínimo fixo de vazios.
+ */
+export function vaziosFaltando(p: { fullStore: number; emptyStore: number; minStock: number }, pedirSemana = 0) {
+  return Math.max(0, Math.max(pedirSemana, p.minStock - p.fullStore) - p.emptyStore);
+}
+
 /** As horas de mais pedidos: a de maior movimento e as vizinhas que chegam a 80% dela ("10h às 12h"). */
 export function pico(porHora: { hora: number; n: number }[]) {
   const max = Math.max(0, ...porHora.map((h) => h.n));
