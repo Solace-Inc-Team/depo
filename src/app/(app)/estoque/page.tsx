@@ -1,7 +1,8 @@
 import { requireUser } from "@/lib/auth";
 import Link from "next/link";
 import { Package } from "lucide-react";
-import { listProducts, listSuppliers, recentMovements, stockOverview } from "@/domain/queries";
+import { listProducts, listSuppliers, recentMovements, stockOverview, vendidosPorProduto } from "@/domain/queries";
+import { previsao } from "@/lib/relatorios";
 import { ActionForm } from "@/components/action-form";
 import { damagedAction, purchaseAction, transferirAction } from "@/app/actions";
 import { JanelaAcao } from "@/components/janela-acao";
@@ -15,12 +16,13 @@ export const metadata = { title: "Estoque" };
 
 export default async function Estoque() {
   const user = await requireUser("dono", "atendente", "caixa");
-  const [stock, moves, products, suppliers, filiais] = await Promise.all([
+  const [stock, moves, products, suppliers, filiais, vendidos] = await Promise.all([
     stockOverview(user.tenantId, user.branchId),
     recentMovements(user.tenantId, user.branchId, 20),
     listProducts(user.tenantId, true),
     listSuppliers(user.tenantId, true),
     listFiliais(user.tenantId),
+    vendidosPorProduto(user.tenantId, user.branchId, 28),
   ]);
   // só existe transferência quando há outra filial ativa para receber
   const outras = filiais.filter((b) => b.active && b.id !== user.branchId);
@@ -154,6 +156,18 @@ export default async function Estoque() {
                 <td data-rotulo="Cheios na loja" className={`num text-right text-xl font-semibold ${p.low ? "text-danger" : ""}`}>
                   {p.fullStore}
                   {p.low && <span className="block text-sm font-medium whitespace-nowrap">abaixo do mínimo ({p.minStock})</span>}
+                  {(() => {
+                    // previsão pela venda média dos últimos 28 dias: quanto dura e quanto pedir para cobrir a semana
+                    const pr = p.active ? previsao(p.fullStore, vendidos.find((v) => v.productId === p.id)?.n ?? 0) : null;
+                    // só quando acaba em até um mês: "dura 245 dias" em produto parado era só ruído
+                    if (!pr || pr.dias > 30) return null;
+                    return (
+                      <span className={`block text-sm font-normal whitespace-nowrap ${pr.dias <= 3 && !p.low ? "text-warn-fg" : "text-muted"}`}>
+                        {pr.dias === 0 ? "acaba hoje" : `dura ${pr.dias} ${pr.dias === 1 ? "dia" : "dias"}`}
+                        {pr.pedirSemana > 0 && <span className="block">peça {pr.pedirSemana} para a semana</span>}
+                      </span>
+                    );
+                  })()}
                   {p.reserved > 0 && (
                     <span className="block text-sm font-normal whitespace-nowrap text-muted" title="Já separados para pedidos que ainda não saíram">
                       {p.reserved} {p.reserved === 1 ? "reservado" : "reservados"}

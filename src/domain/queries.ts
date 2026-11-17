@@ -855,3 +855,70 @@ export const programadosParaHoje = scoped(async function programadosParaHoje(ten
     .orderBy(asc(pedidosProgramados.proxima), asc(pedidosProgramados.createdAt));
   return comNomes(lista, tenantId);
 });
+
+/** Pedidos lançados em cada hora do dia (horário de Brasília) no período. Cancelado e estornado não contam. */
+export const pedidosPorHora = scoped(async function pedidosPorHora(tenantId: string, from: Date, to: Date, branchId: string | null) {
+  const hora = sql<number>`extract(hour from ${orders.createdAt} at time zone 'America/Sao_Paulo')::int`;
+  return db
+    .select({ hora, n: sql<number>`count(*)::int` })
+    .from(orders)
+    .where(
+      and(
+        eq(orders.tenantId, tenantId),
+        branchId ? eq(orders.branchId, branchId) : undefined,
+        gte(orders.createdAt, from),
+        lt(orders.createdAt, to),
+        sql`${orders.status} not in ('cancelado', 'estornado')`,
+      ),
+    )
+    .groupBy(hora)
+    .orderBy(hora);
+});
+
+/**
+ * Clientes com ao menos 3 entregas, para a conta de quem parou de comprar (lib/relatorios.ts). Quem tem entrega
+ * programada ativa fica de fora: ele não sumiu, só ainda não chegou o dia.
+ */
+export const comprasPorCliente = scoped(async function comprasPorCliente(tenantId: string, branchId: string | null) {
+  return db
+    .select({
+      id: customers.id,
+      nome: customers.name,
+      telefone: customers.phone,
+      pedidos: sql<number>`count(*)::int`,
+      primeiro: sql<Date>`min(${orders.deliveredAt})`.mapWith(orders.deliveredAt),
+      ultimo: sql<Date>`max(${orders.deliveredAt})`.mapWith(orders.deliveredAt),
+      totalCents: sql<number>`sum(${orders.totalCents})::int`,
+    })
+    .from(orders)
+    .innerJoin(customers, eq(customers.id, orders.customerId))
+    .where(
+      and(
+        eq(orders.tenantId, tenantId),
+        branchId ? eq(orders.branchId, branchId) : undefined,
+        eq(orders.status, "entregue"),
+        isNull(customers.anonymizedAt),
+        sql`not exists (select 1 from ${pedidosProgramados} p where p.customer_id = ${customers.id} and not p.pausado)`,
+      ),
+    )
+    .groupBy(customers.id)
+    .having(sql`count(*) >= 3`);
+});
+
+/** Unidades entregues de cada produto nos últimos `dias` dias na filial: a venda média que a previsão usa. */
+export const vendidosPorProduto = scoped(async function vendidosPorProduto(tenantId: string, branchId: string, dias: number) {
+  const qtd = sql`coalesce(${orderItems.deliveredQuantity}, ${orderItems.quantity})`;
+  return db
+    .select({ productId: orderItems.productId, n: sql<number>`sum(${qtd})::int` })
+    .from(orderItems)
+    .innerJoin(orders, eq(orders.id, orderItems.orderId))
+    .where(
+      and(
+        eq(orders.tenantId, tenantId),
+        eq(orders.branchId, branchId),
+        eq(orders.status, "entregue"),
+        gte(orders.deliveredAt, new Date(Date.now() - dias * 86400e3)),
+      ),
+    )
+    .groupBy(orderItems.productId);
+});

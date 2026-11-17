@@ -2,7 +2,9 @@ import { filialDoRelatorio } from "@/lib/filial";
 import { CampoFilial } from "@/components/campo-filial";
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import { periodBreakdown, periodReport } from "@/domain/queries";
+import { pedidosPorHora, periodBreakdown, periodReport } from "@/domain/queries";
+import { HorasBarras } from "@/components/horas-barras";
+import { ClientesSumidos } from "./sumidos";
 import { parsePeriod } from "@/lib/period";
 import { paymentsByDay } from "@/domain/receivables";
 import { expensesTotal } from "@/domain/expenses";
@@ -17,12 +19,14 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
   const sp = await searchParams;
   const { fromStr, toStr, from, to } = parsePeriod(sp);
   const filial = filialDoRelatorio(user, sp);
-  const [{ days, closed }, breakdown, fiadoPaid, spent] = await Promise.all([
+  const [{ days, closed }, breakdown, fiadoPaid, spent, porHora] = await Promise.all([
     periodReport(user.tenantId, from, to, filial),
     periodBreakdown(user.tenantId, from, to, filial),
     paymentsByDay(user.tenantId, from, to, filial),
     expensesTotal(user.tenantId, fromStr, toStr, filial, true),
+    pedidosPorHora(user.tenantId, from, to, filial),
   ]);
+  const diasNoPeriodo = Math.max(1, Math.round((to.getTime() - from.getTime()) / 86400e3));
   const fiadoTotal = fiadoPaid.reduce((s, d) => s + d.total, 0);
   const sum = (k: "total" | "cash" | "pix" | "card" | "credit" | "count") => days.reduce((s, d) => s + d[k], 0);
   const diffTotal = closed.reduce((s, c) => s + (c.shift.differenceCents ?? 0), 0);
@@ -90,6 +94,16 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
           <Empty>Nenhuma venda entregue neste período.</Empty>
         )}
       </section>
+
+      {/* quando os pedidos chegam: para escalar entregador e atendente nas horas certas */}
+      {porHora.length > 0 && (
+        <section className="panel mb-6 p-4">
+          <h2 className="h2 mb-3">Movimento por hora</h2>
+          <HorasBarras porHora={porHora} dias={diasNoPeriodo} />
+        </section>
+      )}
+
+      <ClientesSumidos tenantId={user.tenantId} filial={filial} loja={user.tenantName} />
 
       {/* divisória só entre os três números: a barra e a nota embaixo ocupam a largura toda e não levam borda lateral */}
       <section className="panel mb-6 grid sm:grid-cols-3">

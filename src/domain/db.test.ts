@@ -1573,3 +1573,31 @@ test("pedido programado: lança no dia uma vez só, pula, pausa e some com o cli
   await m.registry.anonymizeCustomer(A.ctx, cliente.id);
   assert.equal((await db.select().from(pedidosProgramados).where(eq(pedidosProgramados.customerId, cliente.id))).length, 0);
 });
+
+test("relatórios novos: pedidos por hora, clientes com compras e venda por produto, cada empresa só com os seus", async () => {
+  const { db } = m.db;
+  const { customers } = m.schema;
+  const [fiel] = await db.insert(customers).values({ tenantId: A.t.id, name: "Cliente Fiel", phone: "11999990000" }).returning();
+  for (let i = 0; i < 3; i++) {
+    const o = await m.orders.createOrder(A.ctx, {
+      mode: "entrega", customerId: fiel.id, items: [{ productId: A.product.id, quantity: 2, returnsEmpty: true }],
+      paymentMethod: "dinheiro", deliveryFeeCents: 0, changeForCents: null, notes: "", driverId: null,
+    });
+    await m.orders.dispatchOrder(A.ctx, o.id, A.driver.id);
+    await m.orders.deliverOrder(A.ctx, o.id);
+  }
+  const desde = new Date(Date.now() - 86400e3), ate = new Date(Date.now() + 60000);
+  const horas = await m.q.pedidosPorHora(A.t.id, desde, ate, A.branch.id);
+  const agora = Number(new Intl.DateTimeFormat("en", { hour: "numeric", hourCycle: "h23", timeZone: "America/Sao_Paulo" }).format(new Date()));
+  assert.ok((horas.find((h) => h.hora === agora)?.n ?? 0) >= 3, "os pedidos de agora caem na hora de Brasília");
+
+  const compras = await m.q.comprasPorCliente(A.t.id, A.branch.id);
+  const c = compras.find((x) => x.id === fiel.id)!;
+  assert.equal(c.pedidos, 3);
+  assert.ok(c.primeiro instanceof Date && c.ultimo instanceof Date);
+  assert.equal((await m.q.comprasPorCliente(B.t.id, B.branch.id)).some((x) => x.id === fiel.id), false);
+
+  const vendidos = await m.q.vendidosPorProduto(A.t.id, A.branch.id, 28);
+  assert.ok((vendidos.find((v) => v.productId === A.product.id)?.n ?? 0) >= 6);
+  assert.equal((await m.q.vendidosPorProduto(B.t.id, B.branch.id, 28)).some((v) => v.productId === A.product.id), false);
+});

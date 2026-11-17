@@ -7,7 +7,18 @@ import { useRef, type ReactNode } from "react";
  * um botão ao vizinho em vez de piscar e some na hora. Cada botão do grupo leva `data-dica` com o texto; o
  * aria-label continua sendo o nome que o leitor de tela lê.
  */
-export function Dicas({ children, className = "", lado = "cima" }: { children: ReactNode; className?: string; lado?: "cima" | "baixo" }) {
+/** `contida`: a dica não passa das bordas do grupo (num gráfico, a da primeira barra saía para fora do painel). */
+export function Dicas({
+  children,
+  className = "",
+  lado = "cima",
+  contida = false,
+}: {
+  children: ReactNode;
+  className?: string;
+  lado?: "cima" | "baixo";
+  contida?: boolean;
+}) {
   const grupo = useRef<HTMLDivElement>(null);
   const dica = useRef<HTMLSpanElement>(null);
   const texto = useRef<HTMLSpanElement>(null);
@@ -27,7 +38,8 @@ export function Dicas({ children, className = "", lado = "cima" }: { children: R
     const gr = g.getBoundingClientRect();
     const r = botao.getBoundingClientRect();
     // não passa da borda direita da tela (os botões do rodapé ficam no canto do menu)
-    const x = Math.min(r.left - gr.left + r.width / 2 - largura / 2, window.innerWidth - 8 - largura - gr.left);
+    const centro = Math.min(r.left - gr.left + r.width / 2 - largura / 2, window.innerWidth - 8 - largura - gr.left);
+    const x = contida ? Math.max(0, Math.min(centro, gr.width - largura)) : centro;
     if (!aberta) {
       // fechada, a posição muda sem animar: só o aparecer anima
       tip.style.transition = "none";
