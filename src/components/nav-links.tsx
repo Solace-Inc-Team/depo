@@ -2,75 +2,56 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, type ForwardRefExoticComponent, type HTMLAttributes, type RefAttributes } from "react";
-import { MotionConfig } from "motion/react";
+import { useEffect, useRef } from "react";
 import { SeloMenu } from "./selo-menu";
-// teste: ícones animados da lucide-animated (https://lucide-animated.com) no lugar da animação em CSS
-import { LayoutGridIcon } from "./icones-animados/layout-grid";
-import { PlusIcon } from "./icones-animados/plus";
-import { ReceiptTextIcon } from "./icones-animados/receipt-text";
-import { TruckIcon } from "./icones-animados/truck";
-import { WalletIcon } from "./icones-animados/wallet";
-import { UsersIcon } from "./icones-animados/users";
-import { HandCoinsIcon } from "./icones-animados/hand-coins";
-import { ChartColumnIncreasingIcon } from "./icones-animados/chart-column-increasing";
-import { ReceiptIcon } from "./icones-animados/receipt";
-import { UserRoundCogIcon } from "./icones-animados/user-round-cog";
-import { HistoryIcon } from "./icones-animados/history";
-import { CircleHelpIcon } from "./icones-animados/circle-help";
 import {
   LayoutGrid,
+  Plus,
+  ReceiptText,
+  Truck,
+  Wallet,
   Package,
+  Users,
+  ChartColumn,
+  HandCoins,
+  CircleHelp,
+  Receipt,
   Tag,
+  UserCog,
+  History,
   type LucideIcon,
 } from "lucide-react";
 
-type Controle = { startAnimation: () => void; stopAnimation: () => void };
-type Animado = ForwardRefExoticComponent<HTMLAttributes<HTMLDivElement> & { size?: number } & RefAttributes<Controle>>;
-
-// a biblioteca não tem os ícones de Estoque e Produtos: esses ficam com o Lucide de sempre e a animação em CSS
-const icons: Record<string, Animado | LucideIcon> = {
-  "/": LayoutGridIcon,
-  "/pedidos/novo": PlusIcon,
-  "/pedidos": ReceiptTextIcon,
-  "/entregas": TruckIcon,
-  "/caixa": WalletIcon,
+// a animação de cada ícone é CSS (globals.css, "ícones animados"): com o mouse sobre a linha e quando a tela vira a atual.
+// Antes eram ícones da lucide-animated, que traziam a biblioteca motion para todas as telas, celular incluído
+const icons: Record<string, LucideIcon> = {
+  "/": LayoutGrid,
+  "/pedidos/novo": Plus,
+  "/pedidos": ReceiptText,
+  "/entregas": Truck,
+  "/caixa": Wallet,
   "/estoque": Package,
-  "/clientes": UsersIcon,
-  "/fiado": HandCoinsIcon,
-  "/relatorios": ChartColumnIncreasingIcon,
-  "/despesas": ReceiptIcon,
+  "/clientes": Users,
+  "/fiado": HandCoins,
+  "/relatorios": ChartColumn,
+  "/despesas": Receipt,
   "/produtos": Tag,
-  "/equipe": UserRoundCogIcon,
-  "/auditoria": HistoryIcon,
-  "/ajuda": CircleHelpIcon,
+  "/equipe": UserCog,
+  "/auditoria": History,
+  "/ajuda": CircleHelp,
 };
-const animados = new Set<unknown>([LayoutGridIcon, PlusIcon, ReceiptTextIcon, TruckIcon, WalletIcon, UsersIcon, HandCoinsIcon, ChartColumnIncreasingIcon, ReceiptIcon, UserRoundCogIcon, HistoryIcon, CircleHelpIcon]);
 
-// o ícone anima com o mouse sobre a linha inteira do menu, e uma vez quando a tela dele vira a atual
 function ItemMenu({ href, label, on, selo }: { href: string; label: string; on: boolean; selo?: number }) {
   const Icon = icons[href];
-  const ctrl = useRef<Controle>(null);
-  useEffect(() => {
-    if (!on || !ctrl.current) return;
-    ctrl.current.startAnimation();
-    const t = setTimeout(() => ctrl.current?.stopAnimation(), 700);
-    return () => clearTimeout(t);
-  }, [on]);
-  const Anim = animados.has(Icon) ? (Icon as Animado) : null;
-  const Estatico = Anim ? null : (Icon as LucideIcon | undefined);
   return (
     <Link
       href={href}
       aria-current={on ? "page" : undefined}
-      onMouseEnter={() => ctrl.current?.startAnimation()}
-      onMouseLeave={() => ctrl.current?.stopAnimation()}
       className={`flex h-11 shrink-0 items-center gap-2.5 lg:h-8 rounded-md px-2 text-[13px] font-medium transition-colors ${
         on ? "bg-subtle text-fg" : "text-muted hover:bg-subtle/70 hover:text-fg"
       }`}
     >
-      {Anim && <Anim ref={ctrl} size={16} aria-hidden="true" className="icone-animado shrink-0" />}
-      {Estatico && <Estatico size={16} strokeWidth={1.75} aria-hidden="true" />}
+      {Icon && <Icon size={16} strokeWidth={1.75} aria-hidden="true" />}
       {label}
       {selo !== undefined && <SeloMenu n={selo} />}
     </Link>
@@ -111,8 +92,6 @@ export function NavLinks({ groups }: { groups: NavGroup[] }) {
   }, [path]);
 
   return (
-    // quem pediu menos movimento no aparelho vê os ícones parados
-    <MotionConfig reducedMotion="user">
     <nav ref={nav} aria-label="Principal" className="nav-rola relative flex gap-1 overflow-x-auto px-3 pb-3 lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-5 lg:[@media(max-height:780px)]:gap-3 lg:overflow-x-visible lg:overflow-y-auto lg:pb-4 lg:[scrollbar-width:none] lg:hover:[scrollbar-width:thin] lg:focus-within:[scrollbar-width:thin]">
       {groups.map((g, i) => (
         <div key={i} className={`flex shrink-0 gap-1 lg:flex-col lg:gap-0.5 ${g.soCelular ? "lg:hidden" : ""}`}>
@@ -123,6 +102,5 @@ export function NavLinks({ groups }: { groups: NavGroup[] }) {
         </div>
       ))}
     </nav>
-    </MotionConfig>
   );
 }

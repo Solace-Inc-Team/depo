@@ -302,7 +302,7 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
       {user.role === "dono" && !user.totpEnabled && (
         <p className="mt-8 text-[13px] text-muted">
           Verificação em duas etapas desligada.{" "}
-          <Link href="/senha" className="alvo text-accent hover:underline">Ativar</Link>
+          <Link href="/senha" className="alvo text-accent underline underline-offset-2">Ativar</Link>
         </p>
       )}
     </>

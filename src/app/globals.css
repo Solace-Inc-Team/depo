@@ -12,6 +12,8 @@
   --surface: #ffffff;
   --subtle: #f2f2f3;
   --line: #e6e6e8;
+  /* contorno de campo: 3:1 com o fundo, para achar onde digitar mesmo com pouco brilho (o --line fica para divisórias) */
+  --linha-campo: #8a8a8f;
   --fg: #171717;
   --muted: #676767;
   --accent: var(--marca);
@@ -41,6 +43,7 @@
   --surface: #111111;
   --subtle: #1b1b1c;
   --line: #262628;
+  --linha-campo: #5a5a5f;
   --fg: #ededed;
   --muted: #a1a1a1;
   --accent: var(--marca);
@@ -214,7 +217,7 @@ body {
     width: 100%;
     height: 2.25rem;
     padding: 0 0.75rem;
-    border: 1px solid var(--line);
+    border: 1px solid var(--linha-campo);
     border-radius: 8px;
     background: var(--surface);
     font-size: 0.875rem;
@@ -251,7 +254,7 @@ body {
     padding: 0.5rem 0.75rem;
   }
   .input:hover {
-    border-color: color-mix(in srgb, var(--muted) 45%, var(--line));
+    border-color: color-mix(in srgb, var(--fg) 25%, var(--linha-campo));
   }
   .input:focus {
     outline: none;
@@ -2288,18 +2291,35 @@ input[type="date"].input:hover::-webkit-calendar-picker-indicator {
 }
 
 /* ponto do status do sistema: um halo leve que pulsa devagar enquanto está tudo no ar */
+/* o halo é um disco atrás do ponto que cresce e some: escala e transparência não repintam a tela a cada quadro
+   (era box-shadow animado). Ponto de 8 px e halo de 6 px em volta: 2,5 vezes o tamanho */
 .status-vivo {
-  box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 45%, transparent);
+  position: relative;
+  isolation: isolate;
+}
+.status-vivo::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--ok);
+  opacity: 0;
   animation: status-vivo 2.4s ease-out infinite;
 }
 @keyframes status-vivo {
+  0% {
+    opacity: 0.45;
+    scale: 1;
+  }
   70%,
   100% {
-    box-shadow: 0 0 0 6px transparent;
+    opacity: 0;
+    scale: 2.5;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .status-vivo {
+  .status-vivo::before {
     animation: none;
   }
 }
@@ -2786,7 +2806,9 @@ input[type="date"].input:hover::-webkit-calendar-picker-indicator {
   z-index: -1;
   background: radial-gradient(50% 50% at 50% 40%, color-mix(in srgb, var(--luz, var(--marca)) 32%, transparent), transparent 70%);
   filter: blur(40px);
-  /* a tela acesa respira devagar: a luz cresce e recua, sem chamar atenção */
+  /* a tela acesa respira devagar: a luz cresce e recua, sem chamar atenção. Em camada própria, o desfoque é
+     desenhado uma vez e a respiração só move a camada */
+  will-change: opacity, scale;
   animation: topo-respira 7s ease-in-out infinite alternate;
 }
 /* linha de luz na borda de cima da tela, como reflexo no vidro; vai junto quando a tela inclina */
@@ -3189,11 +3211,6 @@ html:has(.pagina-escura) body {
   .etapas > li::after {
     animation: none !important;
   }
-}
-
-/* teste lucide-animated: o traço dos ícones novos na mesma espessura dos outros do menu */
-.icone-animado svg {
-  stroke-width: 1.75;
 }
 
 /* Text states swap do transitions.dev: o texto antigo sobe 4px desfocando e some, o novo vem de baixo (150ms cada) */
@@ -3983,4 +4000,9 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
 }
 .robo-digitando {
   align-self: flex-start;
+}
+
+/* selo de erros do admin: no escuro o vermelho é claro e o número branco ficava com 2,77:1 */
+:root:not([data-tema="claro"]) .selo-erros {
+  color: #0a0a0a;
 }
