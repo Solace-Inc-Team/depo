@@ -149,7 +149,7 @@ export async function conferirAssinatura(tenantId: string): Promise<boolean> {
       if (!marcado) return false;
       await tx
         .update(tenants)
-        .set({ pagoAte: sql`(greatest(coalesce(${tenants.pagoAte}, ${hoje}::date), ${hoje}::date) + interval '1 month')::date` })
+        .set({ pagoAte: somaMeses(hoje, 1) })
         .where(eq(tenants.id, tenantId));
       await tx.insert(auditLog).values({ tenantId, userId: null, action: "assinatura.pago", entity: "tenant", entityId: tenantId, data: { pagamento: c.mpPaymentId, valor: c.valorCents } });
       return true;
@@ -194,7 +194,7 @@ export async function conferirCartao(tenantId: string) {
         .update(tenants)
         .set({
           mpAssinaturaCobradas: a.cobradas,
-          pagoAte: sql`(greatest(coalesce(${tenants.pagoAte}, ${hoje}::date), ${hoje}::date) + make_interval(months => ${novas}::int))::date`,
+          pagoAte: somaMeses(hoje, novas),
         })
         .where(and(eq(tenants.id, tenantId), eq(tenants.mpAssinaturaId, a.id), eq(tenants.mpAssinaturaCobradas, t.cobradas)))
         .returning({ id: tenants.id });
@@ -211,6 +211,17 @@ export async function conferirCartao(tenantId: string) {
   return { situacao: a.situacao, link: a.link, caiu };
 }
 
+/**
+ * Novo "pago até": soma meses a partir do maior entre o vencimento atual e hoje, sem perder dias no fim do mês.
+ * Quem vence no último dia continua no último dia (31/01, 28/02, 31/03); só somar 1 mês prendia em 28 para sempre.
+ */
+function somaMeses(hoje: string, meses: number) {
+  const base = sql`greatest(coalesce(${tenants.pagoAte}, ${hoje}::date), ${hoje}::date)`;
+  return sql`(case when ${base} = (date_trunc('month', ${base}) + interval '1 month - 1 day')::date
+    then (date_trunc('month', ${base}) + make_interval(months => ${meses}::int + 1) - interval '1 day')::date
+    else (${base} + make_interval(months => ${meses}::int))::date end)`;
+}
+
 /** Cria a assinatura no cartão e devolve o link do Mercado Pago onde o dono põe o cartão. Só o dono. */
 export async function assinarNoCartao(ctx: Ctx, email: string) {
   assertRole(ctx, "dono");
@@ -223,7 +234,15 @@ export async function assinarNoCartao(ctx: Ctx, email: string) {
   const atual = await conferirCartao(ctx.tenantId);
   if (atual?.situacao === "authorized") throw new DomainError("A cobrança no cartão já está ligada.");
   // a que ficou pela metade sai antes de nascer outra: nunca duas cobrando a mesma empresa
-  if (t.id && atual?.situacao !== "cancelled") await cancelarAssinaturaMp(token, t.id).catch(() => {});
+  if (t.id && atual?.situacao !== "cancelled") {
+    try {
+      await cancelarAssinaturaMp(token, t.id);
+    } catch (e) {
+      // sem cancelar a antiga, a nova cobraria em dobro: para aqui
+      console.error(`[assinatura] cancelar a assinatura antiga de ${ctx.tenantId} falhou:`, (e as Error).message);
+      throw new DomainError("Não deu para trocar o cartão agora. Tente de novo em instantes.");
+    }
+  }
   let nova: Awaited<ReturnType<typeof criarAssinaturaMp>>;
   try {
     nova = await criarAssinaturaMp(token, {
@@ -257,6 +276,8 @@ export async function cancelarCartao(ctx: Ctx) {
     console.error(`[assinatura] cancelar cartão de ${ctx.tenantId} falhou:`, (e as Error).message);
     throw new DomainError("Não deu para desligar agora. Tente de novo em instantes.");
   }
+  // uma cobrança pode ter caído entre a última conferência e o desligar: conta antes de soltar a assinatura
+  await conferirCartao(ctx.tenantId).catch((e) => console.error(`[assinatura] conferir antes de desligar ${ctx.tenantId} falhou:`, (e as Error).message));
   await tenantTransaction(ctx, async (tx) => {
     await tx.update(tenants).set({ mpAssinaturaId: null }).where(eq(tenants.id, ctx.tenantId));
     await tx.insert(auditLog).values({ tenantId: ctx.tenantId, userId: ctx.userId, action: "assinatura.cartao_desligado", entity: "tenant", entityId: ctx.tenantId, data: { assinatura: t.id } });

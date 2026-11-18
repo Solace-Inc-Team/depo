@@ -145,7 +145,11 @@ export default async function Acompanhar({ params }: PageProps<"/pedir/[slug]/ac
           <p className="font-semibold">Pague com Pix</p>
           <PixBox code={pix.codigo} />
           <p className="text-[13px] text-muted">
-            {pix.automatico ? "Assim que o Pix cair, esta página mostra que foi recebido." : "O pedido sai para entrega depois que a loja confirmar o pagamento."}
+            {pix.automatico
+              ? "Assim que o Pix cair, esta página mostra que foi recebido."
+              : aPagar
+                ? "O pedido sai para entrega depois que a loja confirmar o pagamento."
+                : "O pedido já está na fila de entrega. Pague agora por aqui ou na hora da entrega."}
           </p>
         </section>
       )}

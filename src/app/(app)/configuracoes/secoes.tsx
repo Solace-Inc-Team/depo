@@ -1,4 +1,4 @@
-import { headers } from "next/headers";
+import { siteUrl } from "@/lib/request";
 import Link from "next/link";
 import QRCode from "qrcode";
 import type { LucideIcon } from "lucide-react";
@@ -106,8 +106,7 @@ function ComUnidade({ unidade, children }: { unidade: string; children: React.Re
 // prontas à janela, que só mostra a escolhida: trocar de seção não carrega nada.
 export async function secoesConfig(tenantId: string, pagoAte: string | null) {
   const [s, filiais] = await Promise.all([getSettings(tenantId), listFiliais(tenantId)]);
-  const h = await headers();
-  const portalUrl = `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}/pedir/${s.slug}`;
+  const portalUrl = `${await siteUrl()}/pedir/${s.slug}`;
   // um link por filial ativa; a principal fica com o link de sempre
   const ativas = filiais.filter((b) => b.active);
   const links = s.portalEnabled

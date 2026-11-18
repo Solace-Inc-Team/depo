@@ -102,3 +102,10 @@ test("robô: respeita os limites do WhatsApp (3 botões de 20 letras, 10 linhas 
   const lista = responder({ etapa: "menu" }, { id: "outro" }, ctx({ produtos: muitos })).saidas[0];
   assert.ok(lista.tipo === "lista" && lista.itens.length === 10 && lista.itens.every((i) => i.titulo.length <= 24) && lista.botao.length <= 20);
 });
+
+test("troco absurdo no robô volta a perguntar em vez de derrubar a conversa", () => {
+  const c = ctx();
+  const r = responder({ etapa: "troco", itens: [{ productId: "g", quantity: 1, returnsEmpty: true }] } as Estado, { texto: "999999999" }, c);
+  assert.equal(r.estado?.etapa, "troco");
+  assert.match(textos(r.saidas), /até R\$\s?1\.000,00/);
+});

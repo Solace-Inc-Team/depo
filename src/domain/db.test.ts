@@ -219,6 +219,20 @@ test("estorno: turno aberto bloqueia, estoque volta e a devolução vira despesa
   assert.equal((await m.exp.listExpenses(B.t.id, today, today, null)).length, 0);
 });
 
+test("estorno de pedido pago parte em dinheiro e parte no Pix devolve cada parte pela sua forma", async () => {
+  const venda = await m.orders.createOrder(A.ctx, {
+    mode: "balcao", customerId: null, items: [{ productId: A.product.id, quantity: 2, returnsEmpty: true }],
+    paymentMethod: "pix", cashPartCents: 5000, deliveryFeeCents: 0, changeForCents: null, notes: "", driverId: null,
+  });
+  await m.orders.refundOrder(A.ctx, { orderId: venda.id, reason: "cliente devolveu", restock: false });
+  const today = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
+  const linhas = (await m.exp.listExpenses(A.t.id, today, today, null)).filter((e) => e.orderId === venda.id);
+  assert.deepEqual(
+    linhas.map((e) => [e.method, e.amountCents]).sort(),
+    [["dinheiro", 5000], ["pix", venda.totalCents - 5000]].sort(),
+  );
+});
+
 test("estorno de fiado exige estornar os pagamentos antes", async () => {
   const st = await m.rec.customerStatement(A.t.id, A.customer.id);
   const fiadoOrder = st.entries.find((e) => e.kind === "compra")!;
@@ -1486,10 +1500,21 @@ test("mensalidade no cartão: cada cobrança do Mercado Pago soma um mês, uma v
   // outra empresa não pega a assinatura desta, nem com o aviso
   assert.equal(await ass.conferirCartao(A.t.id), null);
 
+  // vence no último dia do mês: continua no último dia, sem ficar preso no 28 depois de fevereiro
+  await db.update(tenants).set({ pagoAte: "2027-01-31" }).where(eq(tenants.id, tenant.id));
+  assinaturas.get(id2)!.cobradas = 4;
+  await ass.conferirCartao(tenant.id);
+  assert.equal(await pagoAte(), "2027-02-28");
+  assinaturas.get(id2)!.cobradas = 5;
+  await ass.conferirCartao(tenant.id);
+  assert.equal(await pagoAte(), "2027-03-31");
+
+  // uma cobrança cai e o dono desliga antes de alguém conferir: ela conta mesmo assim
+  assinaturas.get(id2)!.cobradas = 6;
   await ass.cancelarCartao(dono);
   assert.equal(assinaturas.get(id2)!.situacao, "cancelled");
   assert.equal(await ass.conferirCartao(tenant.id), null);
-  assert.equal(await pagoAte(), mais(3), "o que já foi pago continua");
+  assert.equal(await pagoAte(), "2027-04-30", "o que já foi pago continua, inclusive a última cobrança");
   delete process.env.MP_TOKEN_SOLACE;
   process.env.APP_URL = antes;
 });

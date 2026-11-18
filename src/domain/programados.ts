@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { and, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { tenantTransaction, type Tx } from "@/db";
-import { orderItems, orders, pedidosProgramados } from "@/db/schema";
+import { branches, orderItems, orders, pedidosProgramados } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
 import { dataISO, somaDias, todayISO } from "@/lib/period";
 import { audit } from "./stock";
@@ -112,9 +112,16 @@ export async function lancarProgramado(ctx: Ctx, id: string) {
   assertRole(ctx, ...EQUIPE);
   return tenantTransaction(ctx, async (tx) => {
     const p = await doDia(tx, ctx, id);
+    // a filial do programado foi desativada: o pedido vai para a principal em vez de cair numa filial sem equipe
+    const ativas = await tx
+      .select({ id: branches.id })
+      .from(branches)
+      .where(and(eq(branches.tenantId, ctx.tenantId), eq(branches.active, true)))
+      .orderBy(desc(branches.main), asc(branches.createdAt));
+    const branchId = ativas.find((b) => b.id === p.branchId)?.id ?? ativas[0].id;
     const pedido = await criarPedidoNaTx(
       tx,
-      { ...ctx, branchId: p.branchId },
+      { ...ctx, branchId },
       newOrderSchema.parse({
         mode: "entrega",
         customerId: p.customerId,

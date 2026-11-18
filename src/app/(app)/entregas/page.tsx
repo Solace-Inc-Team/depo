@@ -11,7 +11,7 @@ import { cancelarPixVencidos, PRAZO_PAGAR_MS } from "@/domain/pix";
 import { Empty, Money, PageHeader, SiteBadge, fmtTime, paymentLabel } from "@/components/ui";
 import { ResultadoRua } from "@/components/resultado-rua";
 import { Check, MessageCircle, Printer, Repeat } from "lucide-react";
-import { headers } from "next/headers";
+import { siteUrl } from "@/lib/request";
 import { linkWhatsApp, mensagemSaida } from "@/lib/whatsapp";
 import { formatBRL } from "@/lib/money";
 import { cashOf, expectedCash } from "@/lib/cash";
@@ -62,8 +62,7 @@ export default async function Entregas() {
       programadosParaHoje(user.tenantId, user.branchId),
     ]),
   );
-  const h = await headers();
-  const base = `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`;
+  const base = await siteUrl();
   const onShift = drivers.filter((d) => open.some((s) => s.driverId === d.id));
   // mais antigo primeiro: é o próximo a sair
   const queue = [...waiting].reverse();

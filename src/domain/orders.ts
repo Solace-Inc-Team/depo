@@ -473,17 +473,15 @@ export async function refundOrder(ctx: Ctx, input: { orderId: string; reason: st
       .where(eq(orders.id, o.id));
 
     if (o.paymentMethod !== "fiado") {
-      await tx.insert(expenses).values({
-        tenantId: ctx.tenantId,
-        branchId: o.branchId,
-        category: "estorno",
-        description: `Devolução do pedido #${o.number}`,
-        amountCents: o.totalCents,
-        method: o.paymentMethod,
-        paidOn: todayISO(),
-        orderId: o.id,
-        createdBy: ctx.userId,
-      });
+      const devolucao = { tenantId: ctx.tenantId, branchId: o.branchId, category: "estorno" as const, description: `Devolução do pedido #${o.number}`, paidOn: todayISO(), orderId: o.id, createdBy: ctx.userId };
+      // pedido pago parte em dinheiro: cada parte volta pela forma em que entrou (o caixa e os relatórios separam)
+      const emDinheiro = o.paymentMethod === "dinheiro" ? o.totalCents : o.cashPartCents;
+      const resto = o.totalCents - emDinheiro;
+      const linhas = [
+        ...(emDinheiro > 0 ? [{ ...devolucao, amountCents: emDinheiro, method: "dinheiro" as const }] : []),
+        ...(resto > 0 ? [{ ...devolucao, amountCents: resto, method: o.paymentMethod }] : []),
+      ];
+      if (linhas.length) await tx.insert(expenses).values(linhas);
     }
     await audit(tx, ctx, "pedido.estornar", "order", o.id, input);
   });

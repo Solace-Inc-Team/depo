@@ -13,7 +13,7 @@ import { caminhoSeguro } from "@/lib/caminho";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { DomainError } from "@/lib/ctx";
 import { formatBRL, parseBRL } from "@/lib/money";
-import { clientIp } from "@/lib/request";
+import { clientIp, siteUrl } from "@/lib/request";
 import type { ActionState } from "@/components/action-form";
 import { createOrder, dispatchOrders, deliverOrder, cancelOrder, refundOrder, newOrderSchema, reportOccurrence, reassignOrder, confirmPix, marcarPixDevolvido } from "@/domain/orders";
 import { inscreverAviso, placePortalOrder, portalOrderSchema, portalTenant } from "@/domain/portal";
@@ -30,7 +30,7 @@ import { addAddress, addressSchema, removeAddress, saveSettings, settingsSchema,
 import { TERMS_VERSION } from "@/lib/legal";
 import { ativarFilial, criarFilial, mudarDeFilial } from "@/domain/filiais";
 import { alterarProgramado, alterarSchema, excluirProgramado, lancarProgramado, pausarProgramado, programar, programarSchema, pularProgramado } from "@/domain/programados";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { conversar, recomecarConversa } from "@/domain/robo";
 import type { Saida } from "@/lib/robo";
 import { FILIAL_COOKIE } from "@/lib/auth";
@@ -52,6 +52,8 @@ function money(fd: FormData, k: string, required = true): number | null {
   }
   const c = parseBRL(v);
   if (c === null || c < 0) throw new DomainError(`Valor inválido: "${v}". Use o formato 12,50.`);
+  // o mesmo teto das despesas: acima disso é engano de digitação (e o banco não guarda, dava erro 500)
+  if (c > 10_000_000_00) throw new DomainError("Valor muito alto. Confira o que foi digitado.");
   return c;
 }
 
@@ -896,18 +898,19 @@ const textoCurto = (v: unknown, n: number) => (typeof v === "string" ? v.slice(0
 export async function conversarTesteAction(telefone: unknown, entrada: unknown): Promise<{ saidas?: Saida[]; erro?: string }> {
   const user = await requireUser("dono");
   const e = (entrada ?? {}) as Record<string, unknown>;
-  const h = await headers();
   try {
     const saidas = await conversar(
       user.tenantId,
       String(telefone ?? ""),
       { texto: textoCurto(e.texto, 500), id: textoCurto(e.id, 100) },
-      { base: `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`, teste: true },
+      { base: await siteUrl(), teste: true },
     );
     revalidatePath("/", "layout");
     return { saidas };
   } catch (err) {
     if (err instanceof DomainError) return { erro: err.message };
+    // dado que passou pela conversa e o pedido recusou: mensagem em vez de derrubar o simulador
+    if (err instanceof z.ZodError) return { erro: err.issues[0]?.message ?? "Não deu para lançar este pedido." };
     throw err;
   }
 }

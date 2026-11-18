@@ -41,6 +41,8 @@ export type Saida =
 export type Resposta = { saidas: Saida[]; estado: Estado | null; lancar?: { itens: Item[]; pagamento: Pagamento; trocoCents?: number | null } };
 
 const MAX_QTD = 20;
+// troco pelo robô: acima de R$ 1.000 é engano de digitação (e um valor absurdo derrubava o "Confirmar pedido")
+const TROCO_MAX = 100_000;
 const comoPaga: Record<Pagamento, string> = { pix: "no Pix", dinheiro: "em dinheiro", cartao: "no cartão" };
 const LOJA = { id: "loja", titulo: "Falar com a loja" };
 const curto = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s);
@@ -233,6 +235,8 @@ export function responder(estado: Estado | null, entrada: Entrada, ctx: Contexto
       if (valor == null || !Number.isInteger(valor) || valor < 0) return naoEntendi();
       const t = total(ctx, estado.itens);
       if (valor > 0 && valor < t) return { saidas: [{ tipo: "texto", texto: `Esse valor é menor que o total de ${formatBRL(t)}.` }, ...pergunta(estado, ctx)], estado };
+      // acima do teto é engano; muito acima, o pedido seria recusado lá na frente e a conversa caía
+      if (valor > TROCO_MAX) return { saidas: [{ tipo: "texto", texto: `Para troco, mande um valor até ${formatBRL(TROCO_MAX)}.` }, ...pergunta(estado, ctx)], estado };
       return vaiPara({ etapa: "confirmar", itens: estado.itens, pagamento: "dinheiro", trocoCents: valor > t ? valor : null }, ctx);
     }
     case "confirmar": {

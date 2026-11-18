@@ -68,13 +68,13 @@ export async function conversar(tenantId: string, telefone: string, entrada: Ent
       const itens = ultimo
         ? await tx.select({ productId: orderItems.productId, quantity: orderItems.quantity, returnsEmpty: orderItems.returnsEmpty }).from(orderItems).where(eq(orderItems.orderId, ultimo.id))
         : [];
-      const [principal] = await tx
+      const ativas = await tx
         .select({ id: branches.id })
         .from(branches)
         .where(and(eq(branches.tenantId, tenantId), eq(branches.active, true)))
-        .orderBy(desc(branches.main), asc(branches.createdAt))
-        .limit(1);
-      const branchId = ultimo?.branchId ?? principal.id;
+        .orderBy(desc(branches.main), asc(branches.createdAt));
+      // a filial do último pedido, se ainda estiver ativa; desativada, o pedido vai para a principal
+      const branchId = ativas.find((b) => b.id === ultimo?.branchId)?.id ?? ativas[0].id;
       const lista = await tx
         .select({ id: products.id, nome: products.name, precoCents: products.priceCents, vasilhameCents: products.containerPriceCents, retornavel: products.returnable })
         .from(products)
@@ -111,10 +111,10 @@ export async function conversar(tenantId: string, telefone: string, entrada: Ent
               .catch((e) => {
                 if (e !== DESFAZER) throw e;
               });
-            texto = `Pedido #N anotado! Total ${formatBRL(total)}.\nAcompanhe a entrega por aqui: (link do pedido)\n\n(Teste: na conversa real o pedido cai em Entregas. Este não foi lançado.)`;
+            texto = `Pedido #N anotado! Total ${formatBRL(total)}.${comoPagar(dados.pagamento)}\nAcompanhe a entrega por aqui: (link do pedido)\n\n(Teste: na conversa real o pedido cai em Entregas. Este não foi lançado.)`;
           } else {
             const pedido = await lancar(tx, tenantId, branchId, dados);
-            texto = `Pedido #${pedido.number} anotado! Total ${formatBRL(pedido.totalCents)}.\nAcompanhe a entrega por aqui: ${base}/pedir/${loja.slug}/acompanhar/${pedido.trackingId}`;
+            texto = `Pedido #${pedido.number} anotado! Total ${formatBRL(pedido.totalCents)}.${comoPagar(dados.pagamento)}\nAcompanhe a entrega por aqui: ${base}/pedir/${loja.slug}/acompanhar/${pedido.trackingId}`;
           }
           saidas = [{ tipo: "texto", texto }];
         } catch (e) {
@@ -129,6 +129,10 @@ export async function conversar(tenantId: string, telefone: string, entrada: Ent
     }),
   );
 }
+
+// Pix pelo robô entra na fila como o pedido por telefone (não espera o pagamento, como o do site): a mensagem diz
+// onde está o código, e que dá para pagar na entrega
+const comoPagar = (p: Pagamento) => (p === "pix" ? "\nPara pagar no Pix, o código está no link abaixo; se preferir, pague na entrega." : "");
 
 async function lancar(
   tx: Tx,

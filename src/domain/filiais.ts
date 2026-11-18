@@ -83,12 +83,12 @@ export async function ativarFilial(ctx: Ctx, id: string, active: boolean) {
       if (b.main) throw new DomainError("A filial principal não pode ser desativada.");
       const [r] = await tx
         .select({
-          pedidos: sql<number>`(select count(*) from ${orders} where ${orders.branchId} = ${b.id} and ${orders.status} in ('aberto', 'em_rota'))::int`,
+          pedidos: sql<number>`(select count(*) from ${orders} where ${orders.branchId} = ${b.id} and ${orders.status} in ('aguardando_pagamento', 'aberto', 'em_rota'))::int`,
           turnos: sql<number>`(select count(*) from ${shifts} where ${shifts.branchId} = ${b.id} and ${shifts.status} = 'aberto')::int`,
           equipe: sql<number>`(select count(*) from ${users} where ${users.branchId} = ${b.id} and ${users.active})::int`,
         })
         .from(sql`(select 1) as um`);
-      if (r.pedidos) throw new DomainError(`${b.name} tem pedidos em aberto ou em rota. Conclua ou cancele antes.`);
+      if (r.pedidos) throw new DomainError(`${b.name} tem pedidos esperando Pix, em aberto ou em rota. Conclua ou cancele antes.`);
       if (r.turnos) throw new DomainError(`${b.name} tem turno aberto. Faça o acerto antes.`);
       if (r.equipe) throw new DomainError(`${b.name} ainda tem gente da equipe. Passe todos para outra filial antes.`);
     }

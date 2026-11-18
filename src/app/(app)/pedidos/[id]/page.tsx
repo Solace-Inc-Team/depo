@@ -13,7 +13,7 @@ import { DeliveryExceptions } from "@/components/delivery-forms";
 import { originLabel } from "@/domain/orders";
 import { Money, StatusBadge, fmtQuando, paymentLabel } from "@/components/ui";
 import { CopyButton } from "@/components/copy-button";
-import { headers } from "next/headers";
+import { siteUrl } from "@/lib/request";
 import { MessageCircle } from "lucide-react";
 import { Marcar } from "@/components/controles";
 import { TextoQueTroca } from "@/components/texto-que-troca";
@@ -59,10 +59,10 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
   const onShift = drivers.filter((d) => open.some((s) => s.driverId === d.id));
   const driverName = (id?: string) => drivers.find((d) => d.id === id)?.name ?? "outro entregador";
   // link de acompanhamento só para entrega que ainda vai acontecer (balcão e cancelado não têm o que acompanhar)
-  const h = await headers();
+  const base = await siteUrl();
   const acompanhar =
     o.customerName && ["aberto", "em_rota"].includes(o.status)
-      ? `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}/pedir/${settings.slug}/acompanhar/${o.trackingId}`
+      ? `${base}/pedir/${settings.slug}/acompanhar/${o.trackingId}`
       : null;
   // na rua, a mensagem já avisa que saiu e com quem
   const zap = acompanhar
