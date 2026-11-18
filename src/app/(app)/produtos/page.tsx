@@ -30,7 +30,7 @@ function Fields({ p = {}, rotulos = true }: { p?: P; rotulos?: boolean }) {
       </div>
       <div className="w-28">
         <label className={rotulo} htmlFor={`m-${k}`}>Estoque mínimo</label>
-        <input id={`m-${k}`} name="minStock" type="number" min={0} defaultValue={p.minStock ?? 0} className="input" />
+        <input id={`m-${k}`} name="minStock" type="number" inputMode="numeric" min={0} defaultValue={p.minStock ?? 0} className="input" />
       </div>
       {/* no computador a caixa tem a altura do campo, para o texto alinhar com os valores; no celular, altura de toque */}
       <label className="flex min-h-11 items-center gap-2 lg:min-h-9">

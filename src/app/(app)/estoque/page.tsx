@@ -50,7 +50,7 @@ export default async function Estoque() {
             </div>
             <div>
               <label className="label" htmlFor="d-qty">Quantidade</label>
-              <input id="d-qty" name="quantity" type="number" min={1} max={100000} required defaultValue={1} className="input" />
+              <input id="d-qty" name="quantity" type="number" inputMode="numeric" min={1} max={100000} required defaultValue={1} className="input" />
             </div>
             <div>
               <label className="label" htmlFor="d-note">Defeito</label>
@@ -76,11 +76,11 @@ export default async function Estoque() {
               </div>
               <div>
                 <label className="label" htmlFor="t-cheios">Cheios</label>
-                <input id="t-cheios" name="cheios" type="number" min={0} max={100000} defaultValue={0} className="input" />
+                <input id="t-cheios" name="cheios" type="number" inputMode="numeric" min={0} max={100000} defaultValue={0} className="input" />
               </div>
               <div>
                 <label className="label" htmlFor="t-vazios">Vazios</label>
-                <input id="t-vazios" name="vazios" type="number" min={0} max={100000} defaultValue={0} className="input" />
+                <input id="t-vazios" name="vazios" type="number" inputMode="numeric" min={0} max={100000} defaultValue={0} className="input" />
               </div>
               <div className="sm:col-span-2">
                 <label className="label" htmlFor="t-note">Observação</label>
@@ -100,11 +100,11 @@ export default async function Estoque() {
             </div>
             <div>
               <label className="label" htmlFor="p-full">Cheios recebidos</label>
-              <input id="p-full" name="full" type="number" min={1} max={100000} required className="input" />
+              <input id="p-full" name="full" type="number" inputMode="numeric" min={1} max={100000} required className="input" />
             </div>
             <div>
               <label className="label" htmlFor="p-empties">Vazios devolvidos</label>
-              <input id="p-empties" name="empties" type="number" min={0} defaultValue={0} className="input" />
+              <input id="p-empties" name="empties" type="number" inputMode="numeric" min={0} defaultValue={0} className="input" />
             </div>
             <div>
               <label className="label" htmlFor="p-supplier">Fornecedor</label>

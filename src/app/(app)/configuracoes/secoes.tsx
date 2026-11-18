@@ -148,12 +148,12 @@ export async function secoesConfig(tenantId: string, pagoAte: string | null) {
           <Grupo>
             <Linha icone={Percent} titulo="Desconto máximo da equipe" descricao="Acima disso, só você lança o desconto." htmlFor="staffDiscountPct">
               <ComUnidade unidade="%">
-                <input id="staffDiscountPct" name="staffDiscountPct" type="number" min={0} max={100} required defaultValue={s.staffDiscountPct} className="input num w-24" />
+                <input id="staffDiscountPct" name="staffDiscountPct" type="number" inputMode="numeric" min={0} max={100} required defaultValue={s.staffDiscountPct} className="input num w-24" />
               </ComUnidade>
             </Linha>
             <Linha icone={Clock} titulo="Pedido atrasado depois de" htmlFor="lateAfterMinutes">
               <ComUnidade unidade="min">
-                <input id="lateAfterMinutes" name="lateAfterMinutes" type="number" min={10} max={1440} required defaultValue={s.lateAfterMinutes} className="input num w-24" />
+                <input id="lateAfterMinutes" name="lateAfterMinutes" type="number" inputMode="numeric" min={10} max={1440} required defaultValue={s.lateAfterMinutes} className="input num w-24" />
               </ComUnidade>
             </Linha>
           </Grupo>

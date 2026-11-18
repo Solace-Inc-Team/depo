@@ -36,7 +36,8 @@ import type { Saida } from "@/lib/robo";
 import { FILIAL_COOKIE } from "@/lib/auth";
 import { todayISO } from "@/lib/period";
 
-const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
+// o Postgres recusa o byte nulo em texto: virava erro 500 em vez de campo vazio
+const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").replaceAll("\0", "").trim();
 const optId = (fd: FormData, k: string) => str(fd, k) || null;
 const int = (fd: FormData, k: string) => {
   const n = Number(str(fd, k) || "0");
@@ -84,6 +85,8 @@ async function run(fn: () => Promise<unknown>, paths: string[], ok?: string): Pr
     // id mal formado vindo do formulário: o Postgres recusa o uuid
     const code = (e as { cause?: { code?: string } }).cause?.code;
     if (code === "22P02") return { error: "Registro não encontrado. Recarregue a página." };
+    // lista de itens que não é JSON: só chega de requisição montada fora da tela
+    if (e instanceof SyntaxError) return { error: "Escolha ao menos um produto." };
     throw e;
   }
   paths.forEach((p) => revalidatePath(p, "layout"));
@@ -312,7 +315,7 @@ export async function portalOrderAction(slug: string, filial: string, fd: FormDa
   if (str(fd, "site")) return { error: "Não foi possível enviar o pedido." };
   const key = `portal:${await clientIp()}`;
   // conta antes de gravar: envios simultâneos e tentativas com erro também gastam o limite
-  if (await attempt(key, 5)) return { error: "Muitos pedidos seguidos deste aparelho. Ligue para a loja ou tente em 15 minutos." };
+  if (await attempt(key, 5)) return { error: "Muitos pedidos seguidos desta rede. Ligue para a loja ou tente em 15 minutos." };
   try {
     const order = await placePortalOrder(
       t.id,

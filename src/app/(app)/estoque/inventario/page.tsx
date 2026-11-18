@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { stockOverview } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
 import { inventoryAction } from "@/app/actions";
-import { CountInput } from "./count-input";
+import { CountInput, RegistrarInventario } from "./count-input";
 
 export const metadata = { title: "Inventário" };
 
@@ -58,7 +58,7 @@ export default async function Inventario() {
           <label className="label" htmlFor="inv-pw">Sua senha, para confirmar</label>
           <input id="inv-pw" name="confirmPassword" type="password" autoComplete="current-password" required className="input" />
         </div>
-        <button className="btn btn-primary">Registrar inventário</button>
+        <RegistrarInventario />
       </ActionForm>
     </>
   );

@@ -5,7 +5,7 @@ import { listAddresses, listCustomers } from "@/domain/queries";
 export async function GET(req: Request) {
   const user = await getUser();
   if (!user || user.role === "entregador" || pendingTerms(user) || assinaturaBloqueada(user)) return new Response("Não autorizado", { status: 401 });
-  const q = (new URL(req.url).searchParams.get("q") ?? "").trim().slice(0, 80);
+  const q = (new URL(req.url).searchParams.get("q") ?? "").replaceAll("\0", "").trim().slice(0, 80);
   if (q.length < 2) return Response.json([]);
   const found = (await listCustomers(user.tenantId, q)).slice(0, 8);
   const extra = await listAddresses(user.tenantId, found.map((c) => c.id));

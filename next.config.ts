@@ -17,6 +17,8 @@ const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
   agentRules: false,
   poweredByHeader: false,
+  // o driver do banco fica fora do pacote: o Turbopack copiava o código dele como arquivo público em /_next/static/media
+  serverExternalPackages: ["postgres"],
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },

@@ -1127,12 +1127,20 @@ test("Mercado Pago: conecta com o token da loja, cobra o Pix do pedido, confirma
   assert.equal(semMp.enc, null);
   assert.equal((await pix.pixDoPedido(A.t.id, o2.id))?.automatico, false);
 
-  // sem Mercado Pago (chave Pix comum): o pedido do site espera a loja conferir, sem prazo que cancele
+  // sem Mercado Pago (chave Pix comum): o pedido do site espera a loja conferir por um dia, e depois cancela
   const s5 = await doSite();
   assert.equal((await pix.pixDoPedido(A.t.id, s5.id))?.automatico, false);
   await db.update(orders).set({ createdAt: vinteMinAtras }).where(eq(orders.id, s5.id));
   await pix.cancelarPixVencidos(A.t.id);
   assert.equal((await m.q.getOrder(A.t.id, s5.id))!.status, "aguardando_pagamento");
+  const s7 = await doSite();
+  await db.update(orders).set({ createdAt: new Date(Date.now() - 25 * 60 * 60_000) }).where(eq(orders.id, s7.id));
+  await pix.cancelarPixVencidos(B.t.id);
+  assert.equal((await m.q.getOrder(A.t.id, s7.id))!.status, "aguardando_pagamento", "outra empresa não cancela");
+  await pix.cancelarPixVencidos(A.t.id);
+  const v7 = (await m.q.getOrder(A.t.id, s7.id))!;
+  assert.equal(v7.status, "cancelado");
+  assert.equal(v7.cancelReason, "Pix não conferido em 24 horas");
   await assert.rejects(m.orders.confirmPix({ ...A.ctx, role: "atendente" }, s5.id), /Sem permissão/);
   await m.orders.confirmPix({ ...A.ctx, role: "caixa" }, s5.id);
   const conferido = (await m.q.getOrder(A.t.id, s5.id))!;

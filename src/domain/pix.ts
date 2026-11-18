@@ -20,6 +20,8 @@ export const PRAZO_PAGAR_MS = 15 * 60 * 1000;
 const FOLGA_MS = 2 * 60 * 1000;
 // a cobrança no Mercado Pago vale no mínimo 30 minutos (lib/mercadopago.ts), mesmo com o prazo do pedido sendo 15
 const COBRANCA_MIN_MS = 30 * 60 * 1000;
+// Pix na chave da empresa, conferido à mão: um dia para a loja conferir antes de cancelar
+const PRAZO_CONFERIR_MS = 24 * 60 * 60 * 1000;
 
 /** Código Pix na chave da empresa (sem confirmação automática). */
 export function orderPix(t: { pixKey: string; pixName: string; pixCity: string }, order: { number: number; totalCents: number }) {
@@ -258,6 +260,26 @@ export async function cancelarPixVencidos(tenantId: string) {
 }
 
 async function cancelarVencidosDaEmpresa(tenantId: string) {
+  // Pix na chave (sem Mercado Pago) que a loja não conferiu em um dia: não segura mais o estoque do site e do robô
+  const esquecidos = await tenantTransaction({ tenantId }, async (tx) => {
+    const r = await tx
+      .update(orders)
+      .set({ status: "cancelado", cancelReason: "Pix não conferido em 24 horas" })
+      .where(
+        and(
+          eq(orders.tenantId, tenantId),
+          eq(orders.status, "aguardando_pagamento"),
+          isNull(orders.mpPaymentId),
+          isNull(orders.pixConfirmedAt),
+          lt(orders.createdAt, new Date(Date.now() - PRAZO_CONFERIR_MS)),
+        ),
+      )
+      .returning({ id: orders.id, number: orders.number });
+    for (const o of r) await tx.insert(auditLog).values({ tenantId, userId: null, action: "pedido.pix_vencido", entity: "order", entityId: o.id, data: { number: o.number } });
+    return r;
+  });
+  for (const o of esquecidos) void avisarCliente(tenantId, o.id, "cancelado");
+
   const vencidos = await withTenant(tenantId, () =>
     db
       .select({ id: orders.id, number: orders.number, createdAt: orders.createdAt })

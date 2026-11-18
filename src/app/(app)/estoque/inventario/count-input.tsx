@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import NumberFlow from "@number-flow/react";
 
 /** Campo de contagem que já mostra a diferença para o sistema, antes de pedir a senha. */
@@ -25,5 +25,28 @@ export function CountInput({ name, label, expected }: { name: string; label: str
         {diff !== 0 && <NumberFlow value={diff} locales="pt-BR" format={{ signDisplay: "always" }} />}
       </span>
     </div>
+  );
+}
+
+/** Só deixa registrar com ao menos uma contagem: antes, pedia confirmação e senha para então recusar. */
+export function RegistrarInventario() {
+  const ref = useRef<HTMLButtonElement>(null);
+  const [vazio, setVazio] = useState(true);
+  useEffect(() => {
+    const form = ref.current?.form;
+    if (!form) return;
+    // o evento de reset chega antes de os campos esvaziarem
+    const ver = () => setTimeout(() => setVazio(![...form.querySelectorAll<HTMLInputElement>("input[name^='c:']")].some((i) => i.value !== "")));
+    form.addEventListener("input", ver);
+    form.addEventListener("reset", ver);
+    return () => {
+      form.removeEventListener("input", ver);
+      form.removeEventListener("reset", ver);
+    };
+  }, []);
+  return (
+    <button ref={ref} className="btn btn-primary" disabled={vazio}>
+      Registrar inventário
+    </button>
   );
 }

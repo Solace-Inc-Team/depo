@@ -58,8 +58,8 @@ export async function emTesteGratis(tenantId: string) {
   return !pago;
 }
 
-// dois cliques ao mesmo tempo esperam o mesmo Pix em vez de criar duas cobranças no Mercado Pago.
-// shortcut: trava só dentro deste processo, trocar por lock no banco se o app rodar em mais de uma instância
+// dois cliques ao mesmo tempo esperam o mesmo Pix em vez de criar duas cobranças no Mercado Pago: no processo,
+// pelo mapa; entre instâncias do app, pela trava no banco, e quem chega depois acha o Pix em aberto do primeiro
 const gerando = new Map<string, Promise<typeof assinaturaPagamentos.$inferSelect>>();
 
 /** Gera (ou reaproveita) o Pix da mensalidade. Só o dono paga. */
@@ -67,7 +67,12 @@ export async function pixAssinatura(ctx: Ctx) {
   assertRole(ctx, "dono");
   const emAndamento = gerando.get(ctx.tenantId);
   if (emAndamento) return emAndamento;
-  const p = gerarPix(ctx).finally(() => gerando.delete(ctx.tenantId));
+  const p = db
+    .transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"assinatura-pix:" + ctx.tenantId}))`);
+      return gerarPix(ctx);
+    })
+    .finally(() => gerando.delete(ctx.tenantId));
   gerando.set(ctx.tenantId, p);
   return p;
 }

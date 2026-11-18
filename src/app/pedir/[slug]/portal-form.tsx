@@ -24,7 +24,10 @@ type Salvo = {
   pagamento: string;
   numero?: number;
   acompanhar?: string;
+  salvoEm?: number;
 };
+// em aparelho dividido, o próximo a usar não vê para sempre os dados de quem pediu (os salvos antes disso não têm a data)
+const VALIDADE_MS = 90 * 24 * 60 * 60 * 1000;
 const chaveSalvo = (slug: string) => `depo:pedir:${slug}`;
 const semAssinatura = () => () => {};
 function lerBruto(slug: string) {
@@ -37,7 +40,7 @@ function lerBruto(slug: string) {
 function lerSalvo(bruto: string | null): Salvo | null {
   try {
     const j = JSON.parse(bruto ?? "null");
-    return j && typeof j.nome === "string" && Array.isArray(j.itens) ? j : null;
+    return j && typeof j.nome === "string" && Array.isArray(j.itens) && !(j.salvoEm < Date.now() - VALIDADE_MS) ? j : null;
   } catch {
     return null;
   }
@@ -193,7 +196,7 @@ export function PortalForm({
             const r = await action(fd);
             if (r.number) {
               setEnviado({ endereco: campo("address"), referencia: campo("reference"), pagamento: payment, troco: payment === "dinheiro" && parseBRL(campo("changeFor")) ? formatBRL(parseBRL(campo("changeFor"))!) : "" });
-              const novo: Salvo = { nome: campo("name"), fone: campo("phone"), endereco: campo("address"), referencia: campo("reference"), itens: items, pagamento: payment, numero: r.number, acompanhar: r.acompanhar };
+              const novo: Salvo = { nome: campo("name"), fone: campo("phone"), endereco: campo("address"), referencia: campo("reference"), itens: items, pagamento: payment, numero: r.number, acompanhar: r.acompanhar, salvoEm: Date.now() };
               try {
                 localStorage.setItem(chaveSalvo(slug), JSON.stringify(novo));
               } catch {}
