@@ -91,9 +91,10 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
         </p>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
+      {/* minmax(0,…) também no celular: a tabela de itens não alarga a coluna (em 320 px a tela inteira rolava de lado) */}
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)]">
         <div className="space-y-6">
-          <section className="panel">
+          <section className="panel overflow-x-auto">
             <table className="table">
               <thead>
                 <tr><th>Item</th><th className="text-right">Qtd.</th><th className="text-right max-sm:hidden">Preço</th><th className="text-right">Subtotal</th></tr>
@@ -120,16 +121,19 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
                   </tr>
                 ))}
                 {o.deliveryFeeCents > 0 && (
-                  <tr><td colSpan={3}>Taxa de entrega</td><td className="text-right"><Money cents={o.deliveryFeeCents} /></td></tr>
+                  <tr><td colSpan={2}>Taxa de entrega</td><td className="max-sm:hidden" /><td className="text-right"><Money cents={o.deliveryFeeCents} /></td></tr>
                 )}
                 {o.discountCents > 0 && (
                   <tr>
-                    <td colSpan={3}>Desconto{o.discountReason && <span className="text-muted">: {o.discountReason}</span>}</td>
+                    <td colSpan={2}>Desconto{o.discountReason && <span className="text-muted">: {o.discountReason}</span>}</td>
+                    <td className="max-sm:hidden" />
                     <td className="text-right">−<Money cents={o.discountCents} /></td>
                   </tr>
                 )}
                 <tr>
-                  <td colSpan={3} className="font-semibold">
+                  {/* o rótulo ocupa Item e Qtd.; a célula vazia fica no lugar do Preço, que some no celular: assim as
+                      colunas batem com as dos itens nos dois tamanhos */}
+                  <td colSpan={2} className="font-semibold">
                     Total, {paymentLabel[o.paymentMethod].toLowerCase()}
                     {o.cashPartCents > 0 && (
                       <span className="font-normal text-muted">
@@ -137,6 +141,7 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
                       </span>
                     )}
                   </td>
+                  <td className="max-sm:hidden" />
                   <td className="text-right"><Money cents={o.totalCents} className="text-xl font-semibold" /></td>
                 </tr>
               </tbody>

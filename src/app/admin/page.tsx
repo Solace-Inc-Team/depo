@@ -25,7 +25,7 @@ export default async function Admin() {
         {active.reduce((s, t) => s + t.orders30, 0)} pedidos nos últimos 30 dias
       </p>
 
-      <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <section className="panel overflow-x-auto">
           {list.length ? (
             <table className="table min-w-[34rem]">

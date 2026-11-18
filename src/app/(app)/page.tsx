@@ -194,7 +194,7 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
 
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <section className="panel">
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
             <h2 className="h2">Pedidos {ehHoje ? "de hoje" : noDia}</h2>

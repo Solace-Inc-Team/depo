@@ -145,7 +145,7 @@ export function NewOrderForm({
   const step = (id: string, d: number) => setQty((q) => ({ ...q, [id]: Math.max(0, Math.min(99, (q[id] ?? 0) + d)) }));
 
   return (
-    <ActionForm action={createOrderAction} className="grid gap-6 pb-24 lg:grid-cols-[1fr_20rem] lg:pb-0">
+    <ActionForm action={createOrderAction} className="grid gap-6 pb-24 lg:grid-cols-[minmax(0,1fr)_20rem] lg:pb-0">
       <input type="hidden" name="mode" value={mode} ref={modeRef} />
       <input type="hidden" name="items" value={JSON.stringify(items)} />
       <input type="hidden" name="customerId" value={creating ? "" : (customer?.id ?? "")} />
@@ -198,7 +198,7 @@ export function NewOrderForm({
           {customer && !creating ? (
             // cada estado do quadro (buscar, cadastrar, escolhido) chega com movimento quando toma o lugar do outro
             <div className="enter flex items-start justify-between gap-3 rounded-md bg-accent-soft p-3">
-              <div>
+              <div className="min-w-0 wrap-anywhere">
                 <p className="font-semibold">{customer.name}</p>
                 <p className="text-sm text-muted">{customer.address || "Sem endereço"}</p>
                 <p className="text-sm text-muted">{customer.phone}</p>
@@ -283,7 +283,7 @@ export function NewOrderForm({
                         tabIndex={-1}
                         onClick={() => escolher(c)}
                         onMouseEnter={() => setAtivo(i)}
-                        className={`block w-full px-3 py-2 text-left hover:bg-subtle ${i === ativo ? "bg-subtle" : ""}`}
+                        className={`block w-full px-3 py-2 text-left wrap-anywhere hover:bg-subtle ${i === ativo ? "bg-subtle" : ""}`}
                       >
                         <span className="font-medium">{c.name}</span>
                         <span className="block text-sm text-muted">{c.address} {c.phone && `(${c.phone})`}</span>

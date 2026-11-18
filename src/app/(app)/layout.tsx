@@ -93,7 +93,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   ];
 
   return (
-    <div className="app-shell lg:grid lg:min-h-screen lg:grid-cols-[15rem_1fr]">
+    <div className="app-shell lg:grid lg:min-h-screen lg:grid-cols-[15rem_minmax(0,1fr)]">
       <aside className="relative z-20 border-b border-line lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:border-r lg:border-b-0">
         <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-3 lg:px-5 lg:pt-5">
           <MarcaDaSessao />

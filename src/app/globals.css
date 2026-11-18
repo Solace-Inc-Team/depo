@@ -100,6 +100,8 @@ body {
     font-weight: 600;
     line-height: 1.2;
     letter-spacing: -0.025em;
+    /* título com nome de cliente ou loja: palavra sem espaço maior que a tela quebra em vez de alargar a página */
+    overflow-wrap: anywhere;
   }
   .h2 {
     font-size: 0.9375rem;
@@ -3698,8 +3700,9 @@ button.gaveta-mais-linha:active {
 .nav-inferior-selo {
   color: var(--gota);
 }
-/* janela no celular mais alta que a tela: rola por dentro (o botão de enviar ficava fora da tela, sem como chegar) */
-@media (max-width: 639px) {
+/* janela no celular mais alta que a tela: rola por dentro (o botão de enviar ficava fora da tela, sem como chegar).
+   Vale também para tela baixa, como o celular deitado ou uma janela pequena no computador */
+@media (max-width: 639px), (max-height: 640px) {
   .janela-cartao {
     max-height: calc(100dvh - 1rem);
     overflow-y: auto;

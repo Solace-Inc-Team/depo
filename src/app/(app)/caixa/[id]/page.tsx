@@ -153,7 +153,7 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
         </section>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-6">
         <section className="panel overflow-x-auto">
           <h2 className="h2 border-b border-line px-4 py-3">Pedidos do turno</h2>

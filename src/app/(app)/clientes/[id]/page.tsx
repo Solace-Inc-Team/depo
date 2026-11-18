@@ -105,7 +105,7 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
           </div>
         ))}
       </section>
-      <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
         <div className="space-y-6">
           {st.entries.length > 0 && (
             <section id="receber" className="panel scroll-mt-6">

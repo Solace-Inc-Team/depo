@@ -59,9 +59,10 @@ export default async function Equipe() {
                   {varias && <p className="text-sm whitespace-nowrap text-muted">{u.role === "dono" ? "Todas as filiais" : u.branchName}</p>}
                 </td>
                 <td className="text-right">
-                  {/* outro dono só a Solace altera (domain/registry.ts) */}
+                  {/* outro dono só a Solace altera (domain/registry.ts). flex-wrap: em tela estreita as ações descem de
+                      linha em vez de sair do cartão ("Desativar" ficava cortado) */}
                   {u.id !== user.userId && u.role !== "dono" && (
-                    <div className="flex items-center justify-start gap-3 sm:justify-end">
+                    <div className="flex flex-wrap items-center justify-start gap-x-3 gap-y-2 sm:justify-end">
                       {varias && u.active && (
                         <PopoverForm label="Mudar de filial" titulo={u.name} action={mudarDeFilialAction} submit="Salvar">
                           <input type="hidden" name="userId" value={u.id} />

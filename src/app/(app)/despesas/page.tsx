@@ -148,10 +148,11 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
         <button className="btn">Ver período</button>
       </form>
 
-      <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         {/* min-w-0: a tabela larga rola dentro do quadro em vez de alargar a coluna e a página */}
         <div className="min-w-0 space-y-6">
-          <section className="panel grid sm:grid-cols-[auto_1fr] sm:divide-x sm:divide-line">
+          {/* com o menu lateral e a coluna da direita, o total fica em cima das categorias até sobrar largura (xl) */}
+          <section className="panel grid sm:grid-cols-[auto_minmax(0,1fr)] sm:divide-x sm:divide-line lg:grid-cols-1 lg:divide-x-0 xl:grid-cols-[auto_minmax(0,1fr)] xl:divide-x">
             <div className="p-5 sm:pr-8">
               <p className="text-[13px] text-muted">Total no período</p>
               <Money cents={total} className="mt-1 block text-[2rem] leading-tight font-semibold tracking-[-0.03em]" />
@@ -161,7 +162,7 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
                 </p>
               )}
             </div>
-            <ul className="space-y-1.5 border-t border-line p-5 text-[13px] sm:border-t-0">
+            <ul className="space-y-1.5 border-t border-line p-5 text-[13px] sm:border-t-0 lg:border-t xl:border-t-0">
               {byCategory.length ? (
                 byCategory.map(([cat, cents]) => (
                   <li key={cat} className="flex items-center gap-3">
