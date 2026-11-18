@@ -7,11 +7,17 @@ export const todayISO = () => iso(new Date());
 /** "2026-11-30" mais 3 dias: "2026-12-03". Conta em UTC, então não sofre com fuso nem com horário de verão. */
 export const somaDias = (dia: string, n: number) => new Date(Date.parse(dia + "T00:00:00Z") + n * 86400e3).toISOString().slice(0, 10);
 
+/** "2026-11-30" que existe no calendário: mês 13 ou 30 de fevereiro não passam (o banco recusaria). */
+export function dataISO(v: unknown): v is string {
+  if (typeof v !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+  const d = new Date(v + "T00:00:00Z");
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === v;
+}
+
 export function parsePeriod(sp: Record<string, string | string[] | undefined>) {
-  const ok = (v: unknown) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
   const today = iso(new Date());
-  let fromStr = ok(sp.de) ? (sp.de as string) : iso(new Date(Date.now() - 6 * 864e5));
-  let toStr = ok(sp.ate) ? (sp.ate as string) : today;
+  let fromStr = dataISO(sp.de) ? sp.de : iso(new Date(Date.now() - 6 * 864e5));
+  let toStr = dataISO(sp.ate) ? sp.ate : today;
   // "De" depois do "Até": era um período vazio, com R$ 0,00 e nenhuma linha. A pessoa quis o intervalo entre as duas
   if (fromStr > toStr) [fromStr, toStr] = [toStr, fromStr];
   const from = new Date(`${fromStr}T00:00:00-03:00`);

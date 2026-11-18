@@ -5,7 +5,7 @@ import { dashboard, listDrivers, primeirosPassos, programadosParaHoje, vendidosP
 import { previsao, vaziosFaltando } from "@/lib/relatorios";
 import { cancelarPixVencidos } from "@/domain/pix";
 import { contasVencendo } from "@/domain/contas";
-import { todayISO } from "@/lib/period";
+import { dataISO, todayISO } from "@/lib/period";
 import { LiveNumber } from "@/components/live-number";
 import { SemanaBarras } from "@/components/semana-barras";
 import { comparar } from "@/lib/comparativo";
@@ -24,7 +24,7 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
   const sp = await searchParams;
   const hojeISO = todayISO();
   // dia futuro ou malformado volta para hoje; entregador só vale se for da empresa
-  const dia = typeof sp.dia === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.dia) && sp.dia <= hojeISO ? sp.dia : hojeISO;
+  const dia = dataISO(sp.dia) && sp.dia <= hojeISO ? sp.dia : hojeISO;
   // pedido do site que passou do prazo sem pagar sai antes de contar a fila
   await cancelarPixVencidos(user.tenantId);
   const entregadores = await listDrivers(user.tenantId, user.branchId);

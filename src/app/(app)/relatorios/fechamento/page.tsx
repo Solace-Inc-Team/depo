@@ -7,7 +7,7 @@ import { periodBreakdown, periodReport } from "@/domain/queries";
 import { paymentsByDay } from "@/domain/receivables";
 import { expenseCategories, listExpenses } from "@/domain/expenses";
 import { resolutions } from "@/domain/shifts";
-import { parsePeriod, todayISO } from "@/lib/period";
+import { dataISO, parsePeriod, todayISO } from "@/lib/period";
 import { Difference, Money, fmtDateTime } from "@/components/ui";
 import { PrintButton } from "@/components/print-button";
 
@@ -16,7 +16,7 @@ export const metadata = { title: "Fechamento do dia" };
 export default async function Fechamento({ searchParams }: PageProps<"/relatorios/fechamento">) {
   const user = await requireUser("dono", "atendente", "caixa");
   const sp = await searchParams;
-  const day = typeof sp.dia === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.dia) ? sp.dia : todayISO();
+  const day = dataISO(sp.dia) ? sp.dia : todayISO();
   const { from, to } = parsePeriod({ de: day, ate: day });
   const filial = filialDoRelatorio(user, sp);
   const [{ days, closed }, b, fiado, expenses] = await withTenant(user.tenantId, () =>

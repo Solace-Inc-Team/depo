@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { and, asc, eq, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { db, withTenant } from "@/db";
 import { branches, customers, orderItems, orders, products, tenants, users } from "@/db/schema";
 import { type Ctx, DomainError, isUuid } from "@/lib/ctx";
@@ -86,6 +86,8 @@ export async function placePortalOrder(tenantId: string, branchId: string, input
             sql`right(regexp_replace(${customers.phone}, '\\D', '', 'g'), 11) = right(${digits}, 11)`,
           ),
         )
+        // mesmo telefone em dois cadastros (família, empresa): vale o mais recente, como no robô
+        .orderBy(desc(customers.createdAt))
         .limit(1);
       let customerId = known?.id;
       if (!customerId) {

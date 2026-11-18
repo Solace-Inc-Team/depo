@@ -1,4 +1,6 @@
-type C = { name?: string; phone?: string; address?: string; reference?: string; notes?: string };
+import { TelefoneCliente } from "./aviso-telefone";
+
+type C = { id?: string; name?: string; phone?: string; address?: string; reference?: string; notes?: string };
 
 // na ordem em que se pergunta ao cliente: nome, telefone, onde entregar e como achar
 export function CustomerFields({ c = {} }: { c?: C }) {
@@ -10,7 +12,7 @@ export function CustomerFields({ c = {} }: { c?: C }) {
       </div>
       <div className="sm:col-span-2">
         <label className="label" htmlFor="c-phone">Telefone</label>
-        <input id="c-phone" name="phone" inputMode="tel" data-mascara="telefone" autoComplete="tel" defaultValue={c.phone} className="input sm:max-w-56" />
+        <TelefoneCliente id="c-phone" name="phone" defaultValue={c.phone} className="input sm:max-w-56" outroQue={c.id} />
       </div>
       <div className="sm:col-span-2">
         <label className="label" htmlFor="c-addr">Endereço</label>

@@ -632,6 +632,9 @@ test("portal: só com portal ligado, reconhece o cliente pelo telefone e não us
   assert.equal((await m.q.getOrder(A.t.id, second.id))!.customerAddress, "Outro lugar, 5");
   assert.match(second.notes, /Confirmar com o cliente/);
   assert.equal((await db.select().from(customers).where(eq(customers.phone, "(11) 97777-1234"))).length, 1);
+  // a loja cadastrou outra pessoa com o mesmo telefone (pode, só recebe aviso): o pedido do site vai para a mais recente
+  const parente = await m.registry.saveCustomer(A.ctx, { name: "Parente do Site", phone: "11 97777-1234", address: "Rua do Site, 10", reference: "", notes: "" });
+  assert.equal((await m.portal.placePortalOrder(A.t.id, A.branch.id, input)).customerId, parente.id);
   await assert.rejects(m.portal.placePortalOrder(A.t.id, A.branch.id, { ...input, items: [{ productId: B.product.id, quantity: 1, returnsEmpty: true }] }), /indisponível/);
   // pedido recusado não deixa cliente novo para trás
   await assert.rejects(m.portal.placePortalOrder(A.t.id, A.branch.id, { ...input, phone: "21 99999-0000", items: [{ productId: B.product.id, quantity: 1, returnsEmpty: true }] }), /indisponível/);

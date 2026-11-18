@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { tenantTransaction, type Tx } from "@/db";
 import { orderItems, orders, pedidosProgramados } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
-import { somaDias, todayISO } from "@/lib/period";
+import { dataISO, somaDias, todayISO } from "@/lib/period";
 import { audit } from "./stock";
 import { criarPedidoNaTx, newOrderSchema } from "./orders";
 
@@ -11,7 +11,7 @@ import { criarPedidoNaTx, newOrderSchema } from "./orders";
 // toque; a próxima data conta a partir do dia em que foi lançado ou pulado (atrasado não acumula).
 
 const EQUIPE = ["dono", "atendente", "caixa"] as const;
-const dia = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Data inválida.");
+const dia = z.string().refine(dataISO, "Data inválida.");
 
 export const programarSchema = z.object({
   orderId: z.uuid(),

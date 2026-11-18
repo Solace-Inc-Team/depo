@@ -11,6 +11,7 @@ const canalGuardado = () => {
     return "telefone";
   }
 };
+import { TelefoneCliente } from "@/components/aviso-telefone";
 import { ActionForm } from "@/components/action-form";
 import { createOrderAction } from "@/app/actions";
 import { formatBRL, parseBRL } from "@/lib/money";
@@ -214,7 +215,7 @@ export function NewOrderForm({
               </div>
               <div>
                 <label className="label" htmlFor="nc-phone">Telefone</label>
-                <input id="nc-phone" name="newCustomerPhone" inputMode="tel" data-mascara="telefone" className="input" />
+                <TelefoneCliente id="nc-phone" name="newCustomerPhone" className="input" />
               </div>
               <div className="sm:col-span-2">
                 <label className="label" htmlFor="nc-addr">Endereço</label>
