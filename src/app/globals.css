@@ -1572,38 +1572,31 @@ body[data-confirmando] .deliver-btn {
    quem trabalha esperar. Linha que chega depois (pedido novo após uma ação) entra do mesmo jeito.
    "backwards", não "both": terminada a entrada, nada fica preso no elemento. Com "both" cada linha virava
    uma camada própria e a linha de baixo passava por cima do formulário aberto na linha de cima. */
+/* tudo assentado em menos de meio segundo: as linhas só escalonam até a sexta (120 ms entre a primeira e a sexta),
+   e sem desfoque, que custava em celular fraco a cada painel. Antes a última linha parava perto de 0,8 s */
 .pagina > *,
 .pagina :is(.grid, .space-y-6) > :is(.panel, section, article, div) {
-  animation: entra 420ms var(--ease-out) backwards;
+  animation: entra 320ms var(--ease-out) backwards;
 }
-.pagina > *:nth-child(2) { animation-delay: 45ms; }
-.pagina > *:nth-child(3) { animation-delay: 90ms; }
-.pagina > *:nth-child(4) { animation-delay: 135ms; }
-.pagina > *:nth-child(5) { animation-delay: 180ms; }
-.pagina > *:nth-child(n + 6) { animation-delay: 225ms; }
-.pagina :is(.grid, .space-y-6) > :is(.panel, section, article, div):nth-child(2) { animation-delay: 110ms; }
-.pagina :is(.grid, .space-y-6) > :is(.panel, section, article, div):nth-child(3) { animation-delay: 160ms; }
-.pagina :is(.grid, .space-y-6) > :is(.panel, section, article, div):nth-child(4) { animation-delay: 210ms; }
-.pagina :is(.grid, .space-y-6) > :is(.panel, section, article, div):nth-child(n + 5) { animation-delay: 260ms; }
+.pagina > *:nth-child(2) { animation-delay: 40ms; }
+.pagina > *:nth-child(3) { animation-delay: 80ms; }
+.pagina > *:nth-child(n + 4) { animation-delay: 120ms; }
+.pagina :is(.grid, .space-y-6) > :is(.panel, section, article, div):nth-child(2) { animation-delay: 60ms; }
+.pagina :is(.grid, .space-y-6) > :is(.panel, section, article, div):nth-child(3) { animation-delay: 100ms; }
+.pagina :is(.grid, .space-y-6) > :is(.panel, section, article, div):nth-child(n + 4) { animation-delay: 140ms; }
 .pagina :is(.table tbody tr, .panel > ul > li) {
-  animation: linha 340ms var(--ease-out) backwards;
-  animation-delay: 140ms;
+  animation: linha 280ms var(--ease-out) backwards;
+  animation-delay: 100ms;
 }
-.pagina :is(.table tbody tr, .panel > ul > li):nth-child(2) { animation-delay: 162ms; }
-.pagina :is(.table tbody tr, .panel > ul > li):nth-child(3) { animation-delay: 184ms; }
-.pagina :is(.table tbody tr, .panel > ul > li):nth-child(4) { animation-delay: 206ms; }
-.pagina :is(.table tbody tr, .panel > ul > li):nth-child(5) { animation-delay: 228ms; }
-.pagina :is(.table tbody tr, .panel > ul > li):nth-child(6) { animation-delay: 250ms; }
-.pagina :is(.table tbody tr, .panel > ul > li):nth-child(7) { animation-delay: 272ms; }
-.pagina :is(.table tbody tr, .panel > ul > li):nth-child(8) { animation-delay: 294ms; }
-.pagina :is(.table tbody tr, .panel > ul > li):nth-child(9) { animation-delay: 316ms; }
-.pagina :is(.table tbody tr, .panel > ul > li):nth-child(10) { animation-delay: 338ms; }
-.pagina :is(.table tbody tr, .panel > ul > li):nth-child(11) { animation-delay: 360ms; }
-.pagina :is(.table tbody tr, .panel > ul > li):nth-child(n + 12) { animation-delay: 382ms; }
+.pagina :is(.table tbody tr, .panel > ul > li):nth-child(2) { animation-delay: 124ms; }
+.pagina :is(.table tbody tr, .panel > ul > li):nth-child(3) { animation-delay: 148ms; }
+.pagina :is(.table tbody tr, .panel > ul > li):nth-child(4) { animation-delay: 172ms; }
+.pagina :is(.table tbody tr, .panel > ul > li):nth-child(5) { animation-delay: 196ms; }
+.pagina :is(.table tbody tr, .panel > ul > li):nth-child(n + 6) { animation-delay: 220ms; }
 /* linha nova: entra e ainda acende */
 .pagina :is(.table tbody tr, .panel > ul > li).row-new {
   animation:
-    linha 340ms var(--ease-out) backwards,
+    linha 280ms var(--ease-out) backwards,
     flash 2.4s var(--ease-out);
 }
 /* cartão com transição própria (Entregas, data-vt) que chega depois da primeira cascata: já entra deslizando,
@@ -1618,7 +1611,6 @@ body[data-confirmando] .deliver-btn {
   from {
     opacity: 0;
     translate: 0 10px;
-    filter: blur(2px);
   }
 }
 @keyframes linha {
