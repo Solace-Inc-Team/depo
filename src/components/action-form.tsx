@@ -62,6 +62,20 @@ export function validarCampos(form: HTMLFormElement): string | null {
 
 export const toast = (message: string) => window.dispatchEvent(new CustomEvent(TOAST_EVENT, { detail: { message } }));
 
+/**
+ * Server Action chamada fora do ActionForm: sem sinal (ou com o depo recém-atualizado) devolve a mensagem para
+ * mostrar, em vez de derrubar a tela inteira em "Algo deu errado" e perder o que foi digitado.
+ */
+export async function chamarAcao<T>(acao: () => Promise<T>): Promise<{ r: T; erro?: undefined } | { r?: undefined; erro: string }> {
+  try {
+    return { r: await acao() };
+  } catch (e) {
+    if (recarregarSeVersaoNova(e, 1500)) return { erro: "O depo acabou de ser atualizado. Recarregando a tela, tente de novo em seguida." };
+    if (e instanceof TypeError || !navigator.onLine) return { erro: "Sem internet. Tente de novo quando o sinal voltar." };
+    throw e;
+  }
+}
+
 // onSubmit manual em vez de action={...}: o React limpa o form depois da action, e em caso de erro
 // a gente quer manter o que foi digitado
 // o texto da confirmação com o que foi digitado: "Receber {amount}?" vira "Receber R$ 1.084,00?" (dinheiro sai formatado)

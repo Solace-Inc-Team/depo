@@ -1,5 +1,6 @@
 "use client";
 
+import { chamarAcao } from "@/components/action-form";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { ChevronDown, RotateCcw, SendHorizontal, Store } from "lucide-react";
 import { conversarTesteAction, recomecarConversaAction } from "@/app/actions";
@@ -48,7 +49,9 @@ export function Simulador({ clientes, loja }: { clientes: Cliente[]; loja: strin
     setErro("");
     setMsgs((m) => [...m, { de: "cliente", texto: mostrado, chave: chave.current++ }]);
     start(async () => {
-      const r = await conversarTesteAction(telefone, entrada);
+      const c = await chamarAcao(() => conversarTesteAction(telefone, entrada));
+      if (c.erro) return setErro(c.erro);
+      const r = c.r!;
       if (r.erro) return setErro(r.erro);
       const novas: Msg[] = r.saidas!.length
         ? r.saidas!.map((s) => ({ de: "robo", saida: s, chave: chave.current++ }))
@@ -62,7 +65,8 @@ export function Simulador({ clientes, loja }: { clientes: Cliente[]; loja: strin
     setErro("");
     setLimpando(true);
     start(async () => {
-      await recomecarConversaAction(novo);
+      const c = await chamarAcao(() => recomecarConversaAction(novo));
+      if (c.erro) setErro(c.erro);
     });
     setTimeout(() => {
       setMsgs([]);

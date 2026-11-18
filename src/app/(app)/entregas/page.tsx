@@ -6,6 +6,7 @@ import { getSettings, listDrivers, listOrders, listShifts, listViagens, programa
 import { todayISO } from "@/lib/period";
 import { ActionForm } from "@/components/action-form";
 import { confirmPixAction, dispatchAction, lancarProgramadoAction, pularProgramadoAction } from "@/app/actions";
+import { after } from "next/server";
 import { cancelarPixVencidos, PRAZO_PAGAR_MS } from "@/domain/pix";
 import { Empty, Money, PageHeader, SiteBadge, fmtTime, paymentLabel } from "@/components/ui";
 import { ResultadoRua } from "@/components/resultado-rua";
@@ -46,8 +47,9 @@ const ha = (min: number) => (min < 1 ? "agora" : `há ${waited(min)}`);
 
 export default async function Entregas() {
   const user = await requireUser("dono", "atendente", "caixa");
-  // quem passou dos 15 minutos sem pagar sai antes de a fila ser montada
-  await cancelarPixVencidos(user.tenantId);
+  // depois de a tela ir para o navegador: a conferência pergunta ao Mercado Pago (até 10 s cada) e pedido esperando
+  // Pix não está na fila de entrega, então a tela não precisa esperar por ela
+  after(() => cancelarPixVencidos(user.tenantId));
   const [aPagar, waiting, inRoute, drivers, open, settings, viagens, programados] = await withTenant(user.tenantId, () =>
     Promise.all([
       listOrders(user.tenantId, { status: "aguardando_pagamento", branchId: user.branchId }),

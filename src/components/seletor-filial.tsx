@@ -5,7 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useId, useOptimistic, useRef, useState, useTransition } from "react";
 import { Check, ChevronsUpDown, Settings } from "lucide-react";
 import { escolherFilialAction } from "@/app/actions";
-import { useSaida } from "./saida";
+import { Aparece, useSaida } from "./saida";
+import { chamarAcao } from "./action-form";
 
 type Filial = { id: string; name: string };
 
@@ -18,6 +19,9 @@ export function SeletorFilial({ empresa, atual, filiais }: { empresa: string; at
   const path = usePathname();
   const [aberto, setAberto] = useState(false);
   const [trocando, iniciar] = useTransition();
+  // o texto fica guardado enquanto o aviso sai animado; "falhou" diz se ele está à vista
+  const [erro, setErro] = useState("");
+  const [falhou, setFalhou] = useState(false);
   const [mostrada, mostrar] = useOptimistic(atual);
   const raiz = useRef<HTMLDivElement>(null);
   const botao = useRef<HTMLButtonElement>(null);
@@ -51,7 +55,10 @@ export function SeletorFilial({ empresa, atual, filiais }: { empresa: string; at
       mostrar(id);
       const fd = new FormData();
       fd.set("branchId", id);
-      await escolherFilialAction(fd);
+      // sem sinal: a filial de antes volta ao botão sozinha (o otimista desfaz) e o aviso diz por quê
+      const c = await chamarAcao(() => escolherFilialAction(fd));
+      if (c.erro) setErro(c.erro);
+      setFalhou(!!c.erro);
     });
   };
 
@@ -100,6 +107,10 @@ export function SeletorFilial({ empresa, atual, filiais }: { empresa: string; at
         </span>
         <ChevronsUpDown aria-hidden="true" size={14} strokeWidth={1.75} className="shrink-0 text-muted transition-colors group-hover:text-fg" />
       </button>
+
+      <Aparece quando={falhou}>
+        <p role="alert" className="px-2.5 pt-1 text-[12px] text-danger">{erro}</p>
+      </Aparece>
 
       {menu.montado && (
         <div

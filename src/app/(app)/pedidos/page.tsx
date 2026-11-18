@@ -3,6 +3,7 @@ import { ViewTransition } from "react";
 import { Plus, ReceiptText } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { countOrdersByStatus, listOrders } from "@/domain/queries";
+import { after } from "next/server";
 import { cancelarPixVencidos } from "@/domain/pix";
 import { Money, PageHeader, SiteBadge, StatusBadge, fmtQuando, paymentLabel } from "@/components/ui";
 import { LiveNumber } from "@/components/live-number";
@@ -31,7 +32,9 @@ export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
   const sp = await searchParams;
   const current = tabs.find(([v]) => v === sp.status)?.[0] ?? "";
   const q = typeof sp.q === "string" ? sp.q : "";
-  await cancelarPixVencidos(user.tenantId);
+  // depois de a tela ir para o navegador: a conferência pergunta ao Mercado Pago (até 10 s cada) e pedido esperando
+  // Pix não está na fila de entrega, então a tela não precisa esperar por ela
+  after(() => cancelarPixVencidos(user.tenantId));
   const [orders, counts] = await Promise.all([
     listOrders(user.tenantId, { status: current || undefined, q, branchId: user.branchId }),
     countOrdersByStatus(user.tenantId, user.branchId),

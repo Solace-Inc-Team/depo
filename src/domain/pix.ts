@@ -243,7 +243,21 @@ export const liberarSemPix = (tenantId: string, orderId: string) =>
       .where(and(eq(orders.tenantId, tenantId), eq(orders.id, orderId), eq(orders.status, "aguardando_pagamento"))),
   );
 
+// empresas com conferência rodando: Painel, Pedidos e Entregas abertos juntos não repetem as mesmas consultas.
+// shortcut: vale por processo; com mais de uma instância do app, cada uma confere (o update condicional segura o resto).
+const conferindo = new Set<string>();
+
 export async function cancelarPixVencidos(tenantId: string) {
+  if (conferindo.has(tenantId)) return;
+  conferindo.add(tenantId);
+  try {
+    await cancelarVencidosDaEmpresa(tenantId);
+  } finally {
+    conferindo.delete(tenantId);
+  }
+}
+
+async function cancelarVencidosDaEmpresa(tenantId: string) {
   const vencidos = await withTenant(tenantId, () =>
     db
       .select({ id: orders.id, number: orders.number, createdAt: orders.createdAt })

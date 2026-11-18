@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useLayoutEffect, useRef, useState, useTransition } from "react";
 import { ArrowLeft, ArrowRight, Droplet, Eye, EyeOff, Flame } from "lucide-react";
 import { cadastrarAction } from "@/app/actions";
-import { tremerCampo, validarCampos } from "@/components/action-form";
+import { chamarAcao, tremerCampo, validarCampos } from "@/components/action-form";
 import { Aparece } from "@/components/saida";
 import { Marcar } from "@/components/controles";
 
@@ -82,7 +82,9 @@ export function CadastroForm() {
         if (!conferir(dois.current)) return;
         const fd = new FormData(e.currentTarget);
         start(async () => {
-          const r = await cadastrarAction(fd);
+          const c = await chamarAcao(() => cadastrarAction(fd));
+          if (c.erro) return setErro({ geral: c.erro });
+          const r = c.r;
           if (!r?.error) return;
           if (/e-mail/i.test(r.error)) {
             setErro({ email: r.error });

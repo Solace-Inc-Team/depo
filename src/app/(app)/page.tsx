@@ -3,6 +3,7 @@ import { ChevronRight } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { dashboard, listDrivers, primeirosPassos, programadosParaHoje, vendidosPorProduto } from "@/domain/queries";
 import { previsao, vaziosFaltando } from "@/lib/relatorios";
+import { after } from "next/server";
 import { cancelarPixVencidos } from "@/domain/pix";
 import { contasVencendo } from "@/domain/contas";
 import { dataISO, todayISO } from "@/lib/period";
@@ -25,8 +26,9 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
   const hojeISO = todayISO();
   // dia futuro ou malformado volta para hoje; entregador só vale se for da empresa
   const dia = dataISO(sp.dia) && sp.dia <= hojeISO ? sp.dia : hojeISO;
-  // pedido do site que passou do prazo sem pagar sai antes de contar a fila
-  await cancelarPixVencidos(user.tenantId);
+  // depois de a tela ir para o navegador: a conferência pergunta ao Mercado Pago (até 10 s cada) e pedido esperando
+  // Pix não está na fila de entrega, então a tela não precisa esperar por ela
+  after(() => cancelarPixVencidos(user.tenantId));
   const entregadores = await listDrivers(user.tenantId, user.branchId);
   const entregador = entregadores.find((e) => e.id === sp.entregador);
   const d = await dashboard(user.tenantId, { day: dia, driverId: entregador?.id, branchId: user.branchId });
