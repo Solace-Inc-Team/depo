@@ -24,7 +24,8 @@ export async function POST(req: Request) {
   if (assinado === false) console.warn(`[mercadopago] aviso com assinatura que não confere (tipo ${tipo || "?"}, id ${id.slice(0, 40)})`);
   // mensalidade no cartão (eventos "Planos e assinaturas"): a consulta ao Mercado Pago diz quantas cobranças caíram
   if (tipo.startsWith("subscription_")) {
-    if (tipo === "subscription_authorized_payment" && (await attempt(`aviso-mp:${await clientIp(req.headers)}`, MAX_AVISOS_CARTAO))) return new Response(null, { status: 200 });
+    // o limite vale só para aviso sem assinatura válida: os verdadeiros vêm todos dos mesmos IPs do Mercado Pago
+    if (tipo === "subscription_authorized_payment" && assinado !== true && (await attempt(`aviso-mp:${await clientIp(req.headers)}`, MAX_AVISOS_CARTAO))) return new Response(null, { status: 200 });
     await avisoDoCartao(tipo, id).catch((e) => console.error("[assinatura] aviso do cartão falhou:", (e as Error).message));
   } else if (/^ORD[0-9A-Z]{10,40}$/.test(id)) {
     const [o] = await db.select({ id: orders.id, tenantId: orders.tenantId }).from(orders).where(eq(orders.mpPaymentId, id));

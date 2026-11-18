@@ -107,5 +107,9 @@ test("troco absurdo no robô volta a perguntar em vez de derrubar a conversa", (
   const c = ctx();
   const r = responder({ etapa: "troco", itens: [{ productId: "g", quantity: 1, returnsEmpty: true }] } as Estado, { texto: "999999999" }, c);
   assert.equal(r.estado?.etapa, "troco");
-  assert.match(textos(r.saidas), /até R\$\s?1\.000,00/);
+  assert.match(textos(r.saidas), /até R\$\s?1\.014,00/);
+  // pedido grande: pagar um pouco acima do total passa (o teto é o total mais R$ 1.000)
+  const grande = ctx({ produtos: [galao, { ...gas, disponivel: 30 }] });
+  const ok = responder({ etapa: "troco", itens: [{ productId: "b", quantity: 20, returnsEmpty: true }] } as Estado, { texto: "2500" }, grande);
+  assert.equal(ok.estado?.etapa, "confirmar");
 });
