@@ -55,6 +55,8 @@ export function NewOrderForm({
   const [payment, setPayment] = useState<(typeof payments)[number][0]>("dinheiro");
   const [fee, setFee] = useState("");
   const [discount, setDiscount] = useState("");
+  // aberto por quem clicou, não pelo valor: apagar o desconto para corrigir não fecha o campo nem esconde o Motivo
+  const [descontoAberto, setDescontoAberto] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   // campo que existe sempre: a busca some quando o cliente já está escolhido
   const modeRef = useRef<HTMLInputElement>(null);
@@ -76,6 +78,7 @@ export function NewOrderForm({
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  const enterPendente = useRef<string | null>(null);
   // busca no servidor enquanto digita; a resposta de uma busca antiga não sobrescreve a nova
   useEffect(() => {
     const q = search.trim();
@@ -85,6 +88,13 @@ export function NewOrderForm({
       fetch(`/clientes/busca?q=${encodeURIComponent(q)}`, { signal: ctrl.signal })
         .then((r) => (r.ok ? r.json() : []))
         .then((list: Customer[]) => {
+          // Enter apertado antes de a busca voltar: escolhe o primeiro desta busca, a que a pessoa digitou
+          if (enterPendente.current === q && list.length) {
+            enterPendente.current = null;
+            setCustomer(list[0]);
+            setSearch("");
+            return;
+          }
           setMatches({ q, list });
           setAtivo(0);
         })
@@ -236,16 +246,24 @@ export function NewOrderForm({
                 id="busca"
                 ref={searchRef}
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  enterPendente.current = null;
+                  setSearch(e.target.value);
+                }}
                 onKeyDown={(e) => {
                   if (e.key === "ArrowDown" || e.key === "ArrowUp") {
                     if (!shown.length) return;
                     e.preventDefault();
                     setAtivo((a) => (a + (e.key === "ArrowDown" ? 1 : shown.length - 1)) % shown.length);
                   } else if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
-                    // Enter na busca escolhe o cliente marcado; nunca lança o pedido pela metade
+                    // Enter na busca escolhe o cliente marcado; nunca lança o pedido pela metade.
+                    // A lista ainda é da busca anterior (a nova não voltou): não escolhe ninguém dela
                     e.preventDefault();
-                    if (shown[ativo]) escolher(shown[ativo]);
+                    // o texto do campo agora, não o da última renderização: digitação rápida chega antes dela
+                    const digitado = e.currentTarget.value.trim();
+                    if (matches.q === digitado) {
+                      if (shown[ativo]) escolher(shown[ativo]);
+                    } else enterPendente.current = digitado;
                   }
                 }}
                 role="combobox"
@@ -381,7 +399,7 @@ export function NewOrderForm({
           <Aparece quando={payment === "fiado"} className="pt-3">
             <p className="text-sm text-muted">Fiado exige cliente identificado.</p>
           </Aparece>
-          <details className="mt-3" open={!!discount}>
+          <details className="mt-3" open={descontoAberto || !!discount} onToggle={(e) => setDescontoAberto(e.currentTarget.open)}>
             <summary className="btn btn-sm tap cursor-pointer list-none">Dar desconto</summary>
             <div className="mt-2 space-y-2">
               <div>

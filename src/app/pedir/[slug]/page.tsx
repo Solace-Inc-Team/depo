@@ -29,11 +29,13 @@ export default async function Pedir({ params, searchParams }: PageProps<"/pedir/
         <Beams color="#6d9dff" quality={0.5} grain={0.15} speed={0.6} brightness={1.3} mouseInteraction={false} backgroundColor={undefined} dpr={undefined} style={undefined} />
       </div>
     <main className="stagger mx-auto min-h-screen max-w-lg px-5 py-8">
-      <p className="text-[13px] text-muted">Pedido pelo site</p>
-      <h1 className="h1">{t.name}</h1>
-      {t.branchName && <p className="mt-0.5 font-medium">{t.branchName}</p>}
-      <ContatoLoja phone={t.phone} address={t.address} />
-      <div className="mb-6" />
+      {/* o feixe de luz passa por trás do topo: um véu escuro, como o dos cartões, mantém o texto legível */}
+      <header className="mb-6 rounded-2xl bg-bg/60 px-4 py-3 backdrop-blur-md">
+        <p className="text-[13px] text-muted">Pedido pelo site</p>
+        <h1 className="h1">{t.name}</h1>
+        {t.branchName && <p className="mt-0.5 font-medium">{t.branchName}</p>}
+        <ContatoLoja phone={t.phone} address={t.address} />
+      </header>
       {products.length ? (
         <PortalForm slug={slug} loja={{ phone: t.phone, address: t.address }} action={portalOrderAction.bind(null, slug, typeof filial === "string" ? filial : "")} products={products} pixEnabled={!!t.pixKey || t.mp} />
       ) : (

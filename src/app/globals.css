@@ -663,7 +663,8 @@ details[open] > :not(summary) {
   right: 0;
   bottom: 0;
   left: 0;
-  pointer-events: auto;
+  /* no toque, o aviso não segura o dedo: o que está por baixo continua tocável. Só o botão dele pega o toque */
+  pointer-events: none;
   transform-origin: 50% 100%;
   transition:
     translate 350ms cubic-bezier(0.22, 1, 0.36, 1),
@@ -675,6 +676,15 @@ details[open] > :not(summary) {
     translate: 0 60px;
     scale: 0.97;
     filter: blur(2px);
+  }
+}
+.pilha-avisos .toast a {
+  pointer-events: auto;
+}
+/* com mouse, o aviso inteiro responde: passar por cima abre a pilha e segura o tempo */
+@media (hover: hover) and (pointer: fine) {
+  .pilha-avisos .toast {
+    pointer-events: auto;
   }
 }
 .pilha-avisos .toast[data-depth="0"] {
@@ -699,6 +709,10 @@ details[open] > :not(summary) {
   scale: 1;
   opacity: 1;
   filter: none;
+}
+.pilha-avisos .toast[data-leaving],
+.pilha-avisos .toast[data-leaving] a {
+  pointer-events: none;
 }
 .pilha-avisos .toast[data-leaving] {
   z-index: 0;
@@ -847,8 +861,10 @@ details[open] > :not(summary) {
 .escolha-vende:has(input[aria-invalid]) {
   border-color: var(--danger);
 }
+/* backwards e não both: com "both" o translate da animação fica preso no fim e prende os position: fixed de dentro
+   (a barra do total do portal rolava junto com a página) */
 .stagger > * {
-  animation: 600ms var(--ease-out) both hero-up;
+  animation: 600ms var(--ease-out) backwards hero-up;
 }
 .stagger > :nth-child(2) { animation-delay: 60ms; }
 .stagger > :nth-child(3) { animation-delay: 120ms; }

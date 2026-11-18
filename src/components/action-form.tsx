@@ -255,24 +255,52 @@ type Toast = { id: number; message: string; link?: Link; leaving?: boolean; vez?
 
 export function Toaster() {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  // com o mouse ou o foco em cima, os avisos esperam: dá para ler e tocar no botão sem ele sumir na mão
+  const pausa = useRef<{ pausar: () => void; retomar: () => void } | null>(null);
   useEffect(() => {
     let seq = 0;
     let atual: Toast[] = [];
     const timers = new Map<number, ReturnType<typeof setTimeout>[]>();
+    // quando cada aviso sai, para retomar depois de uma pausa com o tempo que faltava
+    const prazos = new Map<number, number>();
+    let pausado = false;
     const set = (fn: (l: Toast[]) => Toast[]) => setToasts((atual = fn(atual)));
     // marca a saída, espera a animação e só então tira da lista
     const marcar = (id: number) => set((l) => l.map((t) => (t.id === id ? { ...t, leaving: true } : t)));
     const sair = (id: number, depois = 0) => {
       timers.get(id)?.forEach(clearTimeout);
+      // pausado, o mapa guarda quanto falta; correndo, a hora de sair
+      if (depois) prazos.set(id, pausado ? depois : Date.now() + depois);
+      else prazos.delete(id);
+      // pausado: só agenda quando o mouse ou o foco sair
+      if (depois && pausado) return void timers.delete(id);
       // sem espera, marca já: o próximo aviso que chegar no mesmo instante conta com esta saída
       if (!depois) marcar(id);
       timers.set(id, [
         setTimeout(() => marcar(id), depois),
         setTimeout(() => {
           timers.delete(id);
+          prazos.delete(id);
           set((l) => l.filter((t) => t.id !== id));
         }, depois + 200),
       ]);
+    };
+    pausa.current = {
+      pausar: () => {
+        if (pausado) return;
+        pausado = true;
+        for (const [id, fim] of [...prazos]) {
+          timers.get(id)?.forEach(clearTimeout);
+          timers.delete(id);
+          prazos.set(id, fim - Date.now());
+        }
+      },
+      retomar: () => {
+        if (!pausado) return;
+        pausado = false;
+        // volta com o que faltava, e pelo menos 1,5 s para não sumir no instante em que o mouse sai
+        for (const [id, falta] of [...prazos]) sair(id, Math.max(falta, 1500));
+      },
     };
     const show = (e: Event) => {
       const { message, link } = (e as CustomEvent<{ message: string; link?: Link }>).detail;
@@ -324,8 +352,21 @@ export function Toaster() {
       role="status"
       aria-live="polite"
       data-aberta={aberta || undefined}
-      onPointerEnter={() => setMouse(true)}
-      onPointerLeave={() => setMouse(false)}
+      onPointerEnter={(e) => {
+        // no celular o toque não "passa por cima": só o mouse pausa
+        if (e.pointerType !== "mouse") return;
+        setMouse(true);
+        pausa.current?.pausar();
+      }}
+      onPointerLeave={(e) => {
+        if (e.pointerType !== "mouse") return;
+        setMouse(false);
+        if (!e.currentTarget.contains(document.activeElement)) pausa.current?.retomar();
+      }}
+      onFocus={() => pausa.current?.pausar()}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null) && !mouse) pausa.current?.retomar();
+      }}
       className="pilha-avisos fixed right-4 bottom-4 left-4 z-50 sm:left-auto sm:w-96"
     >
       {toasts.map((current) => (

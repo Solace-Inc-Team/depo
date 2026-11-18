@@ -72,9 +72,12 @@ export default async function Acompanhar({ params }: PageProps<"/pedir/[slug]/ac
     </div>
     <main className="stagger mx-auto min-h-screen max-w-lg px-4 py-8">
       <AtualizaSozinho ativo={!cancelado && !entregue} />
-      <p className="text-[13px] text-muted">{loja.name}</p>
-      <h1 className="h1">Pedido #{p.number}</h1>
-      <ContatoLoja phone={loja.phone} address={loja.address} />
+      {/* mesmo véu do topo da página de pedir: o feixe de luz não apaga o texto */}
+      <header className="rounded-2xl bg-bg/60 px-5 py-3 backdrop-blur-md">
+        <p className="text-[13px] text-muted">{loja.name}</p>
+        <h1 className="h1">Pedido #{p.number}</h1>
+        <ContatoLoja phone={loja.phone} address={loja.address} />
+      </header>
 
       <section className="panel mt-6 p-5" aria-live="polite">
         <p className="flex items-center gap-2.5 text-[1.375rem] leading-tight font-semibold tracking-[-0.02em]">
