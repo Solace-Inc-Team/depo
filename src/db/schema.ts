@@ -307,6 +307,8 @@ export const orders = pgTable(
     index("orders_branch_status_idx").on(t.branchId, t.status),
     index("orders_trip_idx").on(t.tripId),
     index("orders_tenant_created_idx").on(t.tenantId, t.createdAt),
+    // lista de clientes (último pedido) e ficha do cliente
+    index("orders_tenant_customer_idx").on(t.tenantId, t.customerId, t.createdAt),
     uniqueIndex("orders_tenant_number_uq").on(t.tenantId, t.number),
     // o aviso do Mercado Pago chega só com o id da cobrança
     index("orders_mp_payment_idx").on(t.mpPaymentId),
@@ -390,7 +392,9 @@ export const orderItems = pgTable("order_items", {
   returnsEmpty: boolean("returns_empty").notNull().default(true),
   // sem vazio para trocar, a loja empresta o vasilhame (comodato) em vez de vender: o cliente fica com o casco sem pagar
   loan: boolean("loan").notNull().default(false),
-});
+},
+// os itens são sempre lidos pelo pedido
+(t) => [index("order_items_order_idx").on(t.orderId)]);
 
 /**
  * Comodato lançado à mão: o que já estava emprestado antes do sistema (sem mexer no estoque) e as
@@ -595,5 +599,6 @@ export const auditLog = pgTable(
     data: jsonb("data"),
     createdAt: createdAt(),
   },
-  (t) => [index("audit_tenant_created_idx").on(t.tenantId, t.createdAt)],
+  // o segundo serve ao histórico de um pedido
+  (t) => [index("audit_tenant_created_idx").on(t.tenantId, t.createdAt), index("audit_tenant_entity_idx").on(t.tenantId, t.entity, t.entityId)],
 );

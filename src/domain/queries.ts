@@ -772,7 +772,7 @@ export const metricasEntregadores = scoped(async function metricasEntregadores(t
           sum(case when o.payment_method = 'dinheiro' then o.total_cents else o.cash_part_cents end)::int as esperado,
           bool_and(exists (
             select 1 from audit_log a
-            where a.entity_id = o.id::text and a.user_id = o.driver_id and a.action in ('pedido.entregue', 'pedido.entrega_parcial')
+            where a.tenant_id = ${tenantId} and a.entity = 'order' and a.entity_id = o.id::text and a.user_id = o.driver_id and a.action in ('pedido.entregue', 'pedido.entrega_parcial')
           )) as celular
         from cash_entries e
         join orders o on o.trip_id = e.trip_id and o.status = 'entregue' and o.driver_id is not null
