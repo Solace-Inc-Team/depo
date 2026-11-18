@@ -87,6 +87,8 @@ body {
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  /* iPhone deitado (viewport-fit=cover): o conteúdo não entra embaixo do recorte da câmera */
+  padding-inline: env(safe-area-inset-left) env(safe-area-inset-right);
 }
 
 .num {
@@ -1712,6 +1714,9 @@ html[data-trocando-tema]:has(.janela[open]) .app-shell > :not(dialog) {
   display: grid;
   grid-template-columns: 13rem minmax(0, 1fr);
   height: min(36rem, 78vh);
+  /* em tela baixa (janela pequena, celular deitado) a margem de cima + o cabeçalho + o corpo passavam da tela:
+     o corpo encolhe para caber com a mesma folga embaixo */
+  height: min(36rem, calc(88dvh - 4.5rem));
 }
 .config-trilho {
   position: relative;

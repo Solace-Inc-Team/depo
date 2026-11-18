@@ -269,12 +269,12 @@ export function NavInferior({
               </li>
             )}
             <li>
-              <Link href="/ajuda" className="gaveta-mais-linha">
+              <Link href="/ajuda" onClick={(e) => ir(e, "/ajuda")} className="gaveta-mais-linha">
                 <CircleHelp size={18} strokeWidth={1.75} aria-hidden="true" /> Ajuda
               </Link>
             </li>
             <li>
-              <Link href="/senha" className="gaveta-mais-linha">
+              <Link href="/senha" onClick={(e) => ir(e, "/senha")} className="gaveta-mais-linha">
                 <KeyRound size={18} strokeWidth={1.75} aria-hidden="true" /> Conta e segurança
               </Link>
             </li>

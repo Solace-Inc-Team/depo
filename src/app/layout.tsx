@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
-import { Toaster } from "@/components/action-form";
+import { AvisoSemAcesso, Toaster } from "@/components/action-form";
 import { LuzNoBotao } from "@/components/luz-no-botao";
 import { MascaraCampos } from "@/components/mascara-campos";
 import { Confirmador } from "@/components/confirm-dialog";
@@ -25,6 +25,8 @@ export const viewport: Viewport = {
     { media: "(prefers-color-scheme: light)", color: "#fafafa" },
     { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
   ],
+  // sem isto o iPhone devolve 0 em env(safe-area-inset-*) e as barras de baixo encostam na barra de gestos
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -41,6 +43,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </Suspense>
         <AreaTransition>{children}</AreaTransition>
         <Toaster />
+        <Suspense fallback={null}>
+          <AvisoSemAcesso />
+        </Suspense>
         <LuzNoBotao />
         <MascaraCampos />
         <Confirmador />

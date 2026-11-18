@@ -61,8 +61,11 @@ export function MenuConfig({ secoes, rodape, className = "" }: { secoes: Record<
 
   // só o endereço muda (history do navegador, que o Next acompanha): abrir e trocar de seção não vão ao servidor
   // a janela abre no próprio clique; o endereço vem depois (esperar o Next atualizar deixava 170ms parado)
+  // duplo clique na engrenagem: o 2º clique cai no fundo da janela recém-aberta e a fecharia na hora
+  const abertaEm = useRef(0);
   const abrir = () => {
     abriuAqui.current = true;
+    abertaEm.current = Date.now();
     setMostrada("empresa");
     janela.current?.removeAttribute("data-saindo");
     janela.current?.showModal();
@@ -112,7 +115,7 @@ export function MenuConfig({ secoes, rodape, className = "" }: { secoes: Record<
           e.preventDefault();
           fechar();
         }}
-        onClick={(e) => e.target === e.currentTarget && fechar()}
+        onClick={(e) => e.target === e.currentTarget && Date.now() - abertaEm.current > 400 && fechar()}
       >
         {/* o foco de abertura vai para a janela, não para o X (que ganharia o anel de foco à toa) */}
         <div className="janela-cartao config-cartao outline-none" tabIndex={-1} autoFocus>

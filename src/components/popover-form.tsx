@@ -50,7 +50,8 @@ export function PopoverForm({
       form.style.transformOrigin = `${align === "left" ? "left" : "right"} ${cabeEmbaixo ? "top" : "bottom"}`;
     };
     const fora = (e: PointerEvent) => {
-      if (!d.contains(e.target as Node)) d.open = false;
+      // a janela de confirmação fica fora do popover, mas responder nela não é "clicar fora"
+      if (!d.contains(e.target as Node) && !(e.target as Element).closest?.("dialog[open]")) d.open = false;
     };
     const aoTrocar = () => {
       if (d.open) {

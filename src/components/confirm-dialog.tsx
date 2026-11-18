@@ -29,11 +29,17 @@ export function Confirmador() {
   const ref = useRef<HTMLDialogElement>(null);
   const [pedido, setPedido] = useState<Pedido>();
   const [saindo, setSaindo] = useState(false);
+  // o pedido da vez: a saída de um não fecha o que chegou logo depois, e um pedido trocado responde "não"
+  const atual = useRef<Pedido>(undefined);
 
   useEffect(() => {
     const abrir = (e: Event) => {
+      const novo = (e as CustomEvent<Pedido>).detail;
+      const antigo = atual.current;
+      atual.current = novo;
+      antigo?.responder(false);
       setSaindo(false);
-      setPedido((e as CustomEvent<Pedido>).detail);
+      setPedido(novo);
     };
     window.addEventListener(EVENTO, abrir);
     return () => window.removeEventListener(EVENTO, abrir);
@@ -46,10 +52,14 @@ export function Confirmador() {
   // responde, toca a saída e só então fecha de verdade
   const fechar = (ok: boolean) => {
     if (!pedido || saindo) return;
-    pedido.responder(ok);
+    const este = pedido;
+    atual.current = undefined;
+    este.responder(ok);
     setSaindo(true);
     const dur = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 170;
     setTimeout(() => {
+      // chegou outro pedido durante a saída: ele fica na tela
+      if (atual.current) return;
       ref.current?.close();
       setPedido(undefined);
       setSaindo(false);

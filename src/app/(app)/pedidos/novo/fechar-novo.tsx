@@ -18,7 +18,9 @@ export function FecharNovo() {
         const form = document.querySelector<HTMLFormElement>("form:has(input[name=items])");
         const itens = form?.querySelector<HTMLInputElement>("input[name=items]")?.value ?? "[]";
         const cliente = form?.querySelector<HTMLInputElement>("input[name=customerId]")?.value ?? "";
-        const temAlgo = cliente !== "" || (JSON.parse(itens) as { quantity?: number }[]).some((i) => (i.quantity ?? 1) > 0);
+        // cliente novo digitado (nome) também é algo anotado, mesmo sem produto ainda
+        const novoCliente = form?.querySelector<HTMLInputElement>("input[name=newCustomerName]")?.value.trim() ?? "";
+        const temAlgo = cliente !== "" || novoCliente !== "" || (JSON.parse(itens) as { quantity?: number }[]).some((i) => (i.quantity ?? 1) > 0);
         if (temAlgo && !(await confirmar("Descartar este pedido? O que foi anotado se perde.", { rotulo: "Descartar", perigo: true }))) return;
         router.push("/pedidos");
       }}

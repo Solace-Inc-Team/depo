@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { CircleAlert, CircleCheck } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { progress } from "./nav-progress";
 import { confirmar } from "./confirm-dialog";
 import { recarregarSeVersaoNova } from "@/lib/versao-nova";
@@ -44,12 +45,13 @@ export function tremerCampo(campo: Campo) {
 
 export function validarCampos(form: HTMLFormElement): string | null {
   // campo de dinheiro com limites (data-min / data-max em centavos): confere antes de perguntar ou enviar
-  for (const el of form.querySelectorAll<HTMLInputElement>("input[data-mascara=dinheiro][data-max], input[data-mascara=dinheiro][data-min]")) {
+  // (e todo campo de dinheiro: "1.2.3" não vira número e não chega à confirmação)
+  for (const el of form.querySelectorAll<HTMLInputElement>("input[data-mascara=dinheiro]")) {
     const v = parseBRL(el.value);
     const min = Number(el.dataset.min ?? -Infinity);
     const max = Number(el.dataset.max ?? Infinity);
     el.setCustomValidity(
-      !el.value.trim() || v == null ? "" : v < min ? (min <= 1 ? "O valor precisa ser maior que zero." : `O valor mínimo é ${formatBRL(min)}.`) : v > max ? (el.dataset.avisoMax ?? "O valor passa de") + ` ${formatBRL(max)}.` : "",
+      !el.value.trim() ? "" : v == null ? "Use o formato 12,50." : v < min ? (min <= 1 ? "O valor precisa ser maior que zero." : `O valor mínimo é ${formatBRL(min)}.`) : v > max ? (el.dataset.avisoMax ?? "O valor passa de") + ` ${formatBRL(max)}.` : "",
     );
   }
   const campo = form.querySelector<Campo>(":invalid:not(fieldset)");
@@ -60,7 +62,25 @@ export function validarCampos(form: HTMLFormElement): string | null {
   return avisoDoCampo(campo);
 }
 
-export const toast = (message: string) => window.dispatchEvent(new CustomEvent(TOAST_EVENT, { detail: { message } }));
+/** Aviso que some sozinho; `aviso`: não é um sucesso (ícone de alerta em vez do ✓). */
+export const toast = (message: string, aviso = false) => window.dispatchEvent(new CustomEvent(TOAST_EVENT, { detail: { message, aviso } }));
+
+/**
+ * Quem abre uma tela que o perfil não acessa vai para o Painel com ?sem-acesso: diz o porquê, em vez de parecer
+ * que o link quebrou, e tira o parâmetro do endereço. Fica no layout raiz, dentro de um Suspense.
+ */
+export function AvisoSemAcesso() {
+  const busca = useSearchParams();
+  const semAcesso = busca.has("sem-acesso");
+  useEffect(() => {
+    if (!semAcesso) return;
+    toast("Seu perfil não acessa essa tela.", true);
+    const url = new URL(location.href);
+    url.searchParams.delete("sem-acesso");
+    history.replaceState(history.state, "", url.pathname + url.search + url.hash);
+  }, [semAcesso]);
+  return null;
+}
 
 /**
  * Server Action chamada fora do ActionForm: sem sinal (ou com o depo recém-atualizado) devolve a mensagem para
@@ -133,6 +153,22 @@ export function ActionForm({
   const [ultimoErro, setUltimoErro] = useState(error);
   if (error && error !== ultimoErro) setUltimoErro(error);
 
+  // dentro de uma janela: fechada sem salvar (X, Esc, clique fora), reabre limpa, sem o erro e o vermelho da
+  // vez anterior (a das Configurações fica como está: cada campo dela já é o valor salvo)
+  useEffect(() => {
+    const janela = formRef.current?.closest("dialog");
+    if (!janela || janela.classList.contains("janela-config")) return;
+    const limpar = () => {
+      const f = formRef.current;
+      if (!f) return;
+      f.reset();
+      for (const c of f.querySelectorAll("[aria-invalid]")) c.removeAttribute("aria-invalid");
+      setError(undefined);
+    };
+    janela.addEventListener("close", limpar);
+    return () => janela.removeEventListener("close", limpar);
+  }, []);
+
   useEffect(() => {
     // em formulário comprido o erro fica fora da tela: rola até ele
     if (error) errorRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -160,6 +196,9 @@ export function ActionForm({
         e.preventDefault();
         if (enviando.current && !salvaAoMudar) return;
         const form = e.currentTarget;
+        // o campo que disparou este salvamento: outro que mude enquanto este vai ao servidor tem o próprio aviso
+        const campo = mudou.current;
+        mudou.current = null;
         // o botão que enviou mostra que está esperando e depois o ✓ (estilos em globals.css)
         const button = (e.nativeEvent as SubmitEvent).submitter;
         // campo obrigatório vazio ou inválido: o campo treme e a mensagem sai em português, sem o balão do navegador
@@ -208,8 +247,6 @@ export function ActionForm({
             button?.setAttribute("data-state", "done");
             setTimeout(() => soltar(button), 1200);
             // o aviso fica fora do form: muitas ações trocam a tela e o form some junto
-            const campo = mudou.current;
-            mudou.current = null;
             if (salvaAoMudar && campo) {
               // "Galão de água 20L: estoque mínimo 16" em vez de um "atualizado" genérico
               const nome = (form.querySelector<HTMLInputElement>('input[name="name"]')?.value ?? "").trim();
@@ -263,7 +300,7 @@ function soltar(button: Element | null | undefined) {
 }
 
 /** Mostra os avisos de sucesso das ações. Fica no layout raiz. */
-type Toast = { id: number; message: string; leaving?: boolean; vez?: number };
+type Toast = { id: number; message: string; aviso?: boolean; leaving?: boolean; vez?: number };
 
 export function Toaster() {
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -315,8 +352,9 @@ export function Toaster() {
       },
     };
     const show = (e: Event) => {
-      const { message } = (e as CustomEvent<{ message: string }>).detail;
-      const tempo = 3500;
+      const { message, aviso } = (e as CustomEvent<{ message: string; aviso?: boolean }>).detail;
+      // aviso de alerta é mais longo de ler
+      const tempo = aviso ? 6000 : 3500;
       // a mesma mensagem de novo (despachos seguidos): o aviso que está na tela dá um pulinho e ganha mais tempo
       const igual = atual.find((t) => t.message === message && !t.leaving);
       if (igual) {
@@ -325,7 +363,7 @@ export function Toaster() {
         return;
       }
       const id = ++seq;
-      set((l) => [...l, { id, message }]);
+      set((l) => [...l, { id, message, aviso }]);
       sair(id, tempo);
       // no máximo três na tela: o mais antigo sai animado, não some de uma vez
       const visiveis = atual.filter((t) => !t.leaving);
@@ -382,7 +420,11 @@ export function Toaster() {
           data-depth={profundidade(current)}
           className="toast flex items-center gap-2 rounded-lg border border-line bg-surface px-4 py-3 text-[13px] font-medium shadow-[0_8px_30px_rgb(0_0_0/0.12)]"
         >
-          <CircleCheck size={16} strokeWidth={2} className="text-ok" aria-hidden="true" />
+          {current.aviso ? (
+            <CircleAlert size={16} strokeWidth={2} className="shrink-0 text-warn" aria-hidden="true" />
+          ) : (
+            <CircleCheck size={16} strokeWidth={2} className="shrink-0 text-ok" aria-hidden="true" />
+          )}
           {/* a chave muda a cada repetição: o texto dá o mesmo pulinho dos números (.bump) */}
           <span key={current.vez ?? 0} className={`min-w-0 flex-1 ${current.vez ? "bump" : ""}`}>{current.message}</span>
         </p>

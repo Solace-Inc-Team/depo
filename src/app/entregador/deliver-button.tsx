@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState, useTransition } from "react";
 import { deliverAction } from "@/app/actions";
 import { toast } from "@/components/action-form";
+import { recarregarSeVersaoNova } from "@/lib/versao-nova";
 import { LiveNumber } from "@/components/live-number";
 import { TextoQueTroca } from "@/components/texto-que-troca";
 
@@ -52,10 +53,20 @@ export function DeliverButton({ orderId, label }: { orderId: string; label: stri
           buzz([12, 60, 12]);
           toast(r.ok);
         }
-      } catch {
-        // sem resposta do servidor: guarda e tenta de novo. Repetir é seguro, o servidor não confirma duas vezes
-        setQueued([...new Set([...queued(), orderId])]);
-        setWaitingNetwork(true);
+      } catch (e) {
+        // depo atualizado com a tela aberta: recarrega, e a entrega guardada é enviada de novo ao abrir
+        // sem sinal: guarda e tenta de novo. Repetir é seguro, o servidor não confirma duas vezes
+        const novaVersao = recarregarSeVersaoNova(e, 1500);
+        if (novaVersao || e instanceof TypeError || !navigator.onLine) {
+          setQueued([...new Set([...queued(), orderId])]);
+          setWaitingNetwork(!novaVersao);
+          if (novaVersao) setError("O depo acabou de ser atualizado. Recarregando, a entrega vai junto.");
+        } else {
+          // erro do servidor com internet: dizer "sem internet" e repetir para sempre não ajuda ninguém
+          setQueued(queued().filter((id) => id !== orderId));
+          setWaitingNetwork(false);
+          setError("Não deu para confirmar a entrega agora. Tente de novo em instantes.");
+        }
       }
       setLeft(null);
     });

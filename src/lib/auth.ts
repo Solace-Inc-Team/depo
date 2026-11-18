@@ -154,7 +154,7 @@ export async function requireUser(...args: (Role | { mesmoBloqueado: true })[]):
   }
   if (pendingTerms(user)) redirect("/aceite");
   if (!mesmoBloqueado && assinaturaBloqueada(user)) redirect("/assinatura");
-  if (roles.length && !roles.includes(user.role)) redirect(user.role === "entregador" ? "/entregador" : "/");
+  if (roles.length && !roles.includes(user.role)) redirect(user.role === "entregador" ? "/entregador?sem-acesso" : "/?sem-acesso");
   return user;
 }
 

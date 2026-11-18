@@ -173,6 +173,8 @@ export function PortalForm({
       ref={formRef}
       method="post"
       noValidate
+      // corrigiu o campo que faltava: o aviso sai, em vez de ficar até o próximo envio
+      onInput={() => result?.error && setResult(undefined)}
       // com a barra do total embaixo no celular, o fim da página ganha espaço para ela não cobrir o botão
       className={`space-y-6 ${items.length ? "pb-24 sm:pb-0" : ""}`}
       onSubmit={(e) => {

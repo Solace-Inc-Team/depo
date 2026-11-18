@@ -83,6 +83,8 @@ export function Simulador({ clientes, loja }: { clientes: Cliente[]; loja: strin
             id="robo-cliente"
             className="input"
             value={telefone}
+            // com o robô respondendo, trocar de cliente misturaria a resposta antiga na conversa nova
+            disabled={pendente}
             onChange={(e) => {
               setTelefone(e.target.value);
               recomecar(e.target.value);
@@ -97,7 +99,7 @@ export function Simulador({ clientes, loja }: { clientes: Cliente[]; loja: strin
           </select>
         </div>
         {/* no celular só o ícone: o nome do cliente com o telefone cabe numa linha */}
-        <button type="button" className="btn max-sm:min-w-11" onClick={() => recomecar()} disabled={!msgs.length || limpando} title="Recomeçar">
+        <button type="button" className="btn max-sm:min-w-11" onClick={() => recomecar()} disabled={!msgs.length || limpando || pendente} title="Recomeçar">
           <RotateCcw size={16} aria-hidden="true" /> <span className="max-sm:sr-only">Recomeçar</span>
         </button>
       </div>

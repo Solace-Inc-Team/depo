@@ -48,7 +48,7 @@ export function NewOrderForm({
   const [keepsBottle, setKeepsBottle] = useState<Record<string, boolean>>({}); // true = cliente não tem vazio para trocar
   const [customer, setCustomer] = useState<Customer | undefined>(initialCustomer);
   const [search, setSearch] = useState("");
-  const [matches, setMatches] = useState<{ q: string; list: Customer[] }>({ q: "", list: [] });
+  const [matches, setMatches] = useState<{ q: string; list: Customer[]; erro?: string }>({ q: "", list: [] });
   // resultado marcado pelas setas (volta ao primeiro a cada busca nova)
   const [ativo, setAtivo] = useState(0);
   const [creating, setCreating] = useState(false);
@@ -61,6 +61,8 @@ export function NewOrderForm({
   // campo que existe sempre: a busca some quando o cliente já está escolhido
   const modeRef = useRef<HTMLInputElement>(null);
 
+  const temItens = useRef(false);
+  const [semProduto, setSemProduto] = useState(false);
   // atalhos de quem atende no teclado: "/" vai para a busca de cliente, Ctrl+Enter lança
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -71,6 +73,8 @@ export function NewOrderForm({
       }
       if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && !e.repeat) {
         e.preventDefault();
+        // carrinho vazio: o botão está desligado, então o atalho também não envia; diz o que falta
+        if (!temItens.current) return setSemProduto(true);
         modeRef.current?.form?.requestSubmit();
       }
     };
@@ -86,7 +90,11 @@ export function NewOrderForm({
     const ctrl = new AbortController();
     const t = setTimeout(() => {
       fetch(`/clientes/busca?q=${encodeURIComponent(q)}`, { signal: ctrl.signal })
-        .then((r) => (r.ok ? r.json() : []))
+        .then((r) => {
+          // sessão vencida não é "nenhum cliente": cadastrar de novo criaria um cliente repetido
+          if (r.status === 401) throw new Error("sessao");
+          return r.ok ? r.json() : [];
+        })
         .then((list: Customer[]) => {
           // Enter apertado antes de a busca voltar: escolhe o primeiro desta busca, a que a pessoa digitou
           if (enterPendente.current === q && list.length) {
@@ -98,7 +106,15 @@ export function NewOrderForm({
           setMatches({ q, list });
           setAtivo(0);
         })
-        .catch(() => {});
+        .catch((e: unknown) => {
+          if (ctrl.signal.aborted) return;
+          enterPendente.current = null;
+          setMatches({
+            q,
+            list: [],
+            erro: e instanceof Error && e.message === "sessao" ? "Sua sessão terminou. Entre de novo para buscar o cliente." : "Sem internet. A busca volta quando o sinal voltar.",
+          });
+        });
     }, 200);
     return () => {
       clearTimeout(t);
@@ -123,11 +139,16 @@ export function NewOrderForm({
       localStorage.setItem("depo:canal", c);
     } catch {}
   };
-  const nothingFound = q.length >= 2 && matches.q === q && matches.list.length === 0;
+  const nothingFound = q.length >= 2 && matches.q === q && matches.list.length === 0 && !matches.erro;
+  const erroBusca = q.length >= 2 && matches.q === q ? matches.erro : undefined;
 
   const items = products
     .filter((p) => qty[p.id] > 0)
     .map((p) => ({ productId: p.id, quantity: qty[p.id], returnsEmpty: p.returnable && !keepsBottle[p.id] }));
+  useEffect(() => {
+    temItens.current = items.length > 0;
+  });
+  if (items.length && semProduto) setSemProduto(false);
   const parsedFee = parseBRL(fee) ?? 0;
   // taxa fora do limite não entra no total mostrado; o servidor recusa com a mensagem
   const feeCents = mode === "entrega" && parsedFee >= 0 && parsedFee <= 100_00 ? parsedFee : 0;
@@ -293,6 +314,11 @@ export function NewOrderForm({
                 </ul>
               )}
               {nothingFound && <p className="enter mt-2 text-sm text-muted">Nenhum cliente encontrado.</p>}
+              {erroBusca && (
+                <p role="alert" className="enter mt-2 text-sm font-medium text-danger">
+                  {erroBusca}
+                </p>
+              )}
               <button type="button" className="btn btn-sm tap mt-2 max-w-full" onClick={() => setCreating(true)}>
                 <Plus size={14} strokeWidth={2} aria-hidden="true" />
                 <span className="truncate">{nothingFound ? `Cadastrar "${q}" como cliente novo` : "Novo cliente"}</span>
@@ -450,7 +476,9 @@ export function NewOrderForm({
             <button className="btn btn-primary mt-4 h-12 w-full text-lg max-lg:hidden" disabled={!items.length}>
               {mode === "balcao" ? "Registrar venda" : "Lançar pedido"}
             </button>
-            <p className="mt-2 hidden text-center text-[13px] text-muted lg:block">Ctrl + Enter também lança</p>
+            <p className={`mt-2 hidden text-center text-[13px] lg:block ${semProduto && !items.length ? "font-medium text-danger" : "text-muted"}`}>
+              {semProduto && !items.length ? "Escolha ao menos um produto para lançar." : "Ctrl + Enter também lança"}
+            </p>
           </div>
         </div>
       </aside>
