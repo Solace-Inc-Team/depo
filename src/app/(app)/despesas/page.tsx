@@ -188,7 +188,7 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
                     <th>Despesa</th>
                     <th>Forma</th>
                     <th className="text-right">Valor</th>
-                    {user.role === "dono" && <th></th>}
+                    {user.role === "dono" && <th><span className="sr-only">Ações</span></th>}
                   </tr>
                 </thead>
                 <tbody>

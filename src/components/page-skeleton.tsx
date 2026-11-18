@@ -1,7 +1,8 @@
 // enquanto a tela busca os dados: o formato da página, sem números
 export function PageSkeleton() {
   return (
-    <div aria-busy="true" aria-label="Carregando" className="esqueleto-pagina">
+    <div role="status" aria-busy="true" className="esqueleto-pagina">
+      <span className="sr-only">Carregando…</span>
       <div className="skeleton h-4 w-32" />
       <div className="skeleton mt-2 h-7 w-56" />
       <div className="mt-8 grid gap-4 sm:grid-cols-3">

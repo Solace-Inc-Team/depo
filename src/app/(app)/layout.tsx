@@ -94,7 +94,9 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
 
   return (
     <div className="app-shell lg:grid lg:min-h-screen lg:grid-cols-[15rem_minmax(0,1fr)]">
-      <aside className="relative z-20 border-b border-line lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:border-r lg:border-b-0">
+      {/* quem usa teclado não precisa passar pelos 14 itens do menu em toda tela */}
+      <a href="#conteudo" className="btn sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:h-10 focus:bg-bg focus:px-4 focus:shadow-lg">Pular para o conteúdo</a>
+      <aside aria-label="Menu" className="relative z-20 border-b border-line lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:border-r lg:border-b-0">
         <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-3 lg:px-5 lg:pt-5">
           <MarcaDaSessao />
           {/* o tema fica no alto nas duas larguras; Sair aqui só no celular (no computador está no rodapé) */}
@@ -184,7 +186,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         </div>
       </aside>
       {/* embaixo, espaço para a barra de navegação do celular e para a barra de gestos do iPhone */}
-      <main className="main-app mx-auto w-full max-w-6xl px-4 pt-6 lg:px-10 lg:py-10">
+      <main id="conteudo" tabIndex={-1} className="main-app outline-none mx-auto w-full max-w-6xl px-4 pt-6 lg:px-10 lg:py-10">
         <PageTransition>{children}</PageTransition>
       </main>
       <NavInferior

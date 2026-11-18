@@ -82,6 +82,13 @@ export function NewOrderForm({
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // carrinho vazio: o botão fica apagado mas alcançável pelo teclado, e diz o que falta em vez de não fazer nada
+  const naoLancaVazio = (e: React.MouseEvent) => {
+    if (temItens.current) return;
+    e.preventDefault();
+    setSemProduto(true);
+  };
+
   const enterPendente = useRef<string | null>(null);
   // busca no servidor enquanto digita; a resposta de uma busca antiga não sobrescreve a nova
   useEffect(() => {
@@ -122,7 +129,9 @@ export function NewOrderForm({
     };
   }, [search]);
   const q = search.trim();
-  const shown = q.length >= 2 ? matches.list : [];
+  // Esc fecha a lista sem apagar o que foi digitado; digitar de novo reabre
+  const [fechada, setFechada] = useState(false);
+  const shown = q.length >= 2 && !fechada ? matches.list : [];
   // ↑ ↓ andam pelos resultados e Enter escolhe: quem atende com o telefone no ombro não larga o teclado
   const escolher = (c: Customer) => {
     setCustomer(c);
@@ -174,7 +183,7 @@ export function NewOrderForm({
       {mode === "entrega" && <input type="hidden" name="origin" value={origin} />}
 
       <div className="space-y-6">
-        <div role="tablist" aria-label="Tipo de venda" className="relative grid grid-cols-2 rounded-lg bg-subtle p-1 sm:inline-grid">
+        <div role="group" aria-label="Tipo de venda" className="relative grid grid-cols-2 rounded-lg bg-subtle p-1 sm:inline-grid">
           {/* fundo da aba escolhida: desliza para o lado em vez de trocar de repente */}
           <span
             aria-hidden="true"
@@ -185,8 +194,7 @@ export function NewOrderForm({
             <button
               key={m}
               type="button"
-              role="tab"
-              aria-selected={mode === m}
+              aria-pressed={mode === m}
               onClick={() => setMode(m)}
               className={`relative min-h-11 rounded-md px-3.5 py-1.5 text-[13px] sm:min-h-0 font-medium transition-colors ${mode === m ? "text-fg" : "text-muted hover:text-fg"}`}
             >
@@ -269,10 +277,17 @@ export function NewOrderForm({
                 value={search}
                 onChange={(e) => {
                   enterPendente.current = null;
+                  setFechada(false);
                   setSearch(e.target.value);
                 }}
                 onKeyDown={(e) => {
-                  if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                  if (e.key === "Escape" && (shown.length || search)) {
+                    // primeiro Esc fecha a lista, o segundo limpa a busca
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (shown.length) setFechada(true);
+                    else setSearch("");
+                  } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
                     if (!shown.length) return;
                     e.preventDefault();
                     setAtivo((a) => (a + (e.key === "ArrowDown" ? 1 : shown.length - 1)) % shown.length);
@@ -288,6 +303,7 @@ export function NewOrderForm({
                   }
                 }}
                 role="combobox"
+                aria-autocomplete="list"
                 aria-expanded={shown.length > 0}
                 aria-controls="busca-resultados"
                 aria-activedescendant={shown[ativo] ? `cli-${shown[ativo].id}` : undefined}
@@ -298,22 +314,28 @@ export function NewOrderForm({
                 <ul id="busca-resultados" role="listbox" className="mt-2 divide-y divide-line rounded-md border border-line">
                   {shown.map((c, i) => (
                     // resultados chegam em sequência rápida; quem já estava na lista não anima de novo
-                    <li key={c.id} id={`cli-${c.id}`} role="option" aria-selected={i === ativo} className="enter" style={{ animationDelay: `${i * 30}ms` }}>
-                      <button
-                        type="button"
-                        tabIndex={-1}
-                        onClick={() => escolher(c)}
-                        onMouseEnter={() => setAtivo(i)}
-                        className={`block w-full px-3 py-2 text-left wrap-anywhere hover:bg-subtle ${i === ativo ? "bg-subtle" : ""}`}
-                      >
-                        <span className="font-medium">{c.name}</span>
-                        <span className="block text-sm text-muted">{c.address} {c.phone && `(${c.phone})`}</span>
-                      </button>
+                    // sem botão dentro: o clique é na própria opção (o foco fica na busca, que comanda a lista)
+                    <li
+                      key={c.id}
+                      id={`cli-${c.id}`}
+                      role="option"
+                      aria-selected={i === ativo}
+                      onClick={() => escolher(c)}
+                      onMouseEnter={() => setAtivo(i)}
+                      className={`enter block w-full cursor-pointer px-3 py-2 text-left wrap-anywhere hover:bg-subtle ${i === ativo ? "bg-subtle" : ""}`}
+                      style={{ animationDelay: `${i * 30}ms` }}
+                    >
+                      <span className="font-medium">{c.name}</span>
+                      <span className="block text-sm text-muted">{c.address} {c.phone && `(${c.phone})`}</span>
                     </li>
                   ))}
                 </ul>
               )}
               {nothingFound && <p className="enter mt-2 text-sm text-muted">Nenhum cliente encontrado.</p>}
+              {/* quem usa leitor de tela ouve o resultado da busca, que na tela só se vê */}
+              <p role="status" className="sr-only">
+                {q.length >= 2 && matches.q === q && !matches.erro ? (matches.list.length ? `${matches.list.length} ${matches.list.length === 1 ? "cliente encontrado" : "clientes encontrados"}` : "Nenhum cliente encontrado.") : ""}
+              </p>
               {erroBusca && (
                 <p role="alert" className="enter mt-2 text-sm font-medium text-danger">
                   {erroBusca}
@@ -398,7 +420,7 @@ export function NewOrderForm({
         </section>
       </div>
 
-      <aside className="lg:sticky lg:top-6 lg:self-start">
+      <aside aria-label="Resumo do pedido" className="lg:sticky lg:top-6 lg:self-start">
         <div className="panel p-4">
           <h2 className="h2 mb-3">Pagamento</h2>
           <div className="grid grid-cols-2 gap-2">
@@ -473,10 +495,10 @@ export function NewOrderForm({
               <LiveNumber value={shownTotal} cents className="text-4xl font-semibold" />
             </p>
             {/* no celular quem lança é a barra de baixo, sempre à vista: aqui seria o mesmo botão duas vezes */}
-            <button className="btn btn-primary mt-4 h-12 w-full text-lg max-lg:hidden" disabled={!items.length}>
+            <button className="btn btn-primary mt-4 h-12 w-full text-lg max-lg:hidden" aria-disabled={!items.length} aria-describedby="lancar-dica" onClick={naoLancaVazio}>
               {mode === "balcao" ? "Registrar venda" : "Lançar pedido"}
             </button>
-            <p className={`mt-2 hidden text-center text-[13px] lg:block ${semProduto && !items.length ? "font-medium text-danger" : "text-muted"}`}>
+            <p id="lancar-dica" aria-live="polite" className={`mt-2 hidden text-center text-[13px] lg:block ${semProduto && !items.length ? "font-medium text-danger" : "text-muted"}`}>
               {semProduto && !items.length ? "Escolha ao menos um produto para lançar." : "Ctrl + Enter também lança"}
             </p>
           </div>
@@ -491,7 +513,7 @@ export function NewOrderForm({
           </p>
           <LiveNumber value={shownTotal} cents className="text-xl font-semibold" />
         </div>
-        <button className="btn btn-primary h-12 shrink-0 px-5" disabled={!items.length}>
+        <button className="btn btn-primary h-12 shrink-0 px-5" aria-disabled={!items.length} aria-describedby="lancar-dica" onClick={naoLancaVazio}>
           {mode === "balcao" ? "Registrar venda" : "Lançar pedido"}
         </button>
       </div>

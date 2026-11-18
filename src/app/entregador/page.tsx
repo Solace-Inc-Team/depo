@@ -31,7 +31,7 @@ export default async function Entregador() {
   const done = s ? s.orders.filter((o) => o.status === "entregue") : [];
 
   return (
-    <div className="mx-auto min-h-screen max-w-lg">
+    <main className="mx-auto min-h-screen max-w-lg">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-bg/85 px-4 py-3 backdrop-blur">
         <MarcaDaSessao />
         {/* no alto, só o que tem nome: quem nunca viu o sistema não adivinha ícone solto */}
@@ -176,6 +176,6 @@ export default async function Entregador() {
         <span aria-hidden="true">·</span>
         <TemaBotao className="size-11" />
       </footer>
-    </div>
+    </main>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, useTransition, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { CircleAlert, CircleCheck } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { progress } from "./nav-progress";
@@ -148,6 +148,7 @@ export function ActionForm({
   const [error, setError] = useState<string>();
   const [pending, start] = useTransition();
   const errorRef = useRef<HTMLParagraphElement>(null);
+  const erroId = useId();
   // o aviso sai esmaecendo: guarda o último texto enquanto a saída toca
   const aviso = useSaida(!!error);
   const [ultimoErro, setUltimoErro] = useState(error);
@@ -172,7 +173,16 @@ export function ActionForm({
   useEffect(() => {
     // em formulário comprido o erro fica fora da tela: rola até ele
     if (error) errorRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
-  }, [error]);
+    // o campo marcado aponta para a mensagem: quem volta a ele no leitor de tela ouve o erro de novo
+    const f = formRef.current;
+    if (!f) return;
+    for (const c of f.querySelectorAll<HTMLElement>("[aria-describedby]")) {
+      const resto = (c.getAttribute("aria-describedby") ?? "").split(" ").filter((t) => t && t !== erroId);
+      if (resto.length) c.setAttribute("aria-describedby", resto.join(" "));
+      else c.removeAttribute("aria-describedby");
+    }
+    if (error) for (const c of f.querySelectorAll<HTMLElement>("[aria-invalid]")) c.setAttribute("aria-describedby", [c.getAttribute("aria-describedby"), erroId].filter(Boolean).join(" "));
+  }, [error, erroId]);
 
   return (
     <form
@@ -279,6 +289,7 @@ export function ActionForm({
         {aviso.montado && (
           <p
             ref={errorRef}
+            id={erroId}
             role="alert"
             data-saindo={aviso.saindo || undefined}
             className="erro-form col-span-full mt-2 flex basis-full items-start gap-2 rounded-lg bg-danger-soft px-3 py-2 text-[13px] font-medium text-danger"

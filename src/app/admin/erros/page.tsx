@@ -48,7 +48,7 @@ export default async function Erros() {
                 <th>Onde</th>
                 <th className="text-right">Vezes</th>
                 <th>Última vez</th>
-                <th></th>
+                <th><span className="sr-only">Ações</span></th>
               </tr>
             </thead>
             <tbody>

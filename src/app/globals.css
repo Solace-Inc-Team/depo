@@ -201,7 +201,8 @@ body {
   }
   /* botão principal que ainda não pode ser usado (falta escolher algo): apagado e neutro, não um branco
      pela metade, que no escuro parecia quebrado. O "enviando" (fieldset desativado) segue o estilo de cima */
-  .btn-primary[disabled] {
+  .btn-primary[disabled],
+  .btn-primary[aria-disabled="true"] {
     background: var(--subtle);
     border-color: var(--line);
     color: var(--muted);
@@ -336,7 +337,7 @@ body {
     opacity var(--dur-fast),
     transform var(--dur-fast) var(--ease-out);
 }
-.btn:active:not(:disabled) {
+.btn:active:not(:disabled, [aria-disabled="true"]) {
   transform: scale(0.97);
 }
 
@@ -3447,6 +3448,12 @@ html:has(.pagina-escura) body {
 }
 .campo-busca-limpar:hover {
   color: var(--fg);
+}
+/* o desenho fica em 22 px; o toque no celular pega 44 */
+.campo-busca-limpar::before {
+  content: "";
+  position: absolute;
+  inset: -11px;
 }
 
 /* caixa que acompanha a altura do conteúdo ("Card resize" do transitions.dev, 300ms); o recorte deixa folga

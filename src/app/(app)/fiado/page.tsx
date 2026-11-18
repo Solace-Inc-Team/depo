@@ -43,7 +43,7 @@ export default async function Fiado() {
                 <th>Deve desde</th>
                 <th>Último pagamento</th>
                 <th className="text-right">Saldo</th>
-                <th></th>
+                <th><span className="sr-only">Ações</span></th>
               </tr>
             </thead>
             <tbody>

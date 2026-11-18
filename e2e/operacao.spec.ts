@@ -72,7 +72,7 @@ test("pedido em dinheiro: atendente lança, entregador entrega, caixa faz o acer
 test("fiado: venda no balcão vira dívida e o pagamento quita", async ({ page }) => {
   await entrar(page, "dono@demo.com");
   await page.goto("/pedidos/novo");
-  await page.getByRole("tab", { name: "Venda no balcão" }).click();
+  await page.getByRole("button", { name: "Venda no balcão" }).click();
   await page.getByLabel(/Buscar por nome/).fill("Cláudia");
   await page.getByRole("button", { name: /Cláudia Martins/ }).click();
   await mais(page, "Galão de água 20L").click();

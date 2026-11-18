@@ -42,7 +42,7 @@ export default async function Equipe() {
       <section className="panel overflow-x-auto">
         {/* no celular cada pessoa vira um bloco: nome e perfil em cima, as ações embaixo */}
         <table className="table tabela-pilha">
-          <thead><tr><th>Nome</th><th>Perfil</th><th></th></tr></thead>
+          <thead><tr><th>Nome</th><th>Perfil</th><th><span className="sr-only">Ações</span></th></tr></thead>
           <tbody>
             {team.map((u) => (
               <tr key={u.id} className={u.active ? "" : "text-muted"}>

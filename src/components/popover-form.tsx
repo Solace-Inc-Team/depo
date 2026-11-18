@@ -82,6 +82,11 @@ export function PopoverForm({
       name="acao-de-linha"
       data-popover
       className="inline-block text-left"
+      // o Tab que leva o foco para fora fecha, como o clique fora; a janela de confirmação não conta como fora
+      onBlur={(e) => {
+        const para = e.relatedTarget as Element | null;
+        if (para && !e.currentTarget.contains(para) && !para.closest("dialog[open]")) e.currentTarget.open = false;
+      }}
       onKeyDown={(e) => {
         if (e.key === "Escape") {
           e.currentTarget.open = false;

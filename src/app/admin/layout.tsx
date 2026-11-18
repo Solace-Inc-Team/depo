@@ -18,6 +18,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const [{ n: openErrors }] = await db.select({ n: count() }).from(errorEvents).where(isNull(errorEvents.resolvedAt));
   return (
     <>
+      <a href="#conteudo" className="btn sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:h-10 focus:bg-bg focus:px-4 focus:shadow-lg">Pular para o conteúdo</a>
       <header className="sticky top-0 z-10 border-b border-line bg-bg/85 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 lg:px-10">
           <div className="flex items-center gap-3">
@@ -42,7 +43,7 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
           </Dicas>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-10 lg:py-10">
+      <main id="conteudo" tabIndex={-1} className="outline-none mx-auto w-full max-w-6xl px-4 py-8 lg:px-10 lg:py-10">
         <PageTransition>{children}</PageTransition>
       </main>
     </>

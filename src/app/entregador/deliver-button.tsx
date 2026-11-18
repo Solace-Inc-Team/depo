@@ -39,6 +39,8 @@ export function DeliverButton({ orderId, label }: { orderId: string; label: stri
   const [error, setError] = useState<string>();
   const [waitingNetwork, setWaitingNetwork] = useState(false);
   const [pending, start] = useTransition();
+  // depois do "Desfazer" o foco volta para o botão, em vez de cair no começo da página
+  const [desfez, setDesfez] = useState(false);
 
   const send = useCallback(() => {
     const fd = new FormData();
@@ -118,13 +120,24 @@ export function DeliverButton({ orderId, label }: { orderId: string; label: stri
   if (left !== null && left > 0)
     return (
       // a chave diferente faz o React trocar o bloco (e o .enter tocar de novo), em vez de reaproveitar o do botão
-      <div key="desfazer" className="enter" role="status">
+      // sem região viva: o leitor de tela lia o número a cada segundo; o foco vai direto para o Desfazer e ouve uma vez só
+      <div key="desfazer" className="enter">
         <div className="flex items-center gap-3">
-          <p className="num flex-1 text-[15px]">
+          <p className="num flex-1 text-[15px]" aria-hidden="true">
             {/* o número desce rolando, como os outros números do sistema */}
             Confirmando em <LiveNumber value={left} />s…
           </p>
-          <button type="button" className="btn h-12 px-5 text-[15px]" onClick={() => setLeft(null)}>
+          <span id={`confirmando-${orderId}`} className="sr-only">Confirmando a entrega em {WAIT} segundos.</span>
+          <button
+            type="button"
+            autoFocus
+            aria-describedby={`confirmando-${orderId}`}
+            className="btn h-12 px-5 text-[15px]"
+            onClick={() => {
+              setDesfez(true);
+              setLeft(null);
+            }}
+          >
             Desfazer
           </button>
         </div>
@@ -140,9 +153,11 @@ export function DeliverButton({ orderId, label }: { orderId: string; label: stri
     <div key="botao" className="enter">
       <button
         type="button"
+        autoFocus={desfez}
         disabled={pending || left === 0}
         onClick={() => {
           setError(undefined);
+          setDesfez(false);
           buzz(10);
           setLeft(WAIT);
         }}
