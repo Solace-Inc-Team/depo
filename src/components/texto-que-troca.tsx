@@ -16,16 +16,21 @@ export function TextoQueTroca({ texto, brilho = false, className = "" }: { texto
   useEffect(() => {
     if (texto === atual.current) return;
     atual.current = texto;
+    let quadro = 0;
     const timers = [
       setTimeout(() => setFase("saindo"), 0),
       setTimeout(() => {
         setMostrado(texto);
         setFase("entrando");
+        // um quadro desenhado na posição de partida, depois a transição leva ao lugar. Por quadro e não por
+        // tempo: com 30 ms, em aparelho lento os dois estados caíam no mesmo quadro e o texto aparecia seco
+        quadro = requestAnimationFrame(() => (quadro = requestAnimationFrame(() => setFase(undefined))));
       }, 150),
-      // um quadro na posição de partida, depois a transição leva ao lugar
-      setTimeout(() => setFase(undefined), 180),
     ];
-    return () => timers.forEach(clearTimeout);
+    return () => {
+      timers.forEach(clearTimeout);
+      cancelAnimationFrame(quadro);
+    };
   }, [texto]);
 
   return (

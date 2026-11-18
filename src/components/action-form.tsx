@@ -400,8 +400,12 @@ export function Toaster() {
     // aberta, cada aviso sobe a altura dos que estão na frente dele, mais 8px de vão
     let y = 0;
     const itens = [...el.querySelectorAll<HTMLElement>(".toast:not([data-leaving])")].reverse();
+    // fechada, os de trás sobem o que falta para alcançar o topo do da frente: com o da frente em duas linhas,
+    // eles ficavam inteiros atrás dele e o degrau aparecia como uma fresta embaixo
+    const frente = itens[0]?.offsetHeight ?? 0;
     for (const item of itens) {
       item.style.setProperty("--aberta-y", `${-y}px`);
+      item.style.setProperty("--empilhada-y", `${Math.min(0, item.offsetHeight - frente)}px`);
       y += item.offsetHeight + 8;
     }
     el.style.height = !itens.length ? "0px" : `${aberta ? y - 8 : itens[0].offsetHeight + 24}px`;

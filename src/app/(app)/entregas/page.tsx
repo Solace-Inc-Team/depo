@@ -1,4 +1,4 @@
-import { ViewTransition } from "react";
+import { cloneElement, ViewTransition } from "react";
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { withTenant } from "@/db";
@@ -33,9 +33,10 @@ const Desliza = ({ nome, children }: { nome: string; children: React.ReactElemen
   </ViewTransition>
 );
 // o mesmo nome na fila e na rua: quando o pedido sai, o cartão desliza de uma coluna para a outra
-const Card = ({ id, children }: { id: string; children: React.ReactElement }) => (
+// data-vt: o cartão já entra pela própria transição; depois da primeira cascata da tela, a de linha não roda por cima (globals.css)
+const Card = ({ id, children }: { id: string; children: React.ReactElement<{ "data-vt"?: boolean }> }) => (
   <ViewTransition name={`pedido-${id}`} share="morph" update="move" enter="item-in" exit="item-out" default="none">
-    {children}
+    {cloneElement(children, { "data-vt": true })}
   </ViewTransition>
 );
 

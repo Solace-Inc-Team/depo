@@ -697,14 +697,15 @@ details[open] > :not(summary) {
 }
 .pilha-avisos .toast[data-depth="1"] {
   z-index: 2;
-  translate: 0 -12px;
+  /* --empilhada-y: o que falta para o topo alcançar o do aviso da frente, quando ele é mais alto (action-form.tsx) */
+  translate: 0 calc(var(--empilhada-y, 0px) - 12px);
   scale: 0.94;
   opacity: 0.6;
   filter: blur(1px);
 }
 .pilha-avisos .toast[data-depth="2"] {
   z-index: 1;
-  translate: 0 -24px;
+  translate: 0 calc(var(--empilhada-y, 0px) - 24px);
   scale: 0.88;
   opacity: 0.36;
   filter: blur(2px);
@@ -1604,6 +1605,14 @@ body[data-confirmando] .deliver-btn {
   animation:
     linha 340ms var(--ease-out) backwards,
     flash 2.4s var(--ease-out);
+}
+/* cartão com transição própria (Entregas, data-vt) que chega depois da primeira cascata: já entra deslizando,
+   e a entrada de linha por cima o deixava invisível durante o atraso ou fazia duas entradas seguidas */
+.pagina[data-assentada] .panel > ul > li[data-vt] {
+  animation: none;
+}
+.pagina[data-assentada] .panel > ul > li[data-vt].row-new {
+  animation: flash 2.4s var(--ease-out);
 }
 @keyframes entra {
   from {
