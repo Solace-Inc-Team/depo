@@ -14,7 +14,7 @@ export function SemanaBarras({ semana }: { semana: { day: string; cents: number 
   const ultimo = semana.length - 1;
   return (
     <figure className="mt-4">
-      <Dicas className="flex h-10 items-end gap-0.5">
+      <Dicas toque contida className="flex h-10 items-end gap-0.5">
         {semana.map((d, i) => (
           <div key={d.day} className="semana-barra group relative flex h-full flex-1 items-end" data-atual={i === ultimo || undefined} data-dica={formatBRL(d.cents)}>
             <span

@@ -12,8 +12,8 @@ export function LegalPage({ title, children }: { title: string; children: ReactN
             <Logo />
           </Link>
           <nav className="flex gap-5 text-[13px] text-muted">
-            <Link href="/termos" className="hover:text-fg">Termos de uso</Link>
-            <Link href="/privacidade" className="hover:text-fg">Privacidade</Link>
+            <Link href="/termos" className="alvo hover:text-fg">Termos de uso</Link>
+            <Link href="/privacidade" className="alvo hover:text-fg">Privacidade</Link>
           </nav>
         </div>
       </header>

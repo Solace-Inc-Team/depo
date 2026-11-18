@@ -259,7 +259,7 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
                         {s.orderCount} {s.orderCount === 1 ? "pedido" : "pedidos"}, {s.inRoute} em rota
                       </p>
                     </div>
-                    <Link href={`/caixa/${s.id}`} prefetch={false} className="text-right">
+                    <Link href={`/caixa/${s.id}`} prefetch={false} className="alvo text-right">
                       <Money cents={s.expected} className="block font-semibold" />
                       <span className="text-sm text-accent">Fazer acerto</span>
                     </Link>

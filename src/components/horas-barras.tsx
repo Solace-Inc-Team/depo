@@ -31,7 +31,7 @@ export function HorasBarras({ porHora, dias }: { porHora: { hora: number; n: num
         </span>
       </p>
       {/* espaço para a dica da barra mais alta não cobrir a frase de cima */}
-      <Dicas contida className="mt-11 flex h-28 items-end gap-0.5">
+      <Dicas toque contida className="mt-11 flex h-28 items-end gap-0.5">
         {horas.map((h) => (
           <div
             key={h.hora}

@@ -223,15 +223,16 @@ body {
     font-size: 0.875rem;
     transition: border-color 120ms, box-shadow 120ms;
   }
-  /* no celular, todo botão, campo e link de ação com pelo menos 44 px de altura para o dedo */
-  @media (max-width: 639px) {
+  /* no celular, todo botão, campo e link de ação com pelo menos 44 px de altura para o dedo. Também em tela de
+     toque larga (celular deitado, tablet): pela largura sozinha, o iPhone deitado recebia as medidas do computador */
+  @media (max-width: 639px), (pointer: coarse) {
     .btn,
     .input {
       height: 2.75rem;
     }
   }
-  /* no iPhone, campo com letra menor que 16 px faz o Safari dar zoom na tela ao tocar nele */
-  @media (max-width: 639px) {
+  /* no iPhone, campo com letra menor que 16 px faz o Safari dar zoom na tela ao tocar nele (deitado também) */
+  @media (max-width: 639px), (pointer: coarse) {
     .input,
     input:not([type="checkbox"], [type="radio"], [type="range"]),
     select,
@@ -244,7 +245,7 @@ body {
     align-items: center;
     min-height: 2.75rem;
   }
-  @media (min-width: 640px) {
+  @media (min-width: 640px) and (pointer: fine) {
     .tap {
       min-height: 0;
     }
@@ -3521,6 +3522,18 @@ html:has(.pagina-escura) body {
     visibility: hidden;
     pointer-events: none;
   }
+  /* a barra do carrinho também: com o teclado encolhendo a tela, ela cobria o campo em que se escrevia.
+     !important porque a subida dela é animação, que segura o lugar e venceria a regra comum */
+  body:has(main :is(input:not([type="checkbox"], [type="radio"], [type="hidden"]), textarea, select):focus) .barra-pedido:not(:focus-within) {
+    translate: 0 110% !important;
+    opacity: 0 !important;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      translate var(--dur) ease-in,
+      opacity var(--dur) ease-in,
+      visibility 0s linear var(--dur);
+  }
 }
 /* só abaixo de 1024 px: no computador a navegação é o menu lateral (a regra fora de camada venceria o lg:hidden) */
 .nav-inferior {
@@ -3831,8 +3844,11 @@ button.gaveta-mais-linha:active {
   backdrop-filter: blur(16px) saturate(1.4);
 }
 @media (min-width: 1024px) {
+  /* o recuo lateral fica só no formulário de dentro (lg:px-10), igual ao do conteúdo: com os dois somados, em tela
+     larga o texto e os botões passavam 16 px das bordas dos cartões */
   .saida-grupo {
     left: 15rem;
+    padding-inline: 0;
   }
 }
 /* o último cartão da fila não fica escondido atrás da barra */
@@ -4006,4 +4022,12 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
 /* selo de erros do admin: no escuro o vermelho é claro e o número branco ficava com 2,77:1 */
 :root:not([data-tema="claro"]) .selo-erros {
   color: #0a0a0a;
+}
+
+/* grupo de dicas que no celular não ocupa lugar (display: contents, botões na gaveta): a dica fechada ainda
+   tinha 20 px de recuo e passava da borda, abrindo 4 px de rolagem lateral abaixo de 1024 px */
+@media (max-width: 1023px) {
+  .dicas.contents > .dica {
+    display: none;
+  }
 }

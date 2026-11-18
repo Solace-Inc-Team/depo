@@ -6,7 +6,7 @@ export function ContatoLoja({ phone, address }: { phone: string; address: string
   return (
     <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-muted">
       {phone && (
-        <a href={`tel:+55${phone.replace(/\D/g, "")}`} className="inline-flex min-h-11 items-center gap-1.5 hover:text-fg sm:min-h-0">
+        <a href={`tel:+55${phone.replace(/\D/g, "")}`} className="inline-flex min-h-11 items-center gap-1.5 hover:text-fg [@media(min-width:640px)_and_(pointer:fine)]:min-h-0">
           <Phone size={14} strokeWidth={1.75} aria-hidden="true" />
           <span className="num">{phone}</span>
         </a>

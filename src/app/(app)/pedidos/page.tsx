@@ -65,7 +65,7 @@ export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
               key={v}
               href={href(v)}
               aria-current={on ? "page" : undefined}
-              className={`relative flex min-h-11 shrink-0 items-center gap-1.5 pb-1 text-[13px] sm:min-h-0 sm:pb-2.5 font-medium transition-colors ${
+              className={`relative flex min-h-11 shrink-0 items-center gap-1.5 pb-1 text-[13px] [@media(min-width:640px)_and_(pointer:fine)]:min-h-0 sm:pb-2.5 font-medium transition-colors ${
                 on ? "text-fg" : "text-muted hover:text-fg"
               }`}
             >

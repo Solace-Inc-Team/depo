@@ -48,7 +48,6 @@ const ha = (min: number) => (min < 1 ? "agora" : `há ${waited(min)}`);
 
 export default async function Entregas() {
   const user = await requireUser("dono", "atendente", "caixa");
-  // antes do after(): sem APP_URL (desenvolvimento) o endereço vem dos cabeçalhos, que o Next não deixa ler depois dele
   const base = await siteUrl();
   // depois de a tela ir para o navegador: a conferência pergunta ao Mercado Pago (até 10 s cada) e pedido esperando
   // Pix não está na fila de entrega, então a tela não precisa esperar por ela

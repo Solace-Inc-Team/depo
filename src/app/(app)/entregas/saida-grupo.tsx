@@ -29,7 +29,7 @@ export function SaidaEmGrupo({ entregadores, sugerido, fila }: { entregadores: {
   };
   return (
     <div data-saindo={barra.saindo || undefined} className="saida-grupo barra-pedido barra-sobe" role="region" aria-label="Saída de vários pedidos">
-      <ActionForm id={FORM_GRUPO} action={dispatchAction} className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 lg:px-6">
+      <ActionForm id={FORM_GRUPO} action={dispatchAction} className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 lg:px-10">
         <p className="mr-auto text-sm font-medium" aria-live="polite">
           {marcados} {marcados === 1 ? "pedido marcado" : "pedidos marcados"}
         </p>

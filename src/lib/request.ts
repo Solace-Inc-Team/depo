@@ -13,11 +13,10 @@ export async function clientIp(cab?: Headers) {
 /**
  * Endereço do site para os links que vão ao cliente (acompanhamento, WhatsApp, portal). Vale o APP_URL: o cabeçalho
  * Host vem de quem fez a requisição e não deve decidir para onde o link aponta. Sem APP_URL (no computador de
- * desenvolvimento), usa o endereço desta requisição.
+ * desenvolvimento), o endereço local: ler os cabeçalhos aqui dava erro nas telas que já tinham chamado after()
+ * (o Next não deixa), e o link só serve para quem testa nesta máquina.
  */
 export async function siteUrl() {
   const fixo = process.env.APP_URL?.trim().replace(/\/+$/, "");
-  if (fixo) return fixo;
-  const h = await headers();
-  return `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}`;
+  return fixo || `http://localhost:${process.env.PORT ?? 3000}`;
 }

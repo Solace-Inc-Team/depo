@@ -14,6 +14,7 @@ import { SeletorFilial } from "@/components/seletor-filial";
 import { MenuConfig } from "@/components/menu-config";
 import { Dicas } from "@/components/dicas";
 import { countOpenOrders } from "@/domain/queries";
+import { AtalhoBusca } from "@/components/atalho-busca";
 import { secoesConfig } from "./configuracoes/secoes";
 import { Suspense } from "react";
 import { dataBR, situacaoAssinatura } from "@/lib/plano";
@@ -188,6 +189,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       {/* embaixo, espaço para a barra de navegação do celular e para a barra de gestos do iPhone */}
       <main id="conteudo" tabIndex={-1} className="main-app outline-none mx-auto w-full max-w-6xl px-4 pt-6 lg:px-10 lg:py-10">
         <PageTransition>{children}</PageTransition>
+        <AtalhoBusca />
       </main>
       <NavInferior
         fila={fila}

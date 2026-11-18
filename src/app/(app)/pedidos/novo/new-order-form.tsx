@@ -200,7 +200,7 @@ export function NewOrderForm({
               type="button"
               aria-pressed={mode === m}
               onClick={() => setMode(m)}
-              className={`relative min-h-11 rounded-md px-3.5 py-1.5 text-[13px] sm:min-h-0 font-medium transition-colors ${mode === m ? "text-fg" : "text-muted hover:text-fg"}`}
+              className={`relative min-h-11 rounded-md px-3.5 py-1.5 text-[13px] [@media(min-width:640px)_and_(pointer:fine)]:min-h-0 font-medium transition-colors ${mode === m ? "text-fg" : "text-muted hover:text-fg"}`}
             >
               {m === "entrega" ? "Entrega" : "Venda no balcão"}
             </button>
