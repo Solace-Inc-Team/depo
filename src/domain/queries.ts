@@ -186,6 +186,15 @@ export const countOrdersByStatus = scoped(async function countOrdersByStatus(ten
   return { ...by, total: rows.reduce((s, r) => s + r.n, 0) };
 });
 
+/** Só os que esperam saída, para o selo de Entregas: contar todos os status somava o histórico inteiro a cada tela. */
+export const countOpenOrders = scoped(async function countOpenOrders(tenantId: string, branchId: string | null) {
+  const [r] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(orders)
+    .where(and(eq(orders.tenantId, tenantId), eq(orders.status, "aberto"), branchId ? eq(orders.branchId, branchId) : undefined));
+  return r?.n ?? 0;
+});
+
 export const getOrder = scoped(async function getOrder(tenantId: string, id: string) {
   const [o] = await db
     .select({

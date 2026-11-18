@@ -31,14 +31,17 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
   after(() => cancelarPixVencidos(user.tenantId));
   const entregadores = await listDrivers(user.tenantId, user.branchId);
   const entregador = entregadores.find((e) => e.id === sp.entregador);
-  const d = await dashboard(user.tenantId, { day: dia, driverId: entregador?.id, branchId: user.branchId });
-  // os primeiros passos são tarefas do dono; os outros perfis não têm acesso a metade das telas
-  const passos = user.role === "dono" ? await primeirosPassos(user.tenantId) : null;
+  // uma consulta não depende da outra: juntas, em vez de uma depois da outra
+  const [d, passos, contas, programados] = await Promise.all([
+    dashboard(user.tenantId, { day: dia, driverId: entregador?.id, branchId: user.branchId }),
+    // os primeiros passos são tarefas do dono; os outros perfis não têm acesso a metade das telas
+    user.role === "dono" ? primeirosPassos(user.tenantId) : null,
+    // contas a pagar são de quem cuida do dinheiro: dono e caixa
+    user.role === "dono" || user.role === "caixa" ? contasVencendo(user.tenantId, user.branchId) : null,
+    programadosParaHoje(user.tenantId, user.branchId),
+  ]);
   // conta nova no teste grátis: os primeiros passos já dizem até quando e quanto custa depois
   const testeAte = passos && user.pagoAte && (await emTesteGratis(user.tenantId)) ? user.pagoAte : null;
-  // contas a pagar são de quem cuida do dinheiro: dono e caixa
-  const contas = user.role === "dono" || user.role === "caixa" ? await contasVencendo(user.tenantId, user.branchId) : null;
-  const programados = await programadosParaHoje(user.tenantId, user.branchId);
   const ehHoje = dia === hojeISO;
   const filtrado = !ehHoje || !!entregador;
   const hoje = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Sao_Paulo" }).format(
@@ -177,7 +180,7 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
             <ul>
               {alertas.map((a) => (
                 <li key={a.texto} className="border-b border-line last:border-0">
-                  <Link href={a.href} className="group flex items-center gap-3 px-4 py-3 hover:bg-subtle">
+                  <Link href={a.href} prefetch={false} className="group flex items-center gap-3 px-4 py-3 hover:bg-subtle">
                     <span aria-hidden="true" className={`size-2 shrink-0 rounded-full ${tomPonto[a.tom]}`} />
                     <span className={`flex-1 ${a.tom === "grave" ? "font-medium" : ""}`}>
                       {a.texto}
@@ -205,11 +208,12 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
           {d.recent.length ? (
             <table className="table">
               <tbody>
+                {/* links de linha sem carregamento antecipado: o Painel disparava uns 45, cada um rodando o layout no servidor */}
                 {d.recent.map((o) => (
                   <tr key={o.id}>
                     <td className="num w-12 text-muted">#{o.number}</td>
                     <td>
-                      <Link href={`/pedidos/${o.id}`} className="font-medium wrap-anywhere hover:text-accent">
+                      <Link href={`/pedidos/${o.id}`} prefetch={false} className="font-medium wrap-anywhere hover:text-accent">
                         {o.customerName ?? "Balcão"}
                       </Link>
                       <p className="text-sm text-muted">
@@ -255,7 +259,7 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
                         {s.orderCount} {s.orderCount === 1 ? "pedido" : "pedidos"}, {s.inRoute} em rota
                       </p>
                     </div>
-                    <Link href={`/caixa/${s.id}`} className="text-right">
+                    <Link href={`/caixa/${s.id}`} prefetch={false} className="text-right">
                       <Money cents={s.expected} className="block font-semibold" />
                       <span className="text-sm text-accent">Fazer acerto</span>
                     </Link>

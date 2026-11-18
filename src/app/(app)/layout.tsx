@@ -13,7 +13,7 @@ import { PageTransition } from "@/components/page-transition";
 import { SeletorFilial } from "@/components/seletor-filial";
 import { MenuConfig } from "@/components/menu-config";
 import { Dicas } from "@/components/dicas";
-import { countOrdersByStatus } from "@/domain/queries";
+import { countOpenOrders } from "@/domain/queries";
 import { secoesConfig } from "./configuracoes/secoes";
 import { Suspense } from "react";
 import { dataBR, situacaoAssinatura } from "@/lib/plano";
@@ -55,7 +55,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       : null;
 
   // pedidos esperando saída: o selo no item Entregas (o layout volta a contar a cada ação e a cada atualização da tela)
-  const fila = (await countOrdersByStatus(user.tenantId, user.branchId)).aberto ?? 0;
+  const fila = await countOpenOrders(user.tenantId, user.branchId);
 
   const groups: NavGroup[] = [
     {
