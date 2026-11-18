@@ -1,15 +1,14 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, useTransition, type ReactNode } from "react";
-import { CircleAlert, CircleCheck, MessageCircle } from "lucide-react";
+import { CircleAlert, CircleCheck } from "lucide-react";
 import { progress } from "./nav-progress";
 import { confirmar } from "./confirm-dialog";
 import { recarregarSeVersaoNova } from "@/lib/versao-nova";
 import { useSaida } from "./saida";
 import { formatBRL, parseBRL } from "@/lib/money";
 
-/** `link`: o passo seguinte, como botão dentro do aviso de sucesso (ex.: avisar o cliente pelo WhatsApp). */
-export type ActionState = { error?: string; ok?: string; link?: { href: string; rotulo: string } } | undefined | void;
+export type ActionState = { error?: string; ok?: string } | undefined | void;
 
 const TOAST_EVENT = "deposito:toast";
 
@@ -61,8 +60,7 @@ export function validarCampos(form: HTMLFormElement): string | null {
   return avisoDoCampo(campo);
 }
 
-type Link = NonNullable<Exclude<ActionState, void>["link"]>;
-export const toast = (message: string, link?: Link) => window.dispatchEvent(new CustomEvent(TOAST_EVENT, { detail: { message, link } }));
+export const toast = (message: string) => window.dispatchEvent(new CustomEvent(TOAST_EVENT, { detail: { message } }));
 
 // onSubmit manual em vez de action={...}: o React limpa o form depois da action, e em caso de erro
 // a gente quer manter o que foi digitado
@@ -208,7 +206,7 @@ export function ActionForm({
               alvo?.classList.remove("salvou");
               void (alvo as HTMLElement | null)?.offsetWidth;
               alvo?.classList.add("salvou");
-            } else if (r?.ok) toast(r.ok, r.link);
+            } else if (r?.ok) toast(r.ok);
             const menu = form.closest("details");
             if (menu) menu.open = false;
             // dentro de uma JanelaAcao: deu certo, a janela fecha
@@ -251,11 +249,11 @@ function soltar(button: Element | null | undefined) {
 }
 
 /** Mostra os avisos de sucesso das ações. Fica no layout raiz. */
-type Toast = { id: number; message: string; link?: Link; leaving?: boolean; vez?: number };
+type Toast = { id: number; message: string; leaving?: boolean; vez?: number };
 
 export function Toaster() {
   const [toasts, setToasts] = useState<Toast[]>([]);
-  // com o mouse ou o foco em cima, os avisos esperam: dá para ler e tocar no botão sem ele sumir na mão
+  // com o mouse em cima, os avisos esperam: dá para ler sem eles sumirem
   const pausa = useRef<{ pausar: () => void; retomar: () => void } | null>(null);
   useEffect(() => {
     let seq = 0;
@@ -303,19 +301,17 @@ export function Toaster() {
       },
     };
     const show = (e: Event) => {
-      const { message, link } = (e as CustomEvent<{ message: string; link?: Link }>).detail;
-      // aviso com botão fica mais tempo: dá para ler e tocar
-      const tempo = link ? 9000 : 3500;
+      const { message } = (e as CustomEvent<{ message: string }>).detail;
+      const tempo = 3500;
       // a mesma mensagem de novo (despachos seguidos): o aviso que está na tela dá um pulinho e ganha mais tempo
-      // (com botão não junta: cada um leva ao seu cliente)
-      const igual = !link && atual.find((t) => t.message === message && !t.link && !t.leaving);
+      const igual = atual.find((t) => t.message === message && !t.leaving);
       if (igual) {
         set((l) => l.map((t) => (t.id === igual.id ? { ...t, vez: (t.vez ?? 0) + 1 } : t)));
         sair(igual.id, tempo);
         return;
       }
       const id = ++seq;
-      set((l) => [...l, { id, message, link }]);
+      set((l) => [...l, { id, message }]);
       sair(id, tempo);
       // no máximo três na tela: o mais antigo sai animado, não some de uma vez
       const visiveis = atual.filter((t) => !t.leaving);
@@ -361,11 +357,7 @@ export function Toaster() {
       onPointerLeave={(e) => {
         if (e.pointerType !== "mouse") return;
         setMouse(false);
-        if (!e.currentTarget.contains(document.activeElement)) pausa.current?.retomar();
-      }}
-      onFocus={() => pausa.current?.pausar()}
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node | null) && !mouse) pausa.current?.retomar();
+        pausa.current?.retomar();
       }}
       className="pilha-avisos fixed right-4 bottom-4 left-4 z-50 sm:left-auto sm:w-96"
     >
@@ -379,11 +371,6 @@ export function Toaster() {
           <CircleCheck size={16} strokeWidth={2} className="text-ok" aria-hidden="true" />
           {/* a chave muda a cada repetição: o texto dá o mesmo pulinho dos números (.bump) */}
           <span key={current.vez ?? 0} className={`min-w-0 flex-1 ${current.vez ? "bump" : ""}`}>{current.message}</span>
-          {current.link && (
-            <a href={current.link.href} target="_blank" rel="noopener noreferrer" className="btn btn-sm tap shrink-0">
-              <MessageCircle size={14} strokeWidth={1.75} aria-hidden="true" /> {current.link.rotulo}
-            </a>
-          )}
         </p>
       ))}
     </div>

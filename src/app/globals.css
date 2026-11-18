@@ -663,7 +663,7 @@ details[open] > :not(summary) {
   right: 0;
   bottom: 0;
   left: 0;
-  /* no toque, o aviso não segura o dedo: o que está por baixo continua tocável. Só o botão dele pega o toque */
+  /* no toque, o aviso não segura o dedo: o que está por baixo continua tocável */
   pointer-events: none;
   transform-origin: 50% 100%;
   transition:
@@ -677,9 +677,6 @@ details[open] > :not(summary) {
     scale: 0.97;
     filter: blur(2px);
   }
-}
-.pilha-avisos .toast a {
-  pointer-events: auto;
 }
 /* com mouse, o aviso inteiro responde: passar por cima abre a pilha e segura o tempo */
 @media (hover: hover) and (pointer: fine) {
@@ -710,8 +707,7 @@ details[open] > :not(summary) {
   opacity: 1;
   filter: none;
 }
-.pilha-avisos .toast[data-leaving],
-.pilha-avisos .toast[data-leaving] a {
+.pilha-avisos .toast[data-leaving] {
   pointer-events: none;
 }
 .pilha-avisos .toast[data-leaving] {

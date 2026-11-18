@@ -35,8 +35,6 @@ import { conversar, recomecarConversa } from "@/domain/robo";
 import type { Saida } from "@/lib/robo";
 import { FILIAL_COOKIE } from "@/lib/auth";
 import { todayISO } from "@/lib/period";
-import { getOrder, getSettings } from "@/domain/queries";
-import { linkWhatsApp, mensagemSaida } from "@/lib/whatsapp";
 
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 const optId = (fd: FormData, k: string) => str(fd, k) || null;
@@ -243,14 +241,8 @@ export async function dispatchAction(fd: FormData) {
   // vários "orderId" no mesmo formulário: os pedidos marcados na fila saem juntos, numa viagem só
   const ids = fd.getAll("orderId").map(String).filter((v) => z.uuid().safeParse(v).success);
   if (!ids.length) return { error: "Escolha os pedidos que vão sair." };
-  const r = await run(() => dispatchOrders(user, ids, driverId), ["/"], ids.length === 1 ? "Pedido saiu para entrega." : `${ids.length} pedidos saíram para entrega.`);
-  if (r?.error || ids.length > 1) return r;
-  // um pedido só: o aviso já traz o "Avisar cliente", que antes ficava lá embaixo, dentro do entregador
-  const [o, loja, h] = await Promise.all([getOrder(user.tenantId, ids[0]), getSettings(user.tenantId), headers()]);
-  if (!o?.customerName) return r;
-  const link = `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}/pedir/${loja.slug}/acompanhar/${o.trackingId}`;
-  const zap = linkWhatsApp(o.customerPhone, mensagemSaida({ cliente: o.customerName, loja: loja.name, numero: o.number, entregador: o.driverName, link }));
-  return zap ? { ...r, ok: `Pedido #${o.number} saiu para entrega.`, link: { href: zap, rotulo: "Avisar cliente" } } : r;
+  // o "Avisar cliente" fica na linha do pedido em Entregas e no próprio pedido, enquanto ele está na rua
+  return run(() => dispatchOrders(user, ids, driverId), ["/"], ids.length === 1 ? "Pedido saiu para entrega." : `${ids.length} pedidos saíram para entrega.`);
 }
 
 export async function deliverAction(fd: FormData) {
