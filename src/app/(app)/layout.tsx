@@ -103,14 +103,15 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           {selo && (
             <Link
               href="/assinatura"
-              className={`flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-[12.5px] font-medium lg:hidden ${selo.alerta ? "border-warn-fg/40 text-warn-fg" : "border-line"}`}
+              className={`ml-auto flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-[12.5px] font-medium lg:hidden ${selo.alerta ? "border-warn-fg/40 text-warn-fg" : "border-line"}`}
             >
               <CreditCard size={14} strokeWidth={1.75} aria-hidden="true" className={selo.alerta ? "" : "text-accent"} />
               {selo.curta}
             </Link>
           )}
           {/* a janela das Configurações fica montada também no celular (a gaveta abre pelo endereço ?config); só o botão some */}
-          <Dicas lado="baixo" className="flex items-center gap-1">
+          {/* no celular os botões daqui ficam na gaveta: o grupo não ocupa lugar, e o selo encosta no canto direito */}
+          <Dicas lado="baixo" className="contents items-center gap-1 lg:flex">
             {/* configurações do dono (o que se ajusta uma vez): numa engrenagem, fora do menu do dia a dia */}
             {user.role === "dono" && (
               <Suspense>
