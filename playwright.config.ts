@@ -8,6 +8,8 @@ export default defineConfig({
   workers: 1,
   fullyParallel: false,
   timeout: 60_000,
+  // com a máquina carregada a tela certa chegava, só que depois dos 5 s padrão
+  expect: { timeout: 15_000 },
   // movimento reduzido: as animações não atrasam nem atrapalham os cliques
   use: { baseURL: "http://localhost:3100", locale: "pt-BR", timezoneId: "America/Sao_Paulo", contextOptions: { reducedMotion: "reduce" } },
   webServer: {

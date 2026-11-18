@@ -3,7 +3,11 @@
 import { useDeferredValue, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 // o canal guardado neste aparelho só é lido no navegador; no servidor vale "telefone"
-const semAssinatura = () => () => {};
+// o que outra aba grava aparece aqui também (o evento "storage" só chega às outras abas)
+const outraAba = (avisar: () => void) => {
+  window.addEventListener("storage", avisar);
+  return () => window.removeEventListener("storage", avisar);
+};
 const canalGuardado = () => {
   try {
     return localStorage.getItem("depo:canal") === "whatsapp" ? "whatsapp" : "telefone";
@@ -139,7 +143,7 @@ export function NewOrderForm({
   };
 
   // de onde veio o pedido: começa no último canal usado neste aparelho (WhatsApp vindo sempre marcado errava o relatório)
-  const guardado = useSyncExternalStore(semAssinatura, canalGuardado, () => "telefone" as const);
+  const guardado = useSyncExternalStore(outraAba, canalGuardado, () => "telefone" as const);
   const [escolhido, setOrigin] = useState<"telefone" | "whatsapp">();
   const origin = escolhido ?? guardado;
   const mudarCanal = (c: "telefone" | "whatsapp") => {

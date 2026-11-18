@@ -342,7 +342,8 @@ export function Toaster() {
           timers.delete(id);
           prazos.delete(id);
           set((l) => l.filter((t) => t.id !== id));
-        }, depois + 200),
+          // o mesmo tempo da saída no CSS (.toast[data-leaving], 250ms)
+        }, depois + 250),
       ]);
     };
     pausa.current = {

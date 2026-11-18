@@ -17,8 +17,9 @@ const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
   agentRules: false,
   poweredByHeader: false,
-  // o driver do banco fica fora do pacote: o Turbopack copiava o código dele como arquivo público em /_next/static/media
-  serverExternalPackages: ["postgres"],
+  // o driver do banco fica fora do pacote: o Turbopack copiava o código dele como arquivo público em /_next/static/media.
+  // Só no build: no next dev a mesma linha fazia /entregas recarregar sem parar
+  serverExternalPackages: process.env.NODE_ENV === "production" ? ["postgres"] : [],
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }];
   },

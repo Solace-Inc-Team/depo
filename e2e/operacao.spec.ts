@@ -33,7 +33,7 @@ test("pedido em dinheiro: atendente lança, entregador entrega, caixa faz o acer
   await entrar(page, "atendente@demo.com");
   await page.goto("/pedidos/novo");
   await page.getByLabel(/Buscar por nome/).fill("Ana");
-  await page.getByRole("button", { name: /Ana Ribeiro/ }).click();
+  await page.getByRole("option", { name: /Ana Ribeiro/ }).click();
   await mais(page, "Gás P13").click();
   await page.getByLabel("Entregador").selectOption({ label: "Carlos Mendes" });
   await page.getByRole("button", { name: "Lançar pedido" }).click();
@@ -74,7 +74,7 @@ test("fiado: venda no balcão vira dívida e o pagamento quita", async ({ page }
   await page.goto("/pedidos/novo");
   await page.getByRole("button", { name: "Venda no balcão" }).click();
   await page.getByLabel(/Buscar por nome/).fill("Cláudia");
-  await page.getByRole("button", { name: /Cláudia Martins/ }).click();
+  await page.getByRole("option", { name: /Cláudia Martins/ }).click();
   await mais(page, "Galão de água 20L").click();
   await page.getByRole("button", { name: "Fiado", exact: true }).click();
   await page.getByRole("button", { name: "Registrar venda" }).click();

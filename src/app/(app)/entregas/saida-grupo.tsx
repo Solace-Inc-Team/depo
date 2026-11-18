@@ -12,20 +12,15 @@ export const FORM_GRUPO = "saida-grupo";
  * Vários pedidos na moto: marca na fila e saem juntos, numa viagem só. As caixas ficam nos cartões e entram
  * neste formulário pelo atributo form; a barra sobe quando há algo marcado e desce quando tudo saiu.
  */
-export function SaidaEmGrupo({ entregadores, sugerido }: { entregadores: { id: string; name: string }[]; sugerido: string }) {
+export function SaidaEmGrupo({ entregadores, sugerido, fila }: { entregadores: { id: string; name: string }[]; sugerido: string; fila: string }) {
   const [marcados, setMarcados] = useState(0);
   useEffect(() => {
     const contar = () => setMarcados(document.querySelectorAll(`input[form="${FORM_GRUPO}"]:checked`).length);
     contar();
     document.addEventListener("change", contar);
-    // os pedidos que saíram somem da fila: a contagem acompanha
-    const mo = new MutationObserver(contar);
-    mo.observe(document.querySelector("main") ?? document.body, { childList: true, subtree: true });
-    return () => {
-      document.removeEventListener("change", contar);
-      mo.disconnect();
-    };
-  }, []);
+    return () => document.removeEventListener("change", contar);
+    // os pedidos que saíram somem da fila (fila muda): conta de novo. Antes era a cada mudança da tela, número animado incluído
+  }, [fila]);
   const barra = useSaida(marcados > 0, 200);
   if (!barra.montado) return null;
   const desmarcar = () => {

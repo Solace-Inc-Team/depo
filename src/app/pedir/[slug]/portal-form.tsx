@@ -29,7 +29,11 @@ type Salvo = {
 // em aparelho dividido, o próximo a usar não vê para sempre os dados de quem pediu (os salvos antes disso não têm a data)
 const VALIDADE_MS = 90 * 24 * 60 * 60 * 1000;
 const chaveSalvo = (slug: string) => `depo:pedir:${slug}`;
-const semAssinatura = () => () => {};
+// o que outra aba grava aparece aqui também (o evento "storage" só chega às outras abas)
+const outraAba = (avisar: () => void) => {
+  window.addEventListener("storage", avisar);
+  return () => window.removeEventListener("storage", avisar);
+};
 function lerBruto(slug: string) {
   try {
     return localStorage.getItem(chaveSalvo(slug));
@@ -78,7 +82,7 @@ export function PortalForm({
   const formRef = useRef<HTMLFormElement>(null);
   // dados da última compra neste aparelho (lidos só no navegador; o texto guardado é o que muda, não o objeto)
   const bruto = useSyncExternalStore(
-    semAssinatura,
+    outraAba,
     () => lerBruto(slug),
     () => null,
   );
