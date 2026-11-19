@@ -83,7 +83,7 @@ export default async function Fechamento({ searchParams }: PageProps<"/relatorio
       </Block>
 
       <Block title="Por produto">
-        {b.byProduct.length ? b.byProduct.map((p) => <Row key={p.name} label={`${p.qty} x ${p.name}`} cents={p.total} />) : <None />}
+        {b.byProduct.length ? b.byProduct.map((p) => <Row key={p.name} label={`${p.qty}× ${p.name}`} cents={p.total} />) : <None />}
       </Block>
 
       <Block title="Por entregador">

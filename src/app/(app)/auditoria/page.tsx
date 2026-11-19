@@ -75,7 +75,7 @@ export default async function Auditoria({ searchParams }: PageProps<"/auditoria"
             ))}
           </select>
         </div>
-        <button className="btn btn-primary">Filtrar</button>
+        <button className="btn">Ver</button>
       </form>
 
       {dias.length ? (

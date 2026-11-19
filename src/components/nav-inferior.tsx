@@ -58,7 +58,7 @@ function Aba({ href, label, icone: Icone, on, selo }: { href: string; label: str
         <Icone size={21} strokeWidth={on ? 2 : 1.75} aria-hidden="true" />
         {!!selo && (
           <span className="nav-inferior-selo num" aria-label={`${selo} esperando saída`}>
-            {selo > 9 ? "9+" : selo}
+            {selo > 99 ? "99+" : selo}
           </span>
         )}
       </span>

@@ -48,7 +48,8 @@ export function SeloMenu({ n: doServidor }: { n: number }) {
   return (
     <span className="selo-menu ml-auto" data-aberto={n > 0 || undefined}>
       <span className="selo-menu-num num">
-        <LiveNumber value={mostrado} />
+        {/* mesmo limite da barra do celular */}
+        {mostrado > 99 ? "99+" : <LiveNumber value={mostrado} />}
       </span>
       {n > 0 && <span className="sr-only"> esperando saída</span>}
     </span>

@@ -434,7 +434,7 @@ export function NewOrderForm({
                 type="button"
                 aria-pressed={payment === v}
                 onClick={() => setPayment(v)}
-                className={`btn ${payment === v ? "border-fg bg-fg text-bg hover:bg-fg" : ""}`}
+                className={`btn ${payment === v ? "border-accent bg-accent/10 hover:bg-accent/10" : ""}`}
               >
                 {l}
               </button>

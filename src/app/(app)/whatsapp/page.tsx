@@ -9,7 +9,8 @@ export default async function RoboWhatsapp() {
   const user = await requireUser("dono");
   const clientes = await clientesParaTeste(user.tenantId);
   return (
-    <div className="mx-auto max-w-2xl">
+    // encostada à esquerda como as outras telas: centralizada, o título pulava de lugar ao trocar de tela
+    <div className="max-w-2xl">
       <PageHeader title="Robô do WhatsApp" />
       <p className="-mt-3 mb-6 text-muted">
         Converse como o cliente. O pedido confirmado aqui é só de teste: não cai em Entregas.

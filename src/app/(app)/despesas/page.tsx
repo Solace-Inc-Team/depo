@@ -1,7 +1,7 @@
 import { filialDoRelatorio } from "@/lib/filial";
 import { CampoFilial } from "@/components/campo-filial";
 import Link from "next/link";
-import { Receipt } from "lucide-react";
+import { Receipt, Plus } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { parsePeriod, todayISO } from "@/lib/period";
 import { expenseCategories, listExpenses, type ExpenseCategory } from "@/domain/expenses";
@@ -54,7 +54,7 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
     <>
       <PageHeader title="Despesas">
         {cuidaDasContas && (
-          <JanelaAcao label="Nova conta a pagar" titulo="Nova conta a pagar">
+          <JanelaAcao label="Nova conta a pagar" titulo="Nova conta a pagar" icone={<Plus size={16} strokeWidth={2} aria-hidden="true" />}>
             <ActionForm action={criarContaAction} className="grid gap-3 sm:grid-cols-2" reset>
               <div className="sm:col-span-2">
                 <label className="label" htmlFor="ct-desc">Descrição</label>
@@ -135,7 +135,8 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
         </section>
       )}
 
-      <form className="mb-6 flex flex-wrap items-end gap-3">
+      {/* no celular, De e Até lado a lado; Filial e Ver na linha de baixo */}
+      <form className="mb-6 grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap">
         <div>
           <label className="label" htmlFor="de">De</label>
           <input id="de" name="de" type="date" defaultValue={fromStr} className="input" />
@@ -145,7 +146,7 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
           <input id="ate" name="ate" type="date" defaultValue={toStr} className="input" />
         </div>
         <CampoFilial user={user} valor={sp.filial} />
-        <button className="btn">Ver período</button>
+        <button className="btn">Ver</button>
       </form>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
@@ -231,7 +232,7 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
           </section>
         </div>
 
-        <section className="panel p-5 lg:self-start">
+        <section className="panel p-4 lg:self-start">
           <h2 className="h2">Lançar despesa</h2>
           <ActionForm action={createExpenseAction} className="mt-4 space-y-3" reset>
             <div>

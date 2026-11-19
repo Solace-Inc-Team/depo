@@ -131,7 +131,7 @@ export function PortalForm({
   };
   // o que dá para repetir do último pedido (produto que saiu da loja ou acabou fica de fora)
   const repetivel = salvo?.itens.filter((i) => products.some((p) => p.id === i.productId && p.disponivel > 0)) ?? [];
-  const resumoRepetir = repetivel.map((i) => `${i.quantity} x ${products.find((p) => p.id === i.productId)!.name}`).join(", ");
+  const resumoRepetir = repetivel.map((i) => `${i.quantity}× ${products.find((p) => p.id === i.productId)!.name}`).join(", ");
   const primeiroNome = salvo?.nome.trim().split(/\s+/)[0] ?? "";
 
   useEffect(() => {
@@ -171,7 +171,7 @@ export function PortalForm({
         acompanhar={result.acompanhar}
         enviado={enviado}
         loja={loja}
-        lines={products.filter((p) => qty[p.id] > 0).map((p) => `${qty[p.id]} x ${p.name}`)}
+        lines={products.filter((p) => qty[p.id] > 0).map((p) => `${qty[p.id]}× ${p.name}`)}
       />
     );
 
@@ -404,7 +404,7 @@ function Done({
     if (pix) QRCode.toString(pix, { type: "svg", margin: 1, width: 200 }).then(setQr);
   }, [pix]);
   return (
-    <section className="enter panel space-y-4 p-5" role="status">
+    <section className="enter panel space-y-4 p-4" role="status">
       <p className="flex items-center gap-2 text-lg font-semibold">
         <CheckSucesso size={24} />
         Pedido #{number} recebido

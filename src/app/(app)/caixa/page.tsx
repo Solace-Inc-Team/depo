@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { listDrivers, listPixDevolver, listShifts } from "@/domain/queries";
@@ -24,7 +25,7 @@ export default async function Caixa() {
       {/* abrir turno só aparece quando há entregador livre; a lista de turnos fica com a largura toda */}
       <PageHeader title="Caixa e acertos">
         {free.length > 0 && (
-          <JanelaAcao label="Abrir turno" titulo="Abrir turno" primario>
+          <JanelaAcao label="Abrir turno" titulo="Abrir turno" icone={<Plus size={16} strokeWidth={2} aria-hidden="true" />} primario>
             <ActionForm action={openShiftAction} className="space-y-3" reset>
               <div>
                 <label className="label" htmlFor="driverId">Entregador</label>

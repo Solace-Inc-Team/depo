@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import Link from "next/link";
-import { Package } from "lucide-react";
+import { Package, Plus } from "lucide-react";
 import { listProducts, listSuppliers, recentMovements, stockOverview, vendidosPorProduto } from "@/domain/queries";
 import { previsao, vaziosFaltando } from "@/lib/relatorios";
 import { ActionForm } from "@/components/action-form";
@@ -90,7 +90,7 @@ export default async function Estoque() {
             </ActionForm>
           </JanelaAcao>
         )}
-        <JanelaAcao label="Entrada de compra" titulo="Entrada de compra" primario>
+        <JanelaAcao label="Entrada de compra" titulo="Entrada de compra" icone={<Plus size={16} strokeWidth={2} aria-hidden="true" />} primario>
           <ActionForm action={purchaseAction} className="grid gap-3 sm:grid-cols-2" reset>
             <div className="sm:col-span-2">
               <label className="label" htmlFor="p-product">Produto</label>

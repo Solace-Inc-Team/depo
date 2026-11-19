@@ -42,7 +42,7 @@ export const SiteBadge = () => <span className="ml-2 rounded bg-accent-soft px-1
 
 export function PageHeader({ title, description, children }: { title: string; description?: ReactNode; children?: ReactNode }) {
   return (
-    <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+    <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
       <div>
         <h1 className="h1">{title}</h1>
         {description && <p className="mt-1 max-w-2xl text-muted">{description}</p>}

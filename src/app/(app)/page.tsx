@@ -203,7 +203,11 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
         <section className="panel">
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
             <h2 className="h2">Pedidos {ehHoje ? "de hoje" : noDia}</h2>
-            <Link href="/pedidos" className="alvo text-sm text-accent hover:underline">Ver todos</Link>
+            {/* mesmo jeito dos links dos alertas: cinza com a seta, ir para outra tela não é ação */}
+            <Link href="/pedidos" className="alvo group flex items-center gap-1 text-sm text-muted transition-colors hover:text-fg">
+              Ver todos
+              <ChevronRight size={14} strokeWidth={2} aria-hidden="true" className="transition-transform group-hover:translate-x-0.5" />
+            </Link>
           </div>
           {d.recent.length ? (
             <table className="table">
@@ -259,10 +263,11 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
                         {s.orderCount} {s.orderCount === 1 ? "pedido" : "pedidos"}, {s.inRoute} em rota
                       </p>
                     </div>
-                    <Link href={`/caixa/${s.id}`} prefetch={false} className="alvo text-right">
-                      <Money cents={s.expected} className="block font-semibold" />
-                      <span className="text-sm text-accent">Fazer acerto</span>
-                    </Link>
+                    {/* fazer o acerto é ação: botão, como em Caixa e acertos */}
+                    <div className="flex items-center gap-3">
+                      <Money cents={s.expected} className="font-semibold" />
+                      <Link href={`/caixa/${s.id}`} prefetch={false} className="btn btn-sm tap">Fazer acerto</Link>
+                    </div>
                   </li>
                 ))}
               </ul>

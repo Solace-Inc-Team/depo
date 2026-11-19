@@ -10,7 +10,7 @@ import { after } from "next/server";
 import { cancelarPixVencidos, PRAZO_PAGAR_MS } from "@/domain/pix";
 import { Empty, Money, PageHeader, SiteBadge, fmtTime, paymentLabel } from "@/components/ui";
 import { ResultadoRua } from "@/components/resultado-rua";
-import { Check, MessageCircle, Printer, Repeat } from "lucide-react";
+import { Check, MessageCircle, Printer } from "lucide-react";
 import { siteUrl } from "@/lib/request";
 import { linkWhatsApp, mensagemSaida } from "@/lib/whatsapp";
 import { formatBRL } from "@/lib/money";
@@ -139,8 +139,7 @@ export default async function Entregas() {
       {programados.length > 0 && (
         <Desliza nome="programados">
         <section className="panel mb-6">
-          <h2 className="h2 flex items-center gap-2 border-b border-line px-4 py-3">
-            <Repeat size={15} strokeWidth={1.75} className="text-muted" aria-hidden="true" />
+          <h2 className="h2 border-b border-line px-4 py-3">
             Programados para hoje <span className="font-normal text-muted">({programados.length})</span>
           </h2>
           <ul>
@@ -262,7 +261,7 @@ export default async function Entregas() {
                         {[naRua.length && `${naRua.length} na rua`, entregues.length && `${entregues.length} ${entregues.length === 1 ? "entregue" : "entregues"}`].filter(Boolean).join(", ")}
                         {/* para quem sai sem celular: a folha com tudo que ele precisa na rua */}
                         {naRua.length > 0 && (
-                          <Link href={`/entregas/rota/${d.id}`} className="tap flex items-center gap-1 font-normal hover:text-fg">
+                          <Link href={`/entregas/rota/${d.id}`} className="btn btn-sm tap gap-1.5 font-normal">
                             <Printer size={13} strokeWidth={1.75} aria-hidden="true" />
                             Folha da rota
                           </Link>

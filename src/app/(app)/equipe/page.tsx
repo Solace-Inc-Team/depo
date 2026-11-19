@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { listUsers } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
@@ -19,7 +20,7 @@ export default async function Equipe() {
   return (
     <>
       <PageHeader title="Equipe">
-        <JanelaAcao label="Adicionar pessoa" titulo="Adicionar pessoa" primario>
+        <JanelaAcao label="Adicionar pessoa" titulo="Adicionar pessoa" icone={<Plus size={16} strokeWidth={2} aria-hidden="true" />} primario>
           <ActionForm action={createUserAction} className="space-y-3" reset>
             <div>
               <label className="label" htmlFor="u-name">Nome</label>

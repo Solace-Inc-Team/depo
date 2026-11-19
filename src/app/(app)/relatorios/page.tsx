@@ -44,7 +44,8 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
           <a href="/exportar" className="btn" title="Todos os dados da empresa em planilhas, num ZIP">Exportar dados</a>
         )}
       </PageHeader>
-      <form className="panel mb-6 flex flex-wrap items-end gap-3 p-4">
+      {/* no celular, De e Até lado a lado; Filial e Ver na linha de baixo */}
+      <form className="panel mb-6 grid grid-cols-2 items-end gap-3 p-4 sm:flex sm:flex-wrap">
         <div>
           <label className="label" htmlFor="de">De</label>
           <input id="de" name="de" type="date" defaultValue={fromStr} className="input" />
@@ -54,7 +55,7 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
           <input id="ate" name="ate" type="date" defaultValue={toStr} className="input" />
         </div>
         <CampoFilial user={user} valor={sp.filial} />
-        <button className="btn btn-primary">Ver período</button>
+        <button className="btn">Ver</button>
       </form>
 
       <section className="panel mb-6 overflow-x-auto">
