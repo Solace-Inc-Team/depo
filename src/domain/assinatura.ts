@@ -94,7 +94,7 @@ async function gerarPix(ctx: Ctx) {
   try {
     novo = await criarPixMp(token, {
       valorCents: PLANO.mensalCents,
-      referencia: `assinatura:${id}`,
+      referencia: `assinatura-${id}`,
       emailPagador: email,
       expiraEm,
       chave: id,
@@ -142,7 +142,7 @@ export async function conferirAssinatura(tenantId: string): Promise<boolean> {
       console.error(`[assinatura] consulta de ${tenantId} falhou:`, (e as Error).message);
       continue;
     }
-    if (!p.pago || p.referencia !== `assinatura:${c.id}` || p.valorCents !== c.valorCents) continue;
+    if (!p.pago || p.referencia !== `assinatura-${c.id}` || p.valorCents !== c.valorCents) continue;
     const hoje = todayISO();
     const ok = await tenantTransaction({ tenantId }, async (tx) => {
       // só um aviso marca: a consulta da tela e o webhook podem chegar juntos

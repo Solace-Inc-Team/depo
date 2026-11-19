@@ -1399,6 +1399,8 @@ test("mensalidade: teste grátis no cadastro, Pix na conta da Solace, pago soma 
     const caminho = String(url).replace("https://api.mercadopago.com", "");
     if (caminho === "/v1/orders" && init?.method === "POST") {
       const b = JSON.parse(String(init.body));
+      // como o Mercado Pago de verdade: referência só com letras, números, - e _ (o ":" dava 400 em produção)
+      if (!/^[\w-]{1,64}$/.test(b.external_reference)) return new Response(JSON.stringify({ errors: [{ code: "property_value" }] }), { status: 400 });
       const id = String(7000 + cobrancas.size);
       cobrancas.set(id, { ref: b.external_reference, valor: Math.round(Number(b.total_amount) * 100), pago: false });
       return json({ id: `ORD00000000000${id}`, status: "action_required", transactions: { payments: [{ payment_method: { qr_code: `000201SOLACE${id}` } }] } });
