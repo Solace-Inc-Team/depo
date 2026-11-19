@@ -24,7 +24,10 @@ export function GET(req: Request) {
 export async function POST(req: Request) {
   const corpo = await req.text();
   // sem a assinatura do app, qualquer um poderia lançar pedido em nome de um cliente
-  if (!assinaturaMetaOk(process.env.META_APP_SECRET?.trim() ?? "", corpo, req.headers.get("x-hub-signature-256"))) return new Response(null, { status: 401 });
+  if (!assinaturaMetaOk(process.env.META_APP_SECRET?.trim() ?? "", corpo, req.headers.get("x-hub-signature-256"))) {
+    console.warn("[whatsapp] aviso recusado: assinatura não confere");
+    return new Response(null, { status: 401 });
+  }
   let aviso: unknown;
   try {
     aviso = JSON.parse(corpo);
@@ -32,6 +35,8 @@ export async function POST(req: Request) {
     return new Response(null, { status: 200 });
   }
   const mensagens = mensagensDoAviso(aviso);
+  // só o número da Meta e o final do celular: o log não guarda o telefone do cliente inteiro
+  for (const m of mensagens) console.info(`[whatsapp] mensagem recebida no número ${m.numeroId} de ...${m.de.slice(-4)}`);
   // responde já: a Meta repete o aviso se a resposta demora, e o robô pode levar alguns segundos
   if (mensagens.length) {
     const base = await siteUrl();
@@ -76,4 +81,5 @@ async function enviar(numeroId: string, para: string, saidas: Saida[]) {
       return;
     }
   }
+  console.info(`[whatsapp] ${saidas.length} resposta(s) enviada(s) para ...${para.slice(-4)}`);
 }
