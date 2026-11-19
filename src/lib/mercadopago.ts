@@ -29,10 +29,13 @@ async function chamar<T>(token: string, caminho: string, init: RequestInit = {})
   }
   if (!res.ok) {
     // o motivo vem no corpo; sem ele, "token recusado" escondia casos como "Unauthorized use of live
-    // credentials" (conta de teste criando cobrança), em que o token vale e o problema é outro
+    // credentials" (conta de teste criando cobrança), em que o token vale e o problema é outro.
+    // A API de Orders manda o motivo em errors[], não em message.
     const motivo = await res
       .json()
-      .then((j: { message?: string }) => j?.message ?? "")
+      .then((j: { message?: string; errors?: { code?: string; message?: string }[] }) =>
+        j?.message || (j?.errors ?? []).map((e) => [e.code, e.message].filter(Boolean).join(": ")).join("; "),
+      )
       .catch(() => "");
     if (res.status === 401 || res.status === 403) {
       const tokenRuim = !motivo || /token/i.test(motivo);
