@@ -187,7 +187,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         </div>
       </aside>
       {/* embaixo, espaço para a barra de navegação do celular e para a barra de gestos do iPhone */}
-      <main id="conteudo" tabIndex={-1} className="main-app outline-none mx-auto w-full max-w-6xl px-4 pt-6 lg:px-10 lg:py-10">
+      <main id="conteudo" tabIndex={-1} className="main-app outline-none mx-auto w-full max-w-6xl px-4 2xl:max-w-[1600px] pt-6 lg:px-10 lg:py-10">
         <PageTransition>{children}</PageTransition>
         <AtalhoBusca />
       </main>

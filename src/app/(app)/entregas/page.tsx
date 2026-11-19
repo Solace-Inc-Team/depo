@@ -194,8 +194,8 @@ export default async function Entregas() {
                   <li className={`border-b border-line px-4 py-3 last:border-0 ${minutesSince(o.createdAt) < 1 ? "row-new" : ""}`}>
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                       {podeJuntar && (
-                        // o rótulo em volta dá ao toque 44 px, sem aumentar a caixa
-                        <label className="-my-[13px] -ml-[13px] flex shrink-0 cursor-pointer self-center p-[13px]">
+                        // o rótulo em volta dá ao toque 44 px, sem aumentar a caixa nem afastar o título
+                        <label className="-m-[13px] flex shrink-0 cursor-pointer self-center p-[13px]">
                           <Marcar form={FORM_GRUPO} name="orderId" value={o.id} aria-label={`Marcar o pedido #${o.number} para sair junto`} />
                         </label>
                       )}

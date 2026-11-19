@@ -3718,8 +3718,15 @@ button.gaveta-mais-linha:active {
     white-space: normal;
     text-align: center;
   }
-  /* número ímpar de ações: a última ocupa a linha inteira */
-  .acoes-topo:has(> :nth-child(3)) > .btn:last-child:nth-child(odd) {
+  /* a ação principal vem primeiro, na linha inteira */
+  .acoes-topo:has(> :nth-child(3)) > .btn-primary {
+    grid-column: 1 / -1;
+    order: -1;
+  }
+  /* das outras, se sobrar uma ímpar, ela ocupa a linha inteira. Conta só botões: a janela de cada ação
+     (dialog) também é filha e desfazia a conta */
+  .acoes-topo:has(> :nth-child(3))
+    > .btn:not(.btn-primary):nth-last-child(1 of .btn:not(.btn-primary)):nth-child(odd of .btn:not(.btn-primary)) {
     grid-column: 1 / -1;
   }
 }

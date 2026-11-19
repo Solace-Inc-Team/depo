@@ -169,16 +169,16 @@ export default async function Estoque() {
                     </span>
                   )}
                   {p.reserved > 0 && (
-                    <span className="block text-sm font-normal whitespace-nowrap text-muted" title="Já separados para pedidos que ainda não saíram">
-                      {p.reserved} {p.reserved === 1 ? "reservado" : "reservados"}
+                    <span className="block text-sm font-normal whitespace-nowrap text-muted">
+                      {p.reserved} {p.reserved === 1 ? "separado" : "separados"} para pedidos
                     </span>
                   )}
                 </td>
                 <td data-rotulo="Vazios na loja" className="num text-right text-xl">
                   {p.returnable ? p.emptyStore : "-"}
                   {faltamVazios > 0 && (
-                    <span className="block text-sm font-medium whitespace-nowrap text-warn-fg" title="Para trocar com o fornecedor o que precisa pedir">
-                      faltam {faltamVazios} para trocar
+                    <span className="block text-sm font-medium whitespace-nowrap text-warn-fg">
+                      faltam {faltamVazios} vazios para a troca
                     </span>
                   )}
                 </td>
