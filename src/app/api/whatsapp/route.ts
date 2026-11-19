@@ -5,7 +5,7 @@ import { DomainError } from "@/lib/ctx";
 import { attempt } from "@/lib/rate-limit";
 import { siteUrl } from "@/lib/request";
 import type { Saida } from "@/lib/robo";
-import { assinaturaMetaOk, mensagemParaWhats, mensagensDoAviso, telefoneDoWhats } from "@/lib/whatsapp-api";
+import { assinaturaMetaOk, falhasDoAviso, mensagemParaWhats, mensagensDoAviso, telefoneDoWhats } from "@/lib/whatsapp-api";
 
 // Webhook do app "depo app" na Meta (WhatsApp Cloud API). A Meta chama aqui a cada mensagem que chega num número
 // ligado a uma empresa (admin > Ligar WhatsApp); o robô responde pela mesma API. Configuração no Coolify:
@@ -34,6 +34,7 @@ export async function POST(req: Request) {
   } catch {
     return new Response(null, { status: 200 });
   }
+  for (const f of falhasDoAviso(aviso)) console.warn(`[whatsapp] Meta não entregou a resposta para ...${f.para.slice(-4)}: ${f.codigo} ${f.motivo ?? ""}`);
   const mensagens = mensagensDoAviso(aviso);
   // só o número da Meta e o final do celular: o log não guarda o telefone do cliente inteiro
   for (const m of mensagens) console.info(`[whatsapp] mensagem recebida no número ${m.numeroId} de ...${m.de.slice(-4)}`);

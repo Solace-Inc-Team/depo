@@ -1,7 +1,16 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createHmac } from "node:crypto";
-import { assinaturaMetaOk, mensagemParaWhats, mensagensDoAviso, telefoneDoWhats } from "./whatsapp-api.ts";
+import { assinaturaMetaOk, falhasDoAviso, mensagemParaWhats, mensagensDoAviso, telefoneDoWhats } from "./whatsapp-api.ts";
+
+test("whatsapp api: entrega que falhou vem com código e motivo; entregue e lida ficam de fora", () => {
+  const status = (s: object) => ({ entry: [{ changes: [{ field: "messages", value: { statuses: [s] } }] }] });
+  assert.deepEqual(falhasDoAviso(status({ status: "failed", recipient_id: "5511911112222", errors: [{ code: 130497, title: "restrito" }] })), [
+    { para: "5511911112222", codigo: 130497, motivo: "restrito" },
+  ]);
+  assert.deepEqual(falhasDoAviso(status({ status: "delivered", recipient_id: "5511911112222" })), []);
+  assert.deepEqual(falhasDoAviso(null), []);
+});
 
 test("whatsapp api: assinatura do aviso confere só com o segredo certo e o corpo intacto", () => {
   const corpo = '{"entry":[]}';

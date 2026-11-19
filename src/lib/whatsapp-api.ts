@@ -39,6 +39,7 @@ type Aviso = {
           interactive?: { button_reply?: { id?: string; title?: string }; list_reply?: { id?: string; title?: string } };
           button?: { payload?: string; text?: string };
         }[];
+        statuses?: { status?: string; recipient_id?: string; errors?: { code?: number; title?: string }[] }[];
       };
     }[];
   }[];
@@ -65,6 +66,16 @@ export function mensagensDoAviso(aviso: unknown): MensagemRecebida[] {
         if (entrada) saida.push({ numeroId, de: m.from, id: m.id, entrada });
       }
     }
+  return saida;
+}
+
+/** Respostas que a Meta aceitou mas não conseguiu entregar: ela só avisa depois, no status "failed". */
+export function falhasDoAviso(aviso: unknown) {
+  const saida: { para: string; codigo?: number; motivo?: string }[] = [];
+  for (const e of (aviso as Aviso)?.entry ?? [])
+    for (const c of e.changes ?? [])
+      for (const s of c.value?.statuses ?? [])
+        if (s.status === "failed") saida.push({ para: s.recipient_id ?? "", codigo: s.errors?.[0]?.code, motivo: s.errors?.[0]?.title });
   return saida;
 }
 
