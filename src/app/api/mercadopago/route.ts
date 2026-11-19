@@ -21,7 +21,9 @@ export async function POST(req: Request) {
   // shortcut: por enquanto a assinatura só é registrada; depois de ver nos logs que os avisos verdadeiros passam,
   // recusar os que falham (responder 200 sem fazer nada)
   const assinado = assinaturaDoAvisoOk(process.env.MP_AVISO_SEGREDO?.trim() ?? "", req.headers, url.searchParams.get("data.id") ?? id);
-  if (assinado === false) console.warn(`[mercadopago] aviso com assinatura que não confere (tipo ${tipo || "?"}, id ${id.slice(0, 40)})`);
+  // uma linha por aviso, para ver no log se os verdadeiros passam antes de recusar os que falham
+  const conferencia = assinado === null ? "sem segredo" : assinado ? "assinatura ok" : "assinatura que não confere";
+  (assinado === false ? console.warn : console.info)(`[mercadopago] aviso ${tipo || "?"} ${id.slice(0, 40)}: ${conferencia}`);
   // mensalidade no cartão (eventos "Planos e assinaturas"): a consulta ao Mercado Pago diz quantas cobranças caíram
   if (tipo.startsWith("subscription_")) {
     // o limite vale só para aviso sem assinatura válida: os verdadeiros vêm todos dos mesmos IPs do Mercado Pago
