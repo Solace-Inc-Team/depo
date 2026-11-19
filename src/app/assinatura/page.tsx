@@ -59,7 +59,8 @@ export default async function Assinatura() {
         <div className="flex items-center justify-between gap-4">
           <MarcaDaSessao size={28} />
           {!sit.bloqueado ? (
-            <Link href={casa} className="btn h-9">
+            // sem pré-carregar: o menu buscado ao abrir esta tela ainda diria "Teste" depois de pagar
+            <Link href={casa} prefetch={false} className="btn h-9">
               <ArrowLeft size={15} strokeWidth={1.75} aria-hidden="true" /> Voltar ao sistema
             </Link>
           ) : (
