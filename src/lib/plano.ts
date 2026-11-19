@@ -1,14 +1,7 @@
 // O plano do depo e a conta de quando o acesso vence. Pura, sem banco.
 
-/** O preço que a página inicial anuncia. */
-const PRECO_CENTS = 12900;
-// shortcut: MENSALIDADE_TESTE_CENTS no Coolify baixa a cobrança de todo mundo, só para testar um Pix real; apagar depois do teste
-const teste = Number(process.env.MENSALIDADE_TESTE_CENTS);
-
 export const PLANO = {
-  precoCents: PRECO_CENTS,
-  /** o que a mensalidade cobra de fato */
-  mensalCents: teste > 0 && teste < PRECO_CENTS ? teste : PRECO_CENTS,
+  mensalCents: 12900,
   /** dias de uso grátis depois do cadastro */
   diasGratis: 14,
   /** depois de vencer, dias em que o sistema ainda abre (com aviso) antes de pausar */
