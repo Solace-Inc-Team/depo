@@ -46,16 +46,21 @@ const perguntas = [
   ["Se eu quiser sair, levo meus dados?", "Sim. O dono baixa todos os dados da empresa em planilhas, num arquivo só, quando quiser."],
 ];
 
+// criar conta é sempre o principal (o teste grátis vende sozinho); o WhatsApp fica ao lado, para quem quer conversar antes
 function BotaoContato({ className = "" }: { className?: string }) {
-  return temZap ? (
-    <a href={zap} target="_blank" rel="noopener noreferrer" className={`btn btn-primary h-11 px-5 text-[15px] ${className}`}>
-      <MessageCircle className="size-4" aria-hidden="true" /> Conversar no WhatsApp
-    </a>
-  ) : (
+  return (
     <Link href="/cadastro" className={`btn btn-primary h-11 px-5 text-[15px] ${className}`}>
       Criar conta <ArrowRight className="size-4" aria-hidden="true" />
     </Link>
   );
+}
+
+function BotaoZap({ className = "" }: { className?: string }) {
+  return temZap ? (
+    <a href={zap} target="_blank" rel="noopener noreferrer" className={`btn h-11 px-5 text-[15px] ${className}`}>
+      <MessageCircle className="size-4" aria-hidden="true" /> Conversar no WhatsApp
+    </a>
+  ) : null;
 }
 
 /** Cabeçalho de capítulo: rótulo pequeno, frase grande e uma linha de apoio. */
@@ -269,7 +274,11 @@ export default function Inicio() {
                   </li>
                 ))}
               </ul>
-              <BotaoContato className="mt-8" />
+              {/* o cartão é estreito: um botão por linha, da mesma largura */}
+              <div className="mt-8 grid gap-3">
+                <BotaoContato className="w-full justify-center" />
+                <BotaoZap className="w-full justify-center" />
+              </div>
             </Peca>
           </div>
 
@@ -297,10 +306,11 @@ export default function Inicio() {
             Feche o dia sabendo de tudo.
           </h2>
           <p className="mx-auto mt-5 max-w-[32rem] text-[16px] text-muted sm:text-[17px]">
-            {temZap ? "Chame no WhatsApp e veja o depo funcionando com a rotina da sua revenda." : "Do primeiro pedido da manhã ao acerto da noite."}
+            {temZap ? "Teste grátis ou chame no WhatsApp para ver o depo com a rotina da sua revenda." : "Do primeiro pedido da manhã ao acerto da noite."}
           </p>
-          <div className="mt-8 flex justify-center">
-            <BotaoContato />
+          <div className="mx-auto mt-8 grid max-w-xs gap-3 sm:flex sm:max-w-none sm:justify-center">
+            <BotaoContato className="justify-center" />
+            <BotaoZap className="justify-center" />
           </div>
         </section>
       </main>

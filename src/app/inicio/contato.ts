@@ -4,7 +4,7 @@ import { PLANO } from "@/lib/plano";
 // nem valor: fica o "Criar conta" e o preço sob consulta.
 
 /** WhatsApp da Solace só com dígitos, com DDI e DDD (ex.: 5511999998888). */
-export const WHATSAPP = "";
+export const WHATSAPP: string = "559184747881";
 
 /** Preço por mês como deve aparecer (ex.: "R$ 149"). Vazio mostra "sob consulta". */
 export const PRECO = `R$ ${PLANO.mensalCents / 100}`;
