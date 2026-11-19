@@ -7,7 +7,7 @@ import { PLANO } from "@/lib/plano";
 export const WHATSAPP = "";
 
 /** Preço por mês como deve aparecer (ex.: "R$ 149"). Vazio mostra "sob consulta". */
-export const PRECO = `R$ ${PLANO.mensalCents / 100}`;
+export const PRECO = `R$ ${PLANO.precoCents / 100}`;
 
 /** O que a mensalidade inclui. */
 export const INCLUSO = [
