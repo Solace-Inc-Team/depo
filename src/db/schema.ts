@@ -59,6 +59,8 @@ export const tenants = pgTable("tenants", {
   // conectado pelo botão (OAuth): chave de renovação cifrada e até quando o token vale; colado à mão fica vazio
   mpRefreshEnc: text("mp_refresh_enc"),
   mpExpiraEm: timestamp("mp_expira_em", { withTimezone: true }),
+  // número do WhatsApp da empresa na Cloud API (Phone Number ID da Meta): a mensagem que chega nele vai para o robô desta empresa
+  whatsappNumeroId: text("whatsapp_numero_id").unique(),
   // portal de pedidos: endereço público /pedir/<slug>
   slug: text("slug").notNull().unique(),
   portalEnabled: boolean("portal_enabled").notNull().default(false),

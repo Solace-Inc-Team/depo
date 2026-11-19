@@ -200,6 +200,7 @@ export async function listTenants(admin: SessionUser) {
       // já pagou alguma mensalidade: sem isso, o "pago até" é o fim do teste grátis
       pagou: sql<boolean>`exists (select 1 from assinatura_pagamentos p where p.tenant_id = tenants.id and p.pago_em is not null)`,
       cartao: sql<boolean>`${tenants.mpAssinaturaId} is not null`,
+      whatsappNumeroId: tenants.whatsappNumeroId,
     })
     .from(tenants)
     .where(sql`${tenants.id} <> ${admin.tenantId}`)
@@ -260,6 +261,34 @@ export async function darDias(admin: SessionUser, input: z.infer<typeof darDiasS
     await audit(tx, { tenantId: input.tenantId, userId: admin.userId }, "assinatura.dias", "tenant", input.tenantId, { dias: input.dias, motivo: input.motivo, de: t.pagoAte, ate });
     return { nome: t.name, ate };
   });
+}
+
+export const whatsappSchema = z.object({
+  tenantId: z.string().uuid(),
+  // o Phone Number ID da Meta são só dígitos; vazio desliga
+  numeroId: z.union([z.literal(""), z.string().regex(/^\d{6,30}$/, "O ID do número tem só dígitos, como aparece na Meta.")]),
+});
+
+/** Liga (ou desliga, com vazio) o número do WhatsApp da Cloud API ao robô de uma empresa. */
+export async function ligarWhatsapp(admin: SessionUser, input: z.infer<typeof whatsappSchema>) {
+  assertAdmin(admin);
+  const numeroId = input.numeroId || null;
+  return db.transaction(async (tx) => {
+    if (numeroId) {
+      const [outra] = await tx.select({ name: tenants.name }).from(tenants).where(and(eq(tenants.whatsappNumeroId, numeroId), sql`${tenants.id} <> ${input.tenantId}`));
+      if (outra) throw new DomainError(`Esse número já está ligado a ${outra.name}.`);
+    }
+    const [t] = await tx.update(tenants).set({ whatsappNumeroId: numeroId }).where(eq(tenants.id, input.tenantId)).returning({ name: tenants.name });
+    if (!t) throw new DomainError("Empresa não encontrada.");
+    await audit(tx, { tenantId: input.tenantId, userId: admin.userId }, "whatsapp.numero", "tenant", input.tenantId, { numeroId });
+    return t.name;
+  });
+}
+
+/** A empresa dona do número que recebeu a mensagem (só empresa ativa responde). */
+export async function empresaDoNumeroWhats(numeroId: string) {
+  const [t] = await db.select({ id: tenants.id }).from(tenants).where(and(eq(tenants.whatsappNumeroId, numeroId), eq(tenants.active, true)));
+  return t?.id ?? null;
 }
 
 /** As últimas liberações de dias, para o registro no painel. */

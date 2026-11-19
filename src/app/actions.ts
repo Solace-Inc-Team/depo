@@ -24,7 +24,7 @@ import { openShift, closeShift, addCashEntry, cashEntrySchema, voidCashEntry, re
 import { receivePurchase, markDamaged, runInventory, saveSupplier, supplierSchema, transferirEstoque } from "@/domain/stock";
 import { receivePayment, paymentSchema, voidPayment } from "@/domain/receivables";
 import { assinarNoCartao, cancelarCartao, pixAssinatura } from "@/domain/assinatura";
-import { avisoSchema, cadastrarEmpresa, cadastroSchema, createTenant, darDias, darDiasSchema, deleteTenant, newTenantSchema, publicarAviso, resetOwnerAccess, setTenantActive, tirarAviso } from "@/domain/platform";
+import { avisoSchema, cadastrarEmpresa, cadastroSchema, createTenant, darDias, darDiasSchema, deleteTenant, newTenantSchema, ligarWhatsapp, publicarAviso, resetOwnerAccess, setTenantActive, tirarAviso, whatsappSchema } from "@/domain/platform";
 import { dataBR } from "@/lib/plano";
 import { resolveError, sendTestAlert } from "@/domain/monitoring";
 import { addAddress, addressSchema, removeAddress, saveSettings, settingsSchema, anonymizeCustomer, saveCustomer, customerSchema, saveProduct, productSchema, createUser, userSchema, setUserActive, resetUserPassword, acceptTerms } from "@/domain/registry";
@@ -811,6 +811,16 @@ export async function darDiasAction(fd: FormData): Promise<ActionState> {
     feito = await darDias(admin, darDiasSchema.parse({ tenantId: str(fd, "tenantId"), dias: str(fd, "dias"), motivo: str(fd, "motivo") }));
   }, ["/admin"]);
   return r?.error ? r : { ok: `${feito.nome} com acesso até ${dataBR(feito.ate)}.` };
+}
+
+export async function ligarWhatsappAction(fd: FormData): Promise<ActionState> {
+  const admin = await requireAdmin();
+  const numeroId = str(fd, "numeroId").replace(/\s/g, "");
+  let nome = "";
+  const r = await run(async () => {
+    nome = await ligarWhatsapp(admin, whatsappSchema.parse({ tenantId: str(fd, "tenantId"), numeroId }));
+  }, ["/admin"]);
+  return r?.error ? r : { ok: numeroId ? `Robô de ${nome} ligado ao WhatsApp.` : `Robô de ${nome} desligado do WhatsApp.` };
 }
 
 // o aviso aparece no topo do sistema de todas as empresas: revalida o layout delas também

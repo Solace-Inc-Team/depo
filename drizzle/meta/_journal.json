@@ -239,6 +239,13 @@
       "when": 1795071410680,
       "tag": "0033_aviso_plataforma",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1795089152070,
+      "tag": "0034_whatsapp_numero",
+      "breakpoints": true
     }
   ]
 }

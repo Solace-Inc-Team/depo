@@ -1,7 +1,7 @@
 import { requireAdmin } from "@/lib/auth";
 import { DELETE_DEADLINE_DAYS, avisoAtual, listDeletions, listDiasDados, listTenants, recebidoNoMes } from "@/domain/platform";
 import { ActionForm } from "@/components/action-form";
-import { createTenantAction, darDiasAction, deleteTenantAction, publicarAvisoAction, resetOwnerAccessAction, tirarAvisoAction, toggleTenantAction } from "@/app/actions";
+import { createTenantAction, darDiasAction, deleteTenantAction, ligarWhatsappAction, publicarAvisoAction, resetOwnerAccessAction, tirarAvisoAction, toggleTenantAction } from "@/app/actions";
 import { PopoverForm } from "@/components/popover-form";
 import { Empty, Money, PageHeader, fmtDateTime } from "@/components/ui";
 import { dataBR, situacaoAssinatura } from "@/lib/plano";
@@ -106,6 +106,13 @@ export default async function Admin() {
                               <input id={`dm-${t.id}`} name="motivo" required minLength={3} maxLength={200} autoComplete="off" placeholder="Ex.: Pix não caiu" className="input" />
                             </PopoverForm>
                           )}
+                          {/* o robô responde no número da Cloud API ligado aqui; vazio desliga */}
+                          <PopoverForm align="left" label={t.whatsappNumeroId ? "WhatsApp ligado" : "Ligar WhatsApp"} action={ligarWhatsappAction} submit="Salvar">
+                            <input type="hidden" name="tenantId" value={t.id} />
+                            <label className="label mb-0" htmlFor={`wa-${t.id}`}>ID do número na Meta</label>
+                            <input id={`wa-${t.id}`} name="numeroId" inputMode="numeric" defaultValue={t.whatsappNumeroId ?? ""} pattern="[0-9\s]*" maxLength={40} autoComplete="off" placeholder="Phone Number ID" className="input num" />
+                            <p className="text-[13px] text-muted">Deixe vazio para desligar.</p>
+                          </PopoverForm>
                           <PopoverForm align="left" label="Redefinir acesso" action={resetOwnerAccessAction} submit="Redefinir" confirm="Redefinir o acesso do dono? A senha dele será trocada e a verificação em duas etapas, desligada.">
                             <input type="hidden" name="tenantId" value={t.id} />
                             <label className="label mb-0" htmlFor={`o-${t.id}`}>Senha nova do dono</label>

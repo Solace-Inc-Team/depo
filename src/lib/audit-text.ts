@@ -277,6 +277,9 @@ export function descrever(action: string, dados: Dados, nomes: Record<string, st
       l.titulo = `Solace liberou ${Number(d.dias)} ${Number(d.dias) === 1 ? "dia" : "dias"} de acesso`;
       det(`Acesso até ${String(d.ate ?? "").split("-").reverse().join("/")}`);
       break;
+    case "whatsapp.numero":
+      l.titulo = d.numeroId ? "Solace ligou o robô ao número do WhatsApp" : "Solace desligou o robô do WhatsApp";
+      break;
     case "assinatura.pago":
       l.titulo = "Mensalidade do depo paga";
       det(`Valor ${din(d.valor)}`);
