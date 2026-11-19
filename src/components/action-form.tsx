@@ -233,6 +233,12 @@ export function ActionForm({
             try {
               r = await action(fd);
             } catch (e) {
+              // a ação deu certo e troca de tela (redirect chega aqui como erro): o botão fica no ✓ até a tela nova
+              if (String((e as { digest?: unknown })?.digest ?? "").startsWith("NEXT_REDIRECT")) {
+                progress(false);
+                button?.setAttribute("data-state", "done");
+                throw e;
+              }
               progress(false);
               soltar(button);
               // sem sinal o fetch da ação falha: mantém a tela e o que foi digitado em vez de cair na página de erro
@@ -252,6 +258,8 @@ export function ActionForm({
             setError(r?.error);
             if (r?.error) {
               soltar(button);
+              // campo que reage ao erro do servidor (o código de verificação limpa e treme)
+              form.dispatchEvent(new Event("acao-erro"));
               return;
             }
             button?.setAttribute("data-state", "done");
