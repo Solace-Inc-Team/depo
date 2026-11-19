@@ -24,7 +24,8 @@ import { openShift, closeShift, addCashEntry, cashEntrySchema, voidCashEntry, re
 import { receivePurchase, markDamaged, runInventory, saveSupplier, supplierSchema, transferirEstoque } from "@/domain/stock";
 import { receivePayment, paymentSchema, voidPayment } from "@/domain/receivables";
 import { assinarNoCartao, cancelarCartao, pixAssinatura } from "@/domain/assinatura";
-import { cadastrarEmpresa, cadastroSchema, createTenant, deleteTenant, newTenantSchema, resetOwnerAccess, setTenantActive } from "@/domain/platform";
+import { avisoSchema, cadastrarEmpresa, cadastroSchema, createTenant, darDias, darDiasSchema, deleteTenant, newTenantSchema, publicarAviso, resetOwnerAccess, setTenantActive, tirarAviso } from "@/domain/platform";
+import { dataBR } from "@/lib/plano";
 import { resolveError, sendTestAlert } from "@/domain/monitoring";
 import { addAddress, addressSchema, removeAddress, saveSettings, settingsSchema, anonymizeCustomer, saveCustomer, customerSchema, saveProduct, productSchema, createUser, userSchema, setUserActive, resetUserPassword, acceptTerms } from "@/domain/registry";
 import { TERMS_VERSION } from "@/lib/legal";
@@ -801,6 +802,26 @@ export async function deleteTenantAction(fd: FormData): Promise<ActionState> {
     total = Object.values(counts).reduce((s, n) => s + n, 0);
   }, ["/admin"]);
   return r?.error ? r : { ok: `Empresa excluída: ${total} registros apagados.` };
+}
+
+export async function darDiasAction(fd: FormData): Promise<ActionState> {
+  const admin = await requireAdmin();
+  let feito = { nome: "", ate: "" };
+  const r = await run(async () => {
+    feito = await darDias(admin, darDiasSchema.parse({ tenantId: str(fd, "tenantId"), dias: str(fd, "dias"), motivo: str(fd, "motivo") }));
+  }, ["/admin"]);
+  return r?.error ? r : { ok: `${feito.nome} com acesso até ${dataBR(feito.ate)}.` };
+}
+
+// o aviso aparece no topo do sistema de todas as empresas: revalida o layout delas também
+export async function publicarAvisoAction(fd: FormData): Promise<ActionState> {
+  const admin = await requireAdmin();
+  return run(() => publicarAviso(admin, avisoSchema.parse({ texto: str(fd, "texto"), ate: str(fd, "ate") })), ["/admin", "/"], "Aviso publicado para todas as empresas.");
+}
+
+export async function tirarAvisoAction(): Promise<ActionState> {
+  const admin = await requireAdmin();
+  return run(() => tirarAviso(admin), ["/admin", "/"], "Aviso tirado.");
 }
 
 export async function criarFilialAction(fd: FormData) {

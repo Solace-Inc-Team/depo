@@ -1860,3 +1860,40 @@ test("relatórios novos: pedidos por hora, clientes com compras e venda por prod
   assert.ok((vendidos.find((v) => v.productId === A.product.id)?.n ?? 0) >= 6);
   assert.equal((await m.q.vendidosPorProduto(B.t.id, B.branch.id, 28)).some((v) => v.productId === A.product.id), false);
 });
+
+test("admin dá dias de acesso com registro e publica o aviso para todas as empresas", async () => {
+  const { db } = m.db;
+  const { tenants, auditLog } = m.schema;
+  const { eq, and } = await import("drizzle-orm");
+  const { somarDias } = await import("@/lib/plano");
+  const { todayISO } = await import("@/lib/period");
+  const hoje = todayISO();
+  const admin = { ...A.ctx, platformAdmin: true, name: "", email: "", tenantName: "", totpEnabled: false, termsVersion: null, pagoAte: null, branchName: "", branches: [] };
+  const pagoAte = async () => (await db.select({ p: tenants.pagoAte }).from(tenants).where(eq(tenants.id, B.t.id)))[0].p;
+  const [{ antes }] = await db.select({ antes: tenants.pagoAte }).from(tenants).where(eq(tenants.id, B.t.id));
+
+  // sem cobrança: não tem o que estender
+  await db.update(tenants).set({ pagoAte: null }).where(eq(tenants.id, B.t.id));
+  await assert.rejects(m.platform.darDias(admin, { tenantId: B.t.id, dias: 7, motivo: "teste" }), /não tem cobrança/);
+  // vencida: conta de hoje, não do vencimento (senão os dias dados já nasciam gastos)
+  await db.update(tenants).set({ pagoAte: somarDias(hoje, -5) }).where(eq(tenants.id, B.t.id));
+  await m.platform.darDias(admin, { tenantId: B.t.id, dias: 7, motivo: "Pix não caiu" });
+  assert.equal(await pagoAte(), somarDias(hoje, 7));
+  // em dia: soma ao vencimento
+  await m.platform.darDias(admin, { tenantId: B.t.id, dias: 3, motivo: "cortesia" });
+  assert.equal(await pagoAte(), somarDias(hoje, 10));
+  const reg = await db.select().from(auditLog).where(and(eq(auditLog.tenantId, B.t.id), eq(auditLog.action, "assinatura.dias")));
+  assert.equal(reg.length, 2);
+  assert.equal((reg.find((r) => (r.data as { dias: number }).dias === 3)!.data as { motivo: string }).motivo, "cortesia");
+  // quem não é admin não dá dias
+  await assert.rejects(m.platform.darDias({ ...admin, platformAdmin: false }, { tenantId: B.t.id, dias: 1, motivo: "x" }), /Sem permissão/);
+  await db.update(tenants).set({ pagoAte: antes }).where(eq(tenants.id, B.t.id));
+
+  await assert.rejects(m.platform.publicarAviso(admin, { texto: "Manutenção", ate: somarDias(hoje, -1) }), /já passou/);
+  await m.platform.publicarAviso(admin, { texto: "Manutenção domingo", ate: hoje });
+  assert.equal((await m.platform.avisoAtual())?.texto, "Manutenção domingo", "com a data de hoje, vale até o fim do dia");
+  await m.platform.publicarAviso(admin, { texto: "Novidade no sistema", ate: "" });
+  assert.equal((await m.platform.avisoAtual())?.texto, "Novidade no sistema", "o novo substitui o anterior");
+  await m.platform.tirarAviso(admin);
+  assert.equal(await m.platform.avisoAtual(), null);
+});

@@ -3,6 +3,8 @@ import Link from "next/link";
 import { TemaBotao } from "@/components/tema-botao";
 import { Clock3, MapPin, Phone } from "lucide-react";
 import { requireUser } from "@/lib/auth";
+import { avisoAtual } from "@/domain/platform";
+import { AvisoPlataforma } from "@/components/aviso-plataforma";
 import { getShift, itemsForOrders, listOrders, openShiftFor, getOrder } from "@/domain/queries";
 import { conferirPixMp, pixDoPedido } from "@/domain/pix";
 import { PixBox } from "@/components/pix-box";
@@ -29,6 +31,7 @@ export default async function Entregador() {
   );
   const items = await itemsForOrders(user.tenantId, route.map((o) => o.id));
   const done = s ? s.orders.filter((o) => o.status === "entregue") : [];
+  const aviso = await avisoAtual();
 
   return (
     <main className="mx-auto min-h-screen max-w-lg">
@@ -44,6 +47,7 @@ export default async function Entregador() {
       </header>
 
       <div className="pagina px-4 py-6">
+        {aviso && <AvisoPlataforma id={aviso.id} texto={aviso.texto} />}
         <p className="text-muted">Olá, {user.name.split(" ")[0]}</p>
         {!s ? (
           <div className="panel mt-4 flex flex-col items-center px-6 py-12 text-center">

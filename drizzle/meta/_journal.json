@@ -232,6 +232,13 @@
       "when": 1795012745754,
       "tag": "0032_indices_consultas",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1795071410680,
+      "tag": "0033_aviso_plataforma",
+      "breakpoints": true
     }
   ]
 }

@@ -18,6 +18,8 @@ import { AtalhoBusca } from "@/components/atalho-busca";
 import { secoesConfig } from "./configuracoes/secoes";
 import { Suspense } from "react";
 import { dataBR, situacaoAssinatura } from "@/lib/plano";
+import { avisoAtual } from "@/domain/platform";
+import { AvisoPlataforma } from "@/components/aviso-plataforma";
 import { todayISO } from "@/lib/period";
 
 const initials = (name: string) =>
@@ -56,7 +58,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       : null;
 
   // pedidos esperando saída: o selo no item Entregas (o layout volta a contar a cada ação e a cada atualização da tela)
-  const fila = await countOpenOrders(user.tenantId, user.branchId);
+  const [fila, aviso] = await Promise.all([countOpenOrders(user.tenantId, user.branchId), avisoAtual()]);
 
   const groups: NavGroup[] = [
     {
@@ -189,6 +191,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       </aside>
       {/* embaixo, espaço para a barra de navegação do celular e para a barra de gestos do iPhone */}
       <main id="conteudo" tabIndex={-1} className="main-app outline-none mx-auto w-full max-w-6xl px-4 2xl:max-w-[1600px] pt-6 lg:px-10 lg:py-10">
+        {/* aviso da Solace para todas as empresas (manutenção, novidade) */}
+        {aviso && <AvisoPlataforma id={aviso.id} texto={aviso.texto} />}
         <PageTransition>{children}</PageTransition>
         <AtalhoBusca />
       </main>

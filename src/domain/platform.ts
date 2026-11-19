@@ -1,8 +1,8 @@
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, gt, gte, isNull, or, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { branches, products, sessions, tenantDeletions, tenants, users } from "@/db/schema";
+import { assinaturaPagamentos, auditLog, avisosPlataforma, branches, products, sessions, tenantDeletions, tenants, users } from "@/db/schema";
 import { DomainError } from "@/lib/ctx";
 import { hashPassword } from "@/lib/password";
 import type { SessionUser } from "@/lib/auth";
@@ -197,6 +197,9 @@ export async function listTenants(admin: SessionUser) {
       people: sql<number>`(select count(*)::int from users u where u.tenant_id = tenants.id and u.active)`,
       orders30: sql<number>`(select count(*)::int from orders o where o.tenant_id = tenants.id and o.created_at >= ${since.toISOString()})`,
       lastOrder: sql<string | null>`(select max(o.created_at) from orders o where o.tenant_id = tenants.id)`,
+      // já pagou alguma mensalidade: sem isso, o "pago até" é o fim do teste grátis
+      pagou: sql<boolean>`exists (select 1 from assinatura_pagamentos p where p.tenant_id = tenants.id and p.pago_em is not null)`,
+      cartao: sql<boolean>`${tenants.mpAssinaturaId} is not null`,
     })
     .from(tenants)
     .where(sql`${tenants.id} <> ${admin.tenantId}`)
@@ -222,4 +225,89 @@ export async function ensurePlatformAdmin(email: string, password: string) {
     });
   });
   return true;
+}
+
+/** Quanto entrou de mensalidade neste mês (Pix e cartão), de todas as empresas. */
+export async function recebidoNoMes(admin: SessionUser) {
+  assertAdmin(admin);
+  const inicio = `${todayISO().slice(0, 8)}01`;
+  const [r] = await db
+    .select({ cents: sql<number>`coalesce(sum(${assinaturaPagamentos.valorCents}), 0)::int`, n: sql<number>`count(*)::int` })
+    .from(assinaturaPagamentos)
+    .where(gte(assinaturaPagamentos.pagoEm, new Date(`${inicio}T00:00:00-03:00`)));
+  return r;
+}
+
+export const darDiasSchema = z.object({
+  tenantId: z.uuid(),
+  dias: z.coerce.number().int("Use um número inteiro de dias.").min(1, "Dê pelo menos 1 dia.").max(90, "No máximo 90 dias de uma vez."),
+  motivo: z.string().trim().min(3, "Escreva o motivo, para o registro.").max(200),
+});
+
+/**
+ * Atendimento: mais dias de acesso para uma empresa (teste estendido, Pix que deu problema, cortesia). Conta do
+ * maior entre o vencimento e hoje, como a mensalidade, e fica registrado quem deu, quanto e por quê.
+ */
+export async function darDias(admin: SessionUser, input: z.infer<typeof darDiasSchema>) {
+  assertAdmin(admin);
+  const hoje = todayISO();
+  return db.transaction(async (tx) => {
+    const [t] = await tx.select({ pagoAte: tenants.pagoAte, name: tenants.name }).from(tenants).where(eq(tenants.id, input.tenantId));
+    if (!t) throw new DomainError("Empresa não encontrada.");
+    if (!t.pagoAte) throw new DomainError("Essa empresa não tem cobrança: o acesso dela não vence.");
+    const ate = somarDias(t.pagoAte > hoje ? t.pagoAte : hoje, input.dias);
+    await tx.update(tenants).set({ pagoAte: ate }).where(eq(tenants.id, input.tenantId));
+    await audit(tx, { tenantId: input.tenantId, userId: admin.userId }, "assinatura.dias", "tenant", input.tenantId, { dias: input.dias, motivo: input.motivo, de: t.pagoAte, ate });
+    return { nome: t.name, ate };
+  });
+}
+
+/** As últimas liberações de dias, para o registro no painel. */
+export async function listDiasDados(admin: SessionUser) {
+  assertAdmin(admin);
+  return db
+    .select({ id: auditLog.id, empresa: tenants.name, por: users.name, data: auditLog.data, em: auditLog.createdAt })
+    .from(auditLog)
+    .innerJoin(tenants, eq(tenants.id, auditLog.tenantId))
+    .leftJoin(users, eq(users.id, auditLog.userId))
+    .where(eq(auditLog.action, "assinatura.dias"))
+    .orderBy(desc(auditLog.createdAt))
+    .limit(20);
+}
+
+/** O aviso da Solace em vigor para todas as empresas, ou nada. */
+export async function avisoAtual() {
+  const [a] = await db
+    .select({ id: avisosPlataforma.id, texto: avisosPlataforma.texto, ate: avisosPlataforma.ate })
+    .from(avisosPlataforma)
+    .where(and(isNull(avisosPlataforma.removidoEm), or(isNull(avisosPlataforma.ate), gt(avisosPlataforma.ate, new Date()))))
+    .orderBy(desc(avisosPlataforma.createdAt))
+    .limit(1);
+  return a ?? null;
+}
+
+export const avisoSchema = z.object({
+  texto: z.string().trim().min(5, "Escreva o aviso.").max(160, "Até 160 caracteres: a faixa precisa caber numa linha."),
+  // vazio: fica até tirar
+  ate: z.union([z.literal(""), z.iso.date("Data inválida.")]),
+});
+
+/** Publica o aviso (substitui o anterior) e, com data, ele sai sozinho no fim daquele dia. */
+export async function publicarAviso(admin: SessionUser, input: z.infer<typeof avisoSchema>) {
+  assertAdmin(admin);
+  if (input.ate && input.ate < todayISO()) throw new DomainError("A data já passou.");
+  await db.transaction(async (tx) => {
+    await tx.update(avisosPlataforma).set({ removidoEm: new Date() }).where(isNull(avisosPlataforma.removidoEm));
+    await tx.insert(avisosPlataforma).values({
+      texto: input.texto,
+      // até o fim daquele dia, no horário de Brasília
+      ate: input.ate ? new Date(Date.parse(`${input.ate}T00:00:00-03:00`) + 864e5) : null,
+      criadoPor: admin.userId,
+    });
+  });
+}
+
+export async function tirarAviso(admin: SessionUser) {
+  assertAdmin(admin);
+  await db.update(avisosPlataforma).set({ removidoEm: new Date() }).where(isNull(avisosPlataforma.removidoEm));
 }

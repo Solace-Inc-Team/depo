@@ -272,6 +272,11 @@ export function descrever(action: string, dados: Dados, nomes: Record<string, st
     case "empresa.mp_desconectar":
       l.titulo = "Desconectou o Mercado Pago";
       break;
+    // o motivo é anotação interna da Solace: o dono vê só quantos dias e até quando
+    case "assinatura.dias":
+      l.titulo = `Solace liberou ${Number(d.dias)} ${Number(d.dias) === 1 ? "dia" : "dias"} de acesso`;
+      det(`Acesso até ${String(d.ate ?? "").split("-").reverse().join("/")}`);
+      break;
     case "assinatura.pago":
       l.titulo = "Mensalidade do depo paga";
       det(`Valor ${din(d.valor)}`);

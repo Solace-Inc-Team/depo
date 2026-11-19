@@ -506,6 +506,17 @@ export const errorEvents = pgTable("error_events", {
   resolvedAt: timestamp("resolved_at", { withTimezone: true }),
 });
 
+// aviso da Solace para todas as empresas (manutenção, novidade): uma faixa no topo do sistema. Vale o mais novo
+// ainda em vigor; tirado pelo admin, ganha removido_em. Não é dado de empresa, então fica fora da RLS
+export const avisosPlataforma = pgTable("avisos_plataforma", {
+  id: id(),
+  texto: text("texto").notNull(),
+  ate: timestamp("ate", { withTimezone: true }),
+  removidoEm: timestamp("removido_em", { withTimezone: true }),
+  criadoPor: uuid("criado_por").references(() => users.id),
+  createdAt: createdAt(),
+});
+
 // saldo = soma das movimentações; driver_id null = loja
 export const stockMovements = pgTable(
   "stock_movements",
