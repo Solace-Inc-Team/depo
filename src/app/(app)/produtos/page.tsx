@@ -16,53 +16,60 @@ function Fields({ p = {}, rotulos = true }: { p?: P; rotulos?: boolean }) {
   const rotulo = rotulos ? "label" : "label lg:sr-only";
   return (
     <>
-      <div className="min-w-48 flex-[2]">
+      <div className="col-span-2 lg:col-span-1">
         <label className={rotulo} htmlFor={`n-${k}`}>Nome</label>
         <input id={`n-${k}`} name="name" required defaultValue={p.name} className="input" />
       </div>
-      <div className="w-32">
+      <div>
         <label className={rotulo} htmlFor={`p-${k}`}>Preço</label>
         <input id={`p-${k}`} name="price" required inputMode="decimal" data-mascara="dinheiro" defaultValue={p.priceCents !== undefined ? centsToInput(p.priceCents) : ""} className="input" />
       </div>
-      <div className="w-32">
+      <div>
         <label className={rotulo} htmlFor={`c-${k}`}>Preço do vasilhame</label>
         <input id={`c-${k}`} name="containerPrice" inputMode="decimal" data-mascara="dinheiro" maxLength={12} defaultValue={p.containerPriceCents ? centsToInput(p.containerPriceCents) : ""} className="input" placeholder="0,00" />
       </div>
-      <div className="w-28">
+      <div>
         <label className={rotulo} htmlFor={`m-${k}`}>Estoque mínimo</label>
         <input id={`m-${k}`} name="minStock" type="number" inputMode="numeric" min={0} defaultValue={p.minStock ?? 0} className="input" />
       </div>
-      {/* no computador a caixa tem a altura do campo, para o texto alinhar com os valores; no celular, altura de toque */}
-      <label className="flex min-h-11 items-center gap-2 lg:min-h-9">
-        <Alternar name="returnable" defaultChecked={p.returnable ?? true} /> Retornável
-      </label>
     </>
   );
 }
+
+// no computador a caixa tem a altura do campo, para o texto alinhar com os valores; no celular, altura de toque
+const interruptor = "flex min-h-11 items-center gap-2 lg:min-h-9";
+const Retornavel = ({ p = {} }: { p?: P }) => (
+  <label className={interruptor}>
+    <Alternar name="returnable" defaultChecked={p.returnable ?? true} /> Retornável
+  </label>
+);
+// celular: duas colunas iguais, com os interruptores empilhados ao lado do estoque. Computador: as mesmas colunas
+// nas linhas e no "Novo produto", para os campos ficarem uns embaixo dos outros
+const grade = "grid grid-cols-2 items-start gap-3 lg:items-end lg:grid-cols-[minmax(0,1fr)_8rem_8rem_7rem_8rem_10rem]";
 
 export default async function Produtos() {
   const user = await requireUser("dono");
   const products = await listProducts(user.tenantId);
   return (
     <>
-      <PageHeader title="Produtos e preços" />
-      <p className="-mt-3 mb-6 max-w-2xl text-muted">
-        Preço novo vale só para os próximos pedidos. Salva sozinho ao sair do campo.
-      </p>
+      <PageHeader title="Produtos e preços" description="Preço novo vale só para os próximos pedidos. Salva sozinho ao sair do campo." />
       {/* a divisória vai na seção: cada linha é um formulário, e a borda no fieldset de dentro nunca aparecia */}
       <section className="panel mb-6 divide-y divide-line">
         {products.map((p, i) => (
           // cada linha salva sozinha ao sair do campo que mudou, como a caixa "Clientes podem pedir pelo link"
-          <ActionForm key={p.id} action={saveProductAction} salvaAoMudar className={`flex flex-wrap items-end gap-3 p-4 ${p.active ? "" : "opacity-60"}`}>
+          <ActionForm key={p.id} action={saveProductAction} salvaAoMudar className={`${grade} p-4 ${p.active ? "" : "opacity-60"}`}>
             <input type="hidden" name="id" value={p.id} />
             <Fields p={p} rotulos={i === 0} />
-            <label className="flex min-h-11 items-center gap-2 lg:min-h-9">
-              <Alternar name="active" defaultChecked={p.active} /> À venda
-            </label>
+            <div className="flex flex-col lg:contents">
+              <Retornavel p={p} />
+              <label className={interruptor}>
+                <Alternar name="active" defaultChecked={p.active} /> À venda
+              </label>
+            </div>
             {/* preço que veio com o cadastro: se já está certo, um clique confirma (salvar tira a marca) */}
             {/* o aviso fica junto do botão: embaixo do preço ele empurrava só aquela coluna e desalinhava a linha */}
             {p.precoSugerido && (
-              <span className="flex min-h-11 items-center gap-2 lg:min-h-9">
+              <span className="col-span-2 flex min-h-11 items-center gap-2 lg:col-span-full lg:min-h-9 lg:justify-end">
                 <span className="text-[12px] whitespace-nowrap text-warn-fg">Preço sugerido</span>
                 <button className="btn btn-sm tap">Preço certo</button>
               </span>
@@ -72,9 +79,12 @@ export default async function Produtos() {
       </section>
       <section className="panel p-4">
         <h2 className="h2 mb-3">Novo produto</h2>
-        <ActionForm action={saveProductAction} className="flex flex-wrap items-end gap-3" reset>
+        <ActionForm action={saveProductAction} className={grade} reset>
           <Fields />
-          <button className="btn btn-primary">Cadastrar produto</button>
+          <div className="flex flex-col lg:contents">
+            <Retornavel />
+          </div>
+          <button className="btn btn-primary col-span-2 lg:col-span-1">Cadastrar produto</button>
         </ActionForm>
       </section>
     </>

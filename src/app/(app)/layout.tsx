@@ -97,7 +97,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
     <div className="app-shell lg:grid lg:min-h-screen lg:grid-cols-[15rem_minmax(0,1fr)]">
       {/* quem usa teclado não precisa passar pelos 14 itens do menu em toda tela */}
       <a href="#conteudo" className="btn sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:h-10 focus:bg-bg focus:px-4 focus:shadow-lg">Pular para o conteúdo</a>
-      <aside aria-label="Menu" className="relative z-20 border-b border-line lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:border-r lg:border-b-0">
+      <aside aria-label="Menu" className="relative z-20 border-b border-line max-lg:flex max-lg:items-center lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:border-r lg:border-b-0">
         <div className="flex items-center justify-between gap-3 px-4 pt-4 pb-3 lg:px-5 lg:pt-5">
           <MarcaDaSessao />
           {/* o tema fica no alto nas duas larguras; Sair aqui só no celular (no computador está no rodapé) */}
@@ -135,7 +135,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         </div>
         {user.branches.length > 1 && user.role === "dono" ? (
           // o dono com mais de uma filial troca de filial aqui: a empresa e a filial num botão só, em qualquer largura
-          <div className="px-2.5 pb-3 lg:pb-4">
+          // no celular fica na mesma linha da marca: em cima dela, empurrava o título da tela ~60 px para baixo
+          <div className="min-w-0 px-2.5 max-lg:flex-1 max-lg:py-2 lg:pb-4">
             <SeletorFilial empresa={user.tenantName} atual={user.branchId} filiais={user.branches} />
           </div>
         ) : (

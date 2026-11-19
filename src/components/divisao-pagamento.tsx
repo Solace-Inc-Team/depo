@@ -3,7 +3,8 @@ import { formatBRL } from "@/lib/money";
 type Parte = { rotulo: string; cents: number };
 
 // uma cor só, do mais forte (dinheiro na mão) ao mais apagado (fiado, que ainda não entrou)
-const tons = ["bg-marca", "bg-marca/60", "bg-marca/35", "bg-muted/40"];
+// degraus bem separados: com 60% o Pix ficava quase igual ao Dinheiro ao lado
+const tons = ["bg-marca", "bg-marca/45", "bg-marca/20", "bg-muted/40"];
 
 /**
  * Uma barra fina dividida na proporção de cada forma de pagamento, com o nome, o valor e a parte

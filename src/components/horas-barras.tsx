@@ -46,8 +46,8 @@ export function HorasBarras({ porHora, dias }: { porHora: { hora: number; n: num
       <div aria-hidden="true" className="mt-1 flex gap-0.5">
         {horas.map((h) => (
           <span key={h.hora} className={`flex-1 text-center text-[10.5px] ${h.hora >= p.de && h.hora < p.ate ? "font-medium text-fg" : "text-muted"}`}>
-            {/* rótulo a cada 3 horas, e sempre nas do pico: mais que isso não cabe no celular */}
-            {h.hora % 3 === 0 || h.hora === p.de ? `${h.hora}h` : ""}
+            {/* rótulo a cada 3 horas, e sempre no começo do pico; o da hora vizinha ao pico sai, senão os dois encostam ("11h12h") */}
+            {h.hora === p.de || (h.hora % 3 === 0 && Math.abs(h.hora - p.de) > 1) ? `${h.hora}h` : ""}
           </span>
         ))}
       </div>

@@ -192,18 +192,18 @@ export default async function Entregas() {
               {queue.map((o) => (
                 <Card key={o.id} id={o.id}>
                   <li className={`border-b border-line px-4 py-3 last:border-0 ${minutesSince(o.createdAt) < 1 ? "row-new" : ""}`}>
-                    <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                    <div className="flex items-baseline justify-between gap-x-3">
                       {podeJuntar && (
                         // o rótulo em volta dá ao toque 44 px, sem aumentar a caixa nem afastar o título
                         <label className="-m-[13px] flex shrink-0 cursor-pointer self-center p-[13px]">
                           <Marcar form={FORM_GRUPO} name="orderId" value={o.id} aria-label={`Marcar o pedido #${o.number} para sair junto`} />
                         </label>
                       )}
-                      <Link href={`/pedidos/${o.id}`} className="alvo mr-auto min-w-0 font-semibold wrap-anywhere hover:text-accent">
+                      <Link href={`/pedidos/${o.id}`} className="alvo mr-auto min-w-0 truncate font-semibold hover:text-accent">
                         <span className="num text-muted">#{o.number}</span> {o.customerName ?? "Cliente"}
                         {o.origin === "portal" && <SiteBadge />}
                       </Link>
-                      <span className={`text-[13px] ${late(o) ? "font-semibold text-danger" : "text-muted"}`}>
+                      <span className={`shrink-0 whitespace-nowrap text-[13px] ${late(o) ? "font-semibold text-danger" : "text-muted"}`}>
                         {late(o) ? "Atrasado, " : ""}{ha(minutesSince(o.createdAt))}
                       </span>
                     </div>
@@ -236,7 +236,7 @@ export default async function Entregas() {
           )}
         </section>
 
-        <section className="panel">
+        <section className="panel lg:self-start">
           {/* a lista é de quem está em turno (livre ou na rua); o número é de pedidos que estão na rua */}
           <h2 className="h2 flex items-baseline justify-between gap-3 border-b border-line px-4 py-3">
             Entregadores em turno

@@ -401,7 +401,7 @@ export function NewOrderForm({
         <section className="panel grid gap-3 p-4 sm:grid-cols-2">
           <div className="sm:col-span-2">
             <label className="label" htmlFor="notes">Observações</label>
-            <input id="notes" name="notes" maxLength={500} className="input" placeholder="Ex.: deixar na portaria, tocar o interfone 12" />
+            <input id="notes" name="notes" maxLength={500} className="input" placeholder="Ex.: deixar na portaria" />
           </div>
           {/* trocar Entrega e Balcão recolhe e abre os campos da entrega no lugar */}
           <Aparece quando={mode === "entrega"} className="space-y-3">

@@ -18,11 +18,11 @@ export function SaidaEntregador({
   return (
     <>
       <label className="sr-only" htmlFor={id}>Entregador</label>
-      <select id={id} name="driverId" className="input min-w-40 flex-1" required value={escolhido} onChange={(e) => setEscolhido(e.target.value)}>
+      <select id={id} name="driverId" className="input min-w-32 flex-1" required value={escolhido} onChange={(e) => setEscolhido(e.target.value)}>
         <option value="" disabled>Entregador</option>
         {entregadores.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
       </select>
-      <button className="btn btn-primary">{nome ? `Saiu com ${nome}` : "Saiu para entrega"}</button>
+      <button className="btn btn-primary min-w-[9.75rem] justify-center">{nome ? `Saiu com ${nome}` : "Saiu para entrega"}</button>
     </>
   );
 }

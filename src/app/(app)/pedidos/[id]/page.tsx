@@ -265,11 +265,11 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
                 <ActionForm action={dispatchAction} className="flex flex-wrap gap-2">
                   <input type="hidden" name="orderId" value={o.id} />
                   <label className="sr-only" htmlFor="driverId">Entregador</label>
-                  <select id="driverId" name="driverId" className="input flex-1" required defaultValue="">
+                  <select id="driverId" name="driverId" className="input min-w-0 flex-1 max-sm:basis-full" required defaultValue="">
                     <option value="" disabled>Escolha o entregador</option>
                     {onShift.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
                   </select>
-                  <button className="btn btn-primary">Saiu para entrega</button>
+                  <button className="btn btn-primary max-sm:w-full">Saiu para entrega</button>
                 </ActionForm>
               ) : (
                 <p className="text-muted">Nenhum entregador com turno aberto. <Link href="/caixa" className="text-accent underline">Abrir turno</Link></p>
@@ -297,11 +297,11 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
               <ActionForm action={reassignAction} className="flex flex-wrap gap-2">
                 <input type="hidden" name="orderId" value={o.id} />
                 <label className="sr-only" htmlFor="newDriver">Novo entregador</label>
-                <select id="newDriver" name="driverId" className="input flex-1" required defaultValue="">
+                <select id="newDriver" name="driverId" className="input min-w-0 flex-1 max-sm:basis-full" required defaultValue="">
                   <option value="" disabled>Escolha o entregador</option>
                   {onShift.filter((d) => d.id !== o.driverId).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
                 </select>
-                <button className="btn">Passar pedido</button>
+                <button className="btn max-sm:w-full">Passar pedido</button>
               </ActionForm>
             </section>
           )}

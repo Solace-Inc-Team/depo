@@ -49,7 +49,7 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
       </p>
 
       <section className="panel mb-6 p-5 sm:p-7" aria-label="Conta do acerto">
-        <div className="flex flex-wrap items-end gap-x-6 gap-y-4">
+        <div className="flex flex-wrap items-end gap-x-6 gap-y-4 lg:justify-between">
           <Term label="Troco inicial" cents={s.openingCashCents} />
           <Op>+</Op>
           <Term label="Vendas em dinheiro" cents={cashSales} />
@@ -69,7 +69,7 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
           <Term label="Deve apresentar" cents={s.expected} strong />
         </div>
         {!isOpen && (
-          <div className="mt-6 grid items-end gap-x-6 gap-y-4 border-t border-line pt-6 sm:grid-cols-[auto_auto_auto]">
+          <div className="mt-6 grid items-end gap-x-6 gap-y-4 border-t border-line pt-6 sm:grid-cols-[auto_auto_auto] lg:justify-between">
             <Term label="Contado no acerto" cents={s.countedCashCents ?? 0} />
             <Op>→</Op>
             <div>
@@ -326,7 +326,10 @@ function Term({ label, cents, strong }: { label: string; cents: number; strong?:
   return (
     <div>
       <p className="text-muted">{label}</p>
-      <Money cents={cents} className={`font-semibold tracking-[-0.03em] ${strong ? "text-3xl text-accent sm:text-4xl" : "text-2xl sm:text-3xl"}`} />
+      {/* a caixa do número tem a mesma altura em todos: o valor maior não sobe o rótulo dele */}
+      <p className="flex h-9 items-end sm:h-10">
+        <Money cents={cents} className={`font-semibold leading-none tracking-[-0.03em] ${strong ? "text-3xl text-accent sm:text-4xl" : "text-2xl sm:text-3xl"}`} />
+      </p>
     </div>
   );
 }

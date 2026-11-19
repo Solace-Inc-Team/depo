@@ -10,6 +10,10 @@ export function CountInput({ name, label, expected }: { name: string; label: str
   return (
     <div className="flex items-center justify-end gap-2">
       <span className="text-[13px] text-muted">sistema: {expected}</span>
+      {/* o campo fica na ponta, embaixo do título da coluna; a diferença vem antes dele */}
+      <span aria-live="polite" className={`num w-10 text-right text-[13px] font-semibold ${diff < 0 ? "text-danger" : "text-ok"}`}>
+        {diff !== 0 && <NumberFlow value={diff} locales="pt-BR" format={{ signDisplay: "always" }} />}
+      </span>
       <input
         name={name}
         type="number"
@@ -21,9 +25,6 @@ export function CountInput({ name, label, expected }: { name: string; label: str
         onChange={(e) => setValue(e.target.value)}
         className="input num w-20 text-right"
       />
-      <span aria-live="polite" className={`num w-10 text-left text-[13px] font-semibold ${diff < 0 ? "text-danger" : "text-ok"}`}>
-        {diff !== 0 && <NumberFlow value={diff} locales="pt-BR" format={{ signDisplay: "always" }} />}
-      </span>
     </div>
   );
 }
