@@ -62,7 +62,8 @@ export default async function Fechamento({ searchParams }: PageProps<"/relatorio
           {user.tenantName}
           {user.branches.length > 1 && (filial ? `, filial ${user.branchName}` : ", todas as filiais")}
         </p>
-        <p className="text-xl font-semibold first-letter:uppercase">Fechamento de {longDay}</p>
+        {/* na tela o título e o campo de data já dizem isso; volta só no papel */}
+        <p className="hidden text-xl font-semibold first-letter:uppercase print:block">Fechamento de {longDay}</p>
         <p className="text-[13px] text-muted">Emitido em {fmtDateTime(new Date())} por {user.name}</p>
       </header>
 

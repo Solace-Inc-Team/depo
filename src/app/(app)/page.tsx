@@ -130,7 +130,6 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
           e logo depois o que pede atenção: a situação da loja cabe na primeira tela */}
       <div className="flex flex-col">
         <section className="panel mb-6 grid grid-cols-2 divide-line sm:grid-cols-3 sm:divide-x">
-          {/* cada número no alto e a explicação no pé: os três cartões ficam alinhados mesmo com o gráfico só no primeiro */}
           <div className="col-span-2 flex flex-col p-5 max-sm:p-4 sm:col-span-1">
             <p className="text-muted">Vendido {noDia}</p>
             <LiveNumber value={d.revenue} cents fromZero="once" className="text-[2rem] leading-tight font-semibold tracking-[-0.03em]" />
@@ -148,27 +147,20 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
           <div className="flex flex-col border-t border-line p-5 max-sm:border-r max-sm:p-4 sm:border-t-0">
             <p className="text-muted max-sm:text-[13px]">Dinheiro na rua<span className="max-sm:hidden"> agora</span></p>
             <LiveNumber value={d.cashInStreet} cents fromZero="once" className="text-[2rem] leading-tight font-semibold tracking-[-0.03em] max-sm:text-[1.375rem]" />
-            {/* com quem está o dinheiro: a mesma barra das formas de pagamento, um trecho por entregador */}
-            <DivisaoPagamento className="mt-4 max-sm:hidden" partes={d.openShifts.map((s) => ({ rotulo: s.driverName, cents: s.expected }))} />
-            <p className="mt-1 text-sm text-muted max-sm:text-[12.5px] sm:mt-auto">
+            {/* a linha de apoio logo embaixo do número, na mesma altura nos três cartões */}
+            <p className="mt-1 text-sm text-muted max-sm:text-[12.5px]">
               com {d.openShifts.length} {d.openShifts.length === 1 ? "entregador" : "entregadores"}
             </p>
+            {/* com quem está o dinheiro: a mesma barra das formas de pagamento, um trecho por entregador */}
+            <DivisaoPagamento className="mt-4 max-sm:hidden" partes={d.openShifts.map((s) => ({ rotulo: s.driverName, cents: s.expected }))} />
           </div>
           <div className="flex flex-col border-t border-line p-5 max-sm:p-4 sm:border-t-0">
             <p className="text-muted max-sm:text-[13px]">Fila agora</p>
             <p className="num text-[2rem] leading-tight font-semibold tracking-[-0.03em] max-sm:text-[1.375rem]">
               <LiveNumber value={d.pending} fromZero="once" /> <span className="text-xl font-medium text-muted max-sm:text-[15px]">aguardando</span>
             </p>
-            {/* no celular a barra dá lugar a uma linha só: o que já está em rota */}
-            <p className="mt-1 text-[12.5px] text-muted sm:hidden">{d.inRoute} em rota</p>
-            <DivisaoPagamento
-              className="mt-4 max-sm:hidden"
-              contagem
-              partes={[
-                { rotulo: "Aguardando saída", cents: d.pending },
-                { rotulo: "Em rota", cents: d.inRoute },
-              ]}
-            />
+            {/* uma linha só: a barra com legenda repetia o número de cima ("Aguardando saída 11") */}
+            <p className="mt-1 text-sm text-muted max-sm:text-[12.5px]">{d.inRoute} em rota</p>
           </div>
         </section>
 

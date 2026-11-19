@@ -73,10 +73,10 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
                 <tr key={d.day}>
                   <td className="num">{fmtDay(d.day)}</td>
                   <td data-rotulo="Pedidos" className="num text-right">{d.count}</td>
-                  <td data-rotulo="Dinheiro" className="text-right"><Money cents={d.cash} /></td>
-                  <td data-rotulo="Pix" className="text-right"><Money cents={d.pix} /></td>
-                  <td data-rotulo="Cartão" className="text-right"><Money cents={d.card} /></td>
-                  <td data-rotulo="Fiado" className="text-right"><Money cents={d.credit} /></td>
+                  <td data-rotulo="Dinheiro" data-zero={d.cash === 0 || undefined} className="text-right"><Money cents={d.cash} /></td>
+                  <td data-rotulo="Pix" data-zero={d.pix === 0 || undefined} className="text-right"><Money cents={d.pix} /></td>
+                  <td data-rotulo="Cartão" data-zero={d.card === 0 || undefined} className="text-right"><Money cents={d.card} /></td>
+                  <td data-rotulo="Fiado" data-zero={d.credit === 0 || undefined} className="text-right"><Money cents={d.credit} /></td>
                   <td data-rotulo="Total" className="text-right font-semibold"><Money cents={d.total} /></td>
                 </tr>
               ))}

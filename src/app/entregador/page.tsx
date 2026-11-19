@@ -56,15 +56,23 @@ export default async function Entregador() {
             <section className="panel mt-3 p-5" aria-label="Seu caixa">
               <p className="text-[13px] text-muted">Dinheiro que você deve ter agora</p>
               <LiveNumber value={s.expected} cents className="mt-1 text-[2.75rem] leading-none font-semibold tracking-[-0.035em]" />
-              <p className="mt-3 text-[13px] text-muted">
-                Troco <Money cents={s.openingCashCents} className="text-fg" /> + vendas em dinheiro{" "}
-                <Money cents={s.summary.dinheiro} className="text-fg" />
+              {/* a conta em linhas, como num recibo: em texto corrido era difícil de ler na rua */}
+              <dl className="mt-4 space-y-1 border-t border-line pt-3 text-[13px]">
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted">Troco</dt>
+                  <dd><Money cents={s.openingCashCents} /></dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-muted">Vendas em dinheiro</dt>
+                  <dd>+ <Money cents={s.summary.dinheiro} /></dd>
+                </div>
                 {s.handedOver + s.spent > 0 && (
-                  <>
-                    {" "}− já entregue ao caixa e gastos <Money cents={s.handedOver + s.spent} className="text-fg" />
-                  </>
+                  <div className="flex justify-between gap-3">
+                    <dt className="text-muted">Entregue ao caixa e gastos</dt>
+                    <dd>− <Money cents={s.handedOver + s.spent} /></dd>
+                  </div>
                 )}
-              </p>
+              </dl>
             </section>
 
             <h1 className="h2 mt-6 mb-3">

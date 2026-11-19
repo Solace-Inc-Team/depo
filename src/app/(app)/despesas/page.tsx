@@ -163,21 +163,20 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
                 </p>
               )}
             </div>
-            <ul className="space-y-1.5 border-t border-line p-5 text-[13px] sm:border-t-0 lg:border-t xl:border-t-0">
-              {byCategory.length ? (
-                byCategory.map(([cat, cents]) => (
-                  <li key={cat} className="flex items-center gap-3">
-                    <span className="w-36 shrink-0 truncate text-muted">{expenseCategories[cat as ExpenseCategory] ?? cat}</span>
-                    <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-subtle">
-                      <span className="block h-full rounded-full bg-fg/70" style={{ width: `${(cents / total) * 100}%` }} />
-                    </span>
-                    <Money cents={cents} className="w-24 text-right" />
-                  </li>
-                ))
-              ) : (
-                <li className="text-muted">Ainda sem gastos por categoria.</li>
-              )}
-            </ul>
+            {/* sem gasto nenhum, o cartão fica só com o total: a lista abaixo já diz que não há despesa */}
+            {byCategory.length > 0 && (
+              <ul className="space-y-1.5 border-t border-line p-5 text-[13px] sm:border-t-0 lg:border-t xl:border-t-0">
+                {byCategory.map(([cat, cents]) => (
+                    <li key={cat} className="flex items-center gap-3">
+                      <span className="w-36 shrink-0 truncate text-muted">{expenseCategories[cat as ExpenseCategory] ?? cat}</span>
+                      <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-subtle">
+                        <span className="block h-full rounded-full bg-fg/70" style={{ width: `${(cents / total) * 100}%` }} />
+                      </span>
+                      <Money cents={cents} className="w-24 text-right" />
+                    </li>
+                ))}
+              </ul>
+            )}
           </section>
 
           <section className="panel overflow-x-auto">
@@ -226,7 +225,6 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
               <div className="flex flex-col items-center px-6 py-14 text-center">
                 <Receipt size={28} strokeWidth={1.5} className="text-muted" aria-hidden="true" />
                 <p className="mt-3 font-medium">Nenhuma despesa no período</p>
-                <p className="mt-1 text-muted">Combustível, manutenção, aluguel: o que for lançado aqui sai do resultado em Relatórios.</p>
               </div>
             )}
           </section>

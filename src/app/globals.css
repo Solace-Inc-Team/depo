@@ -4038,3 +4038,10 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
     display: none;
   }
 }
+
+/* no celular, a linha de valor zero some do bloco de cada dia: "Cartão R$ 0,00" em todo dia só alongava a tela */
+@media (max-width: 639px) {
+  .tabela-pilha.rotulada td[data-zero][data-rotulo]:not(:first-child) {
+    display: none;
+  }
+}

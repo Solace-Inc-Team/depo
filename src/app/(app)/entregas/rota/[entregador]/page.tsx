@@ -50,14 +50,15 @@ export default async function FolhaDaRota({ params }: PageProps<"/entregas/rota/
         <div className="flex flex-wrap items-center gap-3">
           <Link href="/entregas" className="alvo text-accent hover:underline">Entregas</Link>
           <span className="text-muted">/</span>
-          <h1 className="h1">Folha da rota</h1>
+          <h1 className="h1">Rota de {d.name}</h1>
         </div>
         {pedidos.length > 0 && <PrintButton label="Imprimir folha" />}
       </div>
 
       <header className="mb-5 border-b border-line pb-4">
         <p className="text-[13px] text-muted">{user.tenantName}{user.branches.length > 1 ? `, ${user.branchName}` : ""}</p>
-        <p className="text-xl font-semibold">Rota de {d.name}</p>
+        {/* na tela o título de cima já diz isso; volta só no papel, onde o de cima não sai */}
+        <p className="hidden text-xl font-semibold print:block">Rota de {d.name}</p>
         <p className="text-[13px] text-muted">
           {pedidos.length} {pedidos.length === 1 ? "entrega" : "entregas"}. Emitida em {fmtDateTime(new Date())}
           {turno ? `. Troco que levou: ${formatBRL(turno.openingCashCents)}` : ""}
