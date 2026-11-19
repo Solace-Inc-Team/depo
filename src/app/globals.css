@@ -2571,12 +2571,14 @@ input[type="date"].input:hover::-webkit-calendar-picker-indicator {
 }
 
 /* links pequenos (voltar, ver todos, rodapé, marca) ganham área de toque de 44px no celular sem
-   mudar o desenho: o preenchimento cresce para fora e a margem negativa devolve o espaço */
+   mudar o desenho: o preenchimento cresce para fora e a margem negativa devolve o espaço.
+   Os links dentro das tabelas também: no tablet a tabela aparece inteira, e o link do pedido tinha 18 px */
 @media (pointer: coarse) {
-  .alvo {
+  .alvo,
+  main td a:not(.btn) {
     display: inline-block;
-    padding-block: 12px;
-    margin-block: -12px;
+    padding-block: 13px;
+    margin-block: -13px;
   }
 }
 
