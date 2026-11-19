@@ -8,10 +8,12 @@ export function SaidaEntregador({
   id,
   entregadores,
   sugerido,
+  primario = false,
 }: {
   id: string;
   entregadores: { id: string; name: string }[];
   sugerido: string;
+  primario?: boolean;
 }) {
   const [escolhido, setEscolhido] = useState(sugerido);
   const nome = entregadores.find((d) => d.id === escolhido)?.name.split(" ")[0];
@@ -22,7 +24,7 @@ export function SaidaEntregador({
         <option value="" disabled>Entregador</option>
         {entregadores.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
       </select>
-      <button className="btn btn-primary min-w-[9.75rem] justify-center">{nome ? `Saiu com ${nome}` : "Saiu para entrega"}</button>
+      <button className={`btn min-w-[9.75rem] justify-center ${primario ? "btn-primary" : ""}`}>{nome ? `Saiu com ${nome}` : "Saiu para entrega"}</button>
     </>
   );
 }

@@ -37,7 +37,7 @@ export function SaidaEmGrupo({ entregadores, sugerido, fila }: { entregadores: {
           Desmarcar
         </button>
         <div className="flex w-full gap-2 sm:w-auto">
-          <SaidaEntregador id="d-grupo" entregadores={entregadores} sugerido={sugerido} />
+          <SaidaEntregador id="d-grupo" entregadores={entregadores} sugerido={sugerido} primario />
         </div>
       </ActionForm>
     </div>

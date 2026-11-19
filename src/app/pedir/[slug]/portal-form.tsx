@@ -239,7 +239,7 @@ export function PortalForm({
                 )}
               </div>
               {/* aparelho de outra pessoa: apaga o que ficou guardado aqui */}
-              <button type="button" className="btn h-9 text-[13px]" onClick={esquecer}>
+              <button type="button" className="btn h-11 text-[13px]" onClick={esquecer}>
                 Não sou {primeiroNome}
               </button>
             </section>

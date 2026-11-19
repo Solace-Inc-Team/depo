@@ -106,7 +106,7 @@ export default async function Entregas() {
             Esperando o Pix <span className="font-normal text-muted">({aPagar.length})</span>
           </h2>
           <ul>
-            {[...aPagar].reverse().map((o) => (
+            {[...aPagar].reverse().map((o, i) => (
               <Card key={o.id} id={o.id}>
                 <li className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line px-4 py-3 last:border-0">
                   <div className="min-w-0 wrap-anywhere">
@@ -124,7 +124,8 @@ export default async function Entregas() {
                   {!o.pixAutomatico && user.role !== "atendente" && (
                     <ActionForm action={confirmPixAction} confirm={`Confirmar que o Pix de ${formatBRL(o.totalCents)} do pedido #${o.number} caiu no extrato? O pedido entra na fila de entrega.`}>
                       <input type="hidden" name="orderId" value={o.id} />
-                      <button className="btn btn-primary">Recebi o Pix</button>
+                      {/* botão cheio só no primeiro de cada lista: com um em cada linha, nenhum se destacava */}
+                      <button className={`btn ${i === 0 ? "btn-primary" : ""}`}>Recebi o Pix</button>
                     </ActionForm>
                   )}
                 </li>
@@ -143,7 +144,7 @@ export default async function Entregas() {
             Programados para hoje <span className="font-normal text-muted">({programados.length})</span>
           </h2>
           <ul>
-            {programados.map((p) => {
+            {programados.map((p, i) => {
               const atraso = Math.round((Date.parse(todayISO()) - Date.parse(p.proxima)) / 86400e3);
               return (
                 <Desliza key={p.id} nome={`programado-${p.id}`}>
@@ -168,7 +169,7 @@ export default async function Entregas() {
                       </ActionForm>
                       <ActionForm action={lancarProgramadoAction}>
                         <input type="hidden" name="id" value={p.id} />
-                        <button className="btn btn-primary">Lançar pedido</button>
+                        <button className={`btn ${i === 0 ? "btn-primary" : ""}`}>Lançar pedido</button>
                       </ActionForm>
                     </div>
                   </li>
@@ -188,7 +189,7 @@ export default async function Entregas() {
           </h2>
           {queue.length ? (
             <ul>
-              {queue.map((o) => (
+              {queue.map((o, i) => (
                 <Card key={o.id} id={o.id}>
                   <li className={`border-b border-line px-4 py-3 last:border-0 ${minutesSince(o.createdAt) < 1 ? "row-new" : ""}`}>
                     <div className="flex items-baseline justify-between gap-x-3">
@@ -214,7 +215,7 @@ export default async function Entregas() {
                     {onShift.length > 0 && (
                       <ActionForm action={dispatchAction} className="saida-unica mt-2 flex flex-wrap gap-2">
                         <input type="hidden" name="orderId" value={o.id} />
-                        <SaidaEntregador id={`d-${o.id}`} entregadores={onShift.map((d) => ({ id: d.id, name: d.name }))} sugerido={sugestoes.get(o.id)?.entregadorId ?? ""} />
+                        <SaidaEntregador id={`d-${o.id}`} entregadores={onShift.map((d) => ({ id: d.id, name: d.name }))} sugerido={sugestoes.get(o.id)?.entregadorId ?? ""} primario={i === 0} />
                       </ActionForm>
                     )}
                     {/* o porquê da sugestão só quando não é óbvio: o entregador já vai para o mesmo bairro */}
