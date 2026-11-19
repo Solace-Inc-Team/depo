@@ -4047,3 +4047,80 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
     display: none;
   }
 }
+
+/* palavra do título da página inicial que troca sozinha: a caixa acompanha a largura da palavra devagar, sem a
+   linha pular; as medidas ficam numa camada invisível fora do fluxo */
+.palavra-gira {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+  vertical-align: bottom;
+  transition: width 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.palavra-gira-medida {
+  position: absolute;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.palavra-gira-medida > span {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .palavra-gira {
+    transition: none;
+  }
+}
+
+/* menu de filiais: nasce do próprio botão ("Dropdown menu morph" do transitions.dev). A superfície sai colada
+   na borda de baixo do botão e se desdobra para baixo, sem passar por cima dele; o conteúdo aparece logo depois.
+   Fecha pelo caminho inverso, mais rápido */
+.seletor-filial ~ .popover {
+  /* o fim do recorte precisa ser um inset também: de inset para "none" o navegador não anima */
+  clip-path: inset(0 round 0.5rem);
+  transition:
+    clip-path 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    translate 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 120ms ease-out;
+  @starting-style {
+    scale: 1;
+    opacity: 0;
+    translate: 0 -0.375rem;
+    clip-path: inset(0 0 100% 0 round 0.5rem);
+  }
+}
+.seletor-filial ~ .popover > * {
+  transition: opacity 180ms ease-out 90ms;
+  @starting-style {
+    opacity: 0;
+  }
+}
+.seletor-filial ~ .popover[data-saindo] {
+  scale: 1;
+  opacity: 0;
+  translate: 0 -0.375rem;
+  clip-path: inset(0 0 100% 0 round 0.5rem);
+  transition:
+    clip-path 200ms cubic-bezier(0.4, 0, 1, 1),
+    translate 200ms cubic-bezier(0.4, 0, 1, 1),
+    opacity 120ms ease-in 80ms;
+}
+.seletor-filial ~ .popover[data-saindo] > * {
+  opacity: 0;
+  transition: opacity 80ms ease-in;
+}
+@media (prefers-reduced-motion: reduce) {
+  .seletor-filial ~ .popover,
+  .seletor-filial ~ .popover[data-saindo] {
+    translate: 0;
+    clip-path: none;
+    @starting-style {
+      translate: 0;
+      clip-path: none;
+    }
+  }
+}

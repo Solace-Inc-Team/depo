@@ -11,6 +11,7 @@ import { DemoEntrega } from "./demo-entrega";
 import { DemoPortal } from "./demo-portal";
 import { MiniEstorno, MiniExportar, MiniSoSua } from "./detalhes";
 import { DIAS_GRATIS, INCLUSO, PRECO, WHATSAPP, linkWhatsApp } from "./contato";
+import { PalavraQueGira } from "./palavra-que-gira";
 import { Peca } from "./peca";
 
 // A vitrine: sempre escura, com uma ideia visual só (a tela do produto e luz). Ritmo de escala variada:
@@ -94,7 +95,14 @@ export default function Inicio() {
                   {linha.map((w, i) => (
                     <Fragment key={i}>
                       <span style={atraso(60 + (l * titulo[0].length + i) * 35)} className="hero-word">
-                        {w}
+                        {/* o que a revenda guarda muda de nome conforme o produto: a palavra troca sozinha */}
+                        {w === "casco." ? (
+                          <>
+                            <PalavraQueGira palavras={["casco", "galão", "botijão"]} />.
+                          </>
+                        ) : (
+                          w
+                        )}
                       </span>{" "}
                     </Fragment>
                   ))}

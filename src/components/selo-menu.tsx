@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { LiveNumber } from "./live-number";
 
 /**
@@ -13,6 +14,8 @@ export function SeloMenu({ n: doServidor }: { n: number }) {
   // chegou pelo site aparecer em quem está parado em outra tela
   const [vivo, setVivo] = useState<{ base: number; n: number } | null>(null);
   const n = vivo && vivo.base === doServidor ? vivo.n : doServidor;
+  const router = useRouter();
+  const naFila = usePathname() === "/entregas";
 
   useEffect(() => {
     let parado = false;
@@ -23,6 +26,9 @@ export function SeloMenu({ n: doServidor }: { n: number }) {
         if (r.ok && !parado) {
           const { n: novo } = (await r.json()) as { n: number };
           setVivo({ base: doServidor, n: novo });
+          // parado na tela de Entregas: a fila mudou, a tela busca de novo e o pedido novo entra deslizando
+          // shortcut: compara só a contagem; um que entra e outro que sai no mesmo intervalo esperam a próxima ação
+          if (naFila && novo !== doServidor) router.refresh();
         }
       } catch {
         // sem sinal: fica o último número até a próxima conferida
@@ -35,7 +41,7 @@ export function SeloMenu({ n: doServidor }: { n: number }) {
       clearInterval(id);
       document.removeEventListener("visibilitychange", conferir);
     };
-  }, [doServidor]);
+  }, [doServidor, naFila, router]);
 
   // guarda o último número para o selo sair mostrando o que tinha, em vez de virar 0 antes de sumir
   const [mostrado, setMostrado] = useState(n);
