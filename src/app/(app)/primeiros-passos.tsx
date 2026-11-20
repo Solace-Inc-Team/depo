@@ -28,7 +28,7 @@ export function PrimeirosPassos({ feito, testeAte }: { feito: Feito; testeAte?: 
   if (prontos === passos.length) return null;
   const proximo = passos.find((p) => !feito[p.chave])!;
   // conta criada pelo cadastro: os produtos já estão lá, falta conferir o preço
-  const conferir = { titulo: "Confira os preços sugeridos", texto: "Os produtos mais comuns já estão cadastrados com preço de mercado. Ajuste para o seu.", acao: "Conferir preços" };
+  const conferir = { titulo: "Confira os preços sugeridos", texto: "Os produtos mais comuns já estão cadastrados com preço de mercado. Ajuste para o seu e desligue o que você não vende.", acao: "Conferir preços" };
   return (
     <section aria-labelledby="primeiros-passos" className="panel mb-6 overflow-hidden">
       <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-3">
