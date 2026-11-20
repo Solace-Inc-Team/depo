@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useRef, useState, useTransition, type ReactNode } from "react";
-import { CircleAlert, CircleCheck } from "lucide-react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, useTransition, type ReactNode, type RefObject } from "react";
+import { ArrowRight, CircleAlert, CircleCheck, Info } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { progress } from "./nav-progress";
 import { confirmar } from "./confirm-dialog";
@@ -9,7 +9,8 @@ import { recarregarSeVersaoNova } from "@/lib/versao-nova";
 import { useSaida } from "./saida";
 import { formatBRL, parseBRL } from "@/lib/money";
 
-export type ActionState = { error?: string; ok?: string } | undefined | void;
+/** `acao`: um próximo passo junto do aviso (e-mail sem conta → criar conta); o aviso vira informação, não erro. */
+export type ActionState = { error?: string; ok?: string; acao?: { rotulo: string; href: string } } | undefined | void;
 
 const TOAST_EVENT = "deposito:toast";
 
@@ -146,8 +147,9 @@ export function ActionForm({
     return () => f.removeEventListener("change", salvar);
   }, [salvaAoMudar]);
   const [error, setError] = useState<string>();
+  const [acao, setAcao] = useState<{ rotulo: string; href: string }>();
   const [pending, start] = useTransition();
-  const errorRef = useRef<HTMLParagraphElement>(null);
+  const errorRef = useRef<HTMLElement>(null);
   const erroId = useId();
   // o aviso sai esmaecendo: guarda o último texto enquanto a saída toca
   const aviso = useSaida(!!error);
@@ -214,6 +216,7 @@ export function ActionForm({
         // campo obrigatório vazio ou inválido: o campo treme e a mensagem sai em português, sem o balão do navegador
         const aviso = validarCampos(form);
         if (aviso) {
+          setAcao(undefined);
           setError(aviso);
           return;
         }
@@ -241,6 +244,7 @@ export function ActionForm({
               }
               progress(false);
               soltar(button);
+              setAcao(undefined);
               // sem sinal o fetch da ação falha: mantém a tela e o que foi digitado em vez de cair na página de erro
               // o depo foi atualizado com esta tela aberta: avisa e recarrega em vez de cair na página de erro
               if (recarregarSeVersaoNova(e, 1500)) {
@@ -255,6 +259,7 @@ export function ActionForm({
             }
             // se a ação trocou de tela a barra completa sozinha; se não, completa aqui
             progress(false);
+            setAcao(r?.error ? r.acao : undefined);
             setError(r?.error);
             if (r?.error) {
               soltar(button);
@@ -294,9 +299,27 @@ export function ActionForm({
       {/* o fieldset recebe o layout (space-y, grid) para que o espaçamento chegue aos campos */}
       <fieldset disabled={pending && !salvaAoMudar} className={`min-w-0 ${className ?? ""}`}>
         {children}
-        {aviso.montado && (
+        {aviso.montado && acao && (
+          // não é erro, é um caminho: fundo neutro e o botão do próximo passo
+          <div
+            ref={errorRef as RefObject<HTMLDivElement>}
+            id={erroId}
+            role="alert"
+            data-saindo={aviso.saindo || undefined}
+            className="erro-form col-span-full mt-2 basis-full rounded-lg border border-line bg-subtle p-3 text-[13px] font-medium"
+          >
+            <p className="flex items-start gap-2">
+              <Info size={16} strokeWidth={2} className="mt-px shrink-0 text-muted" aria-hidden="true" />
+              {error ?? ultimoErro}
+            </p>
+            <a href={acao.href} className="btn mt-3 h-10 w-full">
+              {acao.rotulo} <ArrowRight size={15} strokeWidth={1.75} aria-hidden="true" />
+            </a>
+          </div>
+        )}
+        {aviso.montado && !acao && (
           <p
-            ref={errorRef}
+            ref={errorRef as RefObject<HTMLParagraphElement>}
             id={erroId}
             role="alert"
             data-saindo={aviso.saindo || undefined}

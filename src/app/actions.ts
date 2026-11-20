@@ -109,10 +109,18 @@ export async function login(fd: FormData): Promise<ActionState> {
     .where(eq(users.email, email));
   // sempre confere uma senha (falsa se o e-mail não existe): o tempo de resposta não entrega quem é cliente
   const passwordOk = await verifyPassword(password, u?.user.passwordHash ?? (await dummyHash));
-  // mesma mensagem nos dois casos pra não entregar quais e-mails existem
+  // decisão do dono: dizer quando o e-mail não tem conta e oferecer o cadastro (o cadastro já revelava quem existe).
+  // O limite por e-mail+IP e por IP continua contendo quem testa e-mails em série.
   if (!u || !u.user.active || !passwordOk) {
     await recordFailure(ipKey);
-    return { error: "E-mail ou senha incorretos." };
+    if (!u)
+      return {
+        error: `Não encontramos uma conta com ${email}.`,
+        // no # e não na busca: o e-mail não vai ao servidor nem fica nos registros de acesso
+        acao: { rotulo: "Criar conta com este e-mail", href: `/cadastro#email=${encodeURIComponent(email)}` },
+      };
+    if (!u.user.active) return { error: "Este acesso foi desativado. Fale com o dono da empresa." };
+    return { error: "Senha incorreta." };
   }
   await clearFailures(key);
   if (!u.tenantActive) return { error: "O acesso desta empresa está suspenso. Fale com a Solace." };

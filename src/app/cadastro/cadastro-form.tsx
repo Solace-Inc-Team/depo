@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useLayoutEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
 import { ArrowLeft, ArrowRight, Droplet, Eye, EyeOff, Flame } from "lucide-react";
 import { cadastrarAction } from "@/app/actions";
 import { chamarAcao, tremerCampo, validarCampos } from "@/components/action-form";
@@ -30,6 +30,15 @@ export function CadastroForm() {
   const form = useRef<HTMLFormElement>(null);
   const um = useRef<HTMLFieldSetElement>(null);
   const dois = useRef<HTMLFieldSetElement>(null);
+
+  // veio do login com um e-mail sem conta (/cadastro#email=...): já preenche e tira o e-mail do endereço
+  useEffect(() => {
+    const email = new URLSearchParams(location.hash.slice(1)).get("email");
+    const campo = form.current?.querySelector<HTMLInputElement>("#email");
+    if (!email || !campo) return;
+    campo.value = email;
+    history.replaceState(history.state, "", location.pathname + location.search);
+  }, []);
 
   // o campo inválido treme e ganha o foco; a mensagem aparece embaixo do botão
   const conferir = (parte: HTMLFieldSetElement | null) => {
