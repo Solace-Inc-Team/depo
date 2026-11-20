@@ -138,7 +138,7 @@ export async function cartaoAssinaturaAction(fd: FormData): Promise<ActionState>
   const user = await getUser();
   if (!user) redirect("/login");
   const email = z.email().max(200).safeParse(str(fd, "email").toLowerCase());
-  if (!email.success) return { error: "Digite o e-mail da sua conta do Mercado Pago, como nome@empresa.com." };
+  if (!email.success) return { error: "Digite um e-mail válido, como nome@empresa.com." };
   let link = "";
   const r = await run(async () => void (link = await assinarNoCartao(user, email.data)), ["/assinatura"]);
   if (r?.error) return r;
