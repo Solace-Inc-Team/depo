@@ -14,7 +14,6 @@ import { todayISO } from "@/lib/period";
 import { INCLUSO } from "@/app/inicio/contato";
 import { ArrowLeft, ArrowRight, Check, CreditCard, Lock, LogOut } from "lucide-react";
 import { FormasDePagamento } from "./formas-de-pagamento";
-import { MagicCard } from "@/components/magicui/magic-card";
 import { LiveNumber } from "@/components/live-number";
 import { CheckSucesso } from "@/components/check-sucesso";
 import { TextoQueTroca } from "@/components/texto-que-troca";
@@ -118,8 +117,9 @@ export default async function Assinatura() {
         {dono && (
           // um cartão só: o plano em cima, a forma de pagar no meio, a linha de confiança no pé
           <section className="mt-8">
-            {/* Magic UI MagicCard: a luz segue o mouse no cartão e acende a borda perto dele */}
-            <MagicCard className="rounded-xl" gradientSize={260} gradientColor="var(--accent-soft)" gradientOpacity={1} gradientFrom="var(--accent)" gradientTo="var(--line)">
+            {/* luz parada vinda de cima e um fio na borda superior, como a luz da tela de entrada: calma, igual no celular */}
+            <div className="panel relative overflow-hidden bg-[radial-gradient(120%_70%_at_50%_-10%,rgb(255_255_255/0.05),transparent_60%),var(--surface)] p-0">
+              <span aria-hidden="true" className="pointer-events-none absolute inset-x-[12%] top-0 h-px bg-linear-to-r from-transparent via-white/25 to-transparent" />
             <div className="p-6">
               <p className="text-[13px] font-medium text-muted">Plano mensal</p>
               <p className="mt-1 flex items-baseline gap-1.5">
@@ -186,7 +186,7 @@ export default async function Assinatura() {
               <Lock size={13} strokeWidth={1.75} aria-hidden="true" />
               Pagamento seguro. O acesso libera assim que o pagamento cai.
             </p>
-            </MagicCard>
+            </div>
           </section>
         )}
 
