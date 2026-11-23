@@ -1,17 +1,18 @@
 "use client";
 
 import { useEffect } from "react";
-import { formatarDinheiro, formatarTelefone, somenteNumeros } from "@/lib/mascara";
+import { formatarCep, formatarDinheiro, formatarTelefone, somenteNumeros } from "@/lib/mascara";
 
 const formatos: Record<string, { formatar: (v: string) => string; conta: RegExp }> = {
   telefone: { formatar: formatarTelefone, conta: /\d/ },
   // ponto e vírgula contam: o cursor tem de ficar depois deles
   dinheiro: { formatar: formatarDinheiro, conta: /[\d.,]/ },
   numero: { formatar: somenteNumeros, conta: /\d/ },
+  cep: { formatar: formatarCep, conta: /\d/ },
 };
 
 /**
- * Campos com data-mascara="telefone" | "dinheiro" | "numero" ganham o formato enquanto a pessoa digita:
+ * Campos com data-mascara="telefone" | "dinheiro" | "numero" | "cep" ganham o formato enquanto a pessoa digita:
  * letra não entra no telefone, o telefone vira (11) 91111-1111, o valor aceita só número e vírgula.
  * Um ouvinte só, na fase de captura: formata antes de o React ler o valor, então vale também para
  * campo controlado. O cursor fica depois do mesmo dígito em que estava, sem pular para o fim.

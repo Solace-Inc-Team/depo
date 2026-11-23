@@ -23,6 +23,7 @@ import { LiveNumber } from "@/components/live-number";
 import { Aparece } from "@/components/saida";
 import { Plus } from "lucide-react";
 import { Marcar } from "@/components/controles";
+import { CamposEndereco } from "@/components/campos-endereco";
 
 type Product = { id: string; name: string; priceCents: number; containerPriceCents: number; returnable: boolean; available: number; reserved: number };
 type Customer = { id: string; name: string; phone: string; address: string; addresses?: { id: string; label: string; address: string }[] };
@@ -260,10 +261,7 @@ export function NewOrderForm({
                 <label className="label" htmlFor="nc-phone">Telefone</label>
                 <TelefoneCliente id="nc-phone" name="newCustomerPhone" className="input" />
               </div>
-              <div className="sm:col-span-2">
-                <label className="label" htmlFor="nc-addr">Endereço</label>
-                <input id="nc-addr" name="newCustomerAddress" maxLength={200} className="input" />
-              </div>
+              <CamposEndereco nome="newCustomerAddress" id="nc-end" className="sm:col-span-2" />
               <div className="sm:col-span-2">
                 <label className="label" htmlFor="nc-ref">Referência</label>
                 <input id="nc-ref" name="newCustomerReference" maxLength={200} className="input" />

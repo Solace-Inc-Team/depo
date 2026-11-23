@@ -42,3 +42,9 @@ export function formatarDinheiro(v: string): string {
 
 /** Só números (códigos de verificação). */
 export const somenteNumeros = (v: string) => digitos(v);
+
+/** CEP como 66810-100, enquanto digita. */
+export function formatarCep(v: string): string {
+  const d = v.replace(/\D/g, "").slice(0, 8);
+  return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d;
+}

@@ -12,6 +12,7 @@ import { validarCampos } from "@/components/action-form";
 import type { PortalResult } from "@/app/actions";
 import { Aparece, useSaida } from "@/components/saida";
 import { Marcar } from "@/components/controles";
+import { CamposEndereco } from "@/components/campos-endereco";
 import { linkWhatsApp } from "@/lib/whatsapp";
 
 // o último pedido fica guardado só neste aparelho: quem compra toda semana não digita tudo de novo
@@ -102,7 +103,6 @@ export function PortalForm({
     };
     por("name", s.nome);
     por("phone", s.fone);
-    por("address", s.endereco);
     por("reference", s.referencia);
   }, [salvo]);
 
@@ -124,7 +124,7 @@ export function PortalForm({
       localStorage.removeItem(chaveSalvo(slug));
     } catch {}
     setEsquecido(true);
-    for (const n of ["name", "phone", "address", "reference"]) {
+    for (const n of ["name", "phone", "reference"]) {
       const el = formRef.current?.elements.namedItem(n);
       if (el instanceof HTMLInputElement) el.value = "";
     }
@@ -293,10 +293,8 @@ export function PortalForm({
             <label className="label" htmlFor="phone">Telefone com DDD</label>
             <input id="phone" name="phone" required inputMode="tel" data-mascara="telefone" autoComplete="tel" className="input" />
           </div>
-          <div>
-            <label className="label" htmlFor="address">Endereço</label>
-            <input id="address" name="address" required minLength={5} maxLength={200} autoComplete="street-address" className="input" placeholder="Rua, número, bairro" />
-          </div>
+          {/* o endereço salvo do último pedido volta já separado; "Não sou eu" recria os campos vazios */}
+          <CamposEndereco key={salvo ? "salvo" : "vazio"} nome="address" id="end" inicial={salvo?.endereco} obrigatorio />
           <div>
             <label className="label" htmlFor="reference">Ponto de referência (opcional)</label>
             <input id="reference" name="reference" maxLength={200} className="input" />

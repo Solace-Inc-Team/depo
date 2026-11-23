@@ -31,6 +31,7 @@ import { formatBRL } from "@/lib/money";
 import { appMp } from "@/lib/mercadopago";
 import { AvisoMp } from "./aviso-mp";
 import { ConexaoWhatsappPainel } from "./conexao-whatsapp";
+import { CamposEndereco } from "@/components/campos-endereco";
 import {
   ativarFilialAction,
   conectarMercadoPagoAction,
@@ -133,8 +134,8 @@ export async function secoesConfig(tenantId: string, pagoAte: string | null) {
             <Linha icone={Phone} titulo="Telefone ou WhatsApp" descricao="Para o cliente chamar a loja direto do pedido." htmlFor="emp-tel" campo>
               <input id="emp-tel" name="phone" type="tel" inputMode="tel" data-mascara="telefone" maxLength={30} defaultValue={s.phone} className="input num" placeholder="(11) 91111-1111" />
             </Linha>
-            <Linha icone={MapPin} titulo="Endereço" descricao="Onde fica a loja, para quem quiser buscar no balcão." htmlFor="emp-end" campo>
-              <input id="emp-end" name="address" maxLength={160} defaultValue={s.address} className="input" placeholder="Rua, número, bairro" />
+            <Linha icone={MapPin} titulo="Endereço" descricao="Onde fica a loja, para quem quiser buscar no balcão." campo>
+              <CamposEndereco nome="address" id="emp-end" inicial={s.address} />
             </Linha>
           </Grupo>
         </ActionForm>

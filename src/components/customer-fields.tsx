@@ -1,4 +1,5 @@
 import { TelefoneCliente } from "./aviso-telefone";
+import { CamposEndereco } from "@/components/campos-endereco";
 
 type C = { id?: string; name?: string; phone?: string; address?: string; reference?: string; notes?: string };
 
@@ -14,10 +15,7 @@ export function CustomerFields({ c = {} }: { c?: C }) {
         <label className="label" htmlFor="c-phone">Telefone</label>
         <TelefoneCliente id="c-phone" name="phone" defaultValue={c.phone} className="input sm:max-w-56" outroQue={c.id} />
       </div>
-      <div className="sm:col-span-2">
-        <label className="label" htmlFor="c-addr">Endereço</label>
-        <input id="c-addr" name="address" defaultValue={c.address} className="input" />
-      </div>
+      <CamposEndereco nome="address" id="c-end" inicial={c.address} className="sm:col-span-2" />
       <div className="sm:col-span-2">
         <label className="label" htmlFor="c-ref">Referência</label>
         <input id="c-ref" name="reference" defaultValue={c.reference} className="input" />

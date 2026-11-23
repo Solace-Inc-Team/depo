@@ -16,6 +16,7 @@ import { addAddressAction, removeAddressAction, anonymizeCustomerAction, receive
 import { customerStatement } from "@/domain/receivables";
 import { centsToInput, formatBRL } from "@/lib/money";
 import { Empty, Money, StatusBadge, fmtQuando, paymentLabel } from "@/components/ui";
+import { CamposEndereco } from "@/components/campos-endereco";
 
 export const metadata = { title: "Cliente" };
 
@@ -233,10 +234,7 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                         <label className="label" htmlFor="addr-ref">Referência</label>
                         <input id="addr-ref" name="reference" maxLength={200} className="input" />
                       </div>
-                      <div className="sm:col-span-2">
-                        <label className="label" htmlFor="addr-address">Endereço</label>
-                        <input id="addr-address" name="address" required minLength={5} maxLength={200} className="input" />
-                      </div>
+                      <CamposEndereco nome="address" id="addr" obrigatorio className="sm:col-span-2" />
                       <button className="btn btn-primary mt-1 sm:col-span-2">Adicionar endereço</button>
                     </ActionForm>
                   </JanelaAcao>
