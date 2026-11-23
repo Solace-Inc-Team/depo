@@ -180,10 +180,11 @@ const semAcento = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLo
  * Sem botões (WhatsApp por QR code), o cliente responde digitando: "2" é a segunda opção da pergunta, e o nome da
  * opção ("pix") também vale. Devolve o id da opção, ou "" se o texto não escolhe nenhuma.
  */
-function opcaoDigitada(estado: Estado, ctx: Contexto, texto: string) {
+function opcaoDigitada(estado: Estado | null, ctx: Contexto, texto: string) {
   let saidas: Saida[];
   try {
-    saidas = pergunta(estado, ctx);
+    // sem conversa guardada, só quem não tem cadastro viu opções (o "Falar com a loja"): quem tem cadastro recebe o menu
+    saidas = estado ? pergunta(estado, ctx) : !ctx.cliente || !endereco(ctx) ? [semCadastro(ctx)] : [];
   } catch {
     return ""; // cadastro mudou no meio da conversa (produto saiu de venda): o fluxo normal recomeça a conversa
   }
@@ -197,7 +198,7 @@ function opcaoDigitada(estado: Estado, ctx: Contexto, texto: string) {
 /** Responde a uma mensagem do cliente, a partir de onde a conversa parou. */
 export function responder(estado: Estado | null, entrada: Entrada, ctx: Contexto): Resposta {
   const texto = (entrada.texto ?? "").trim();
-  const id = entrada.id || (estado && estado.etapa !== "loja" && texto ? opcaoDigitada(estado, ctx, texto) : "");
+  const id = entrada.id || (estado?.etapa !== "loja" && texto ? opcaoDigitada(estado, ctx, texto) : "");
 
   // passou para a loja: o robô fica quieto até a conversa expirar
   if (estado?.etapa === "loja") return { saidas: [], estado };

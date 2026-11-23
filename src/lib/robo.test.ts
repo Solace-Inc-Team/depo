@@ -128,3 +128,13 @@ test("robô: sem botões, o cliente responde com o número ou o nome da opção"
   assert.equal(q.estado?.etapa, "vazio", "acima das opções, vale a quantidade digitada");
   assert.match(textos(responder({ etapa: "pagamento", itens: [] }, { texto: "9" }, ctx()).saidas), /Não entendi/);
 });
+
+test("robô: sem cadastro, o 1 chama a loja; com cadastro, um número solto não pula o menu", () => {
+  const semCad = ctx({ cliente: null, ultimo: null });
+  assert.deepEqual(responder(null, { texto: "1" }, semCad).estado, { etapa: "loja" });
+  assert.deepEqual(responder(null, { texto: "falar com a loja" }, semCad).estado, { etapa: "loja" });
+  assert.equal(responder(null, { texto: "2" }, semCad).estado, null, "opção que não existe repete a mensagem");
+  const r = responder(null, { texto: "1" }, ctx());
+  assert.deepEqual(r.estado, { etapa: "menu" }, "primeira mensagem de quem tem cadastro abre o menu");
+  assert.equal(r.lancar, undefined);
+});
