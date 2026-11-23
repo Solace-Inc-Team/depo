@@ -1,6 +1,7 @@
 import { formatBRL, parseBRL } from "./money.ts";
+import { intencao, numeroNaFrase, pagamentoNaFrase, pedidoNaFrase, semPrefixo, valorNaFrase, type PedidoNaFrase } from "./entende.ts";
 
-// O robô do WhatsApp: uma conversa só de botões, sem IA. Esta parte só decide o que responder (sem banco, para ser
+// O robô do WhatsApp: uma conversa de opções, sem IA, que também entende frase solta ("quero 2 gás", "no pix") pelo lib/entende.ts. Esta parte só decide o que responder (sem banco, para ser
 // testada); quem busca o cliente, guarda o andamento e lança o pedido é o domain/robo.ts.
 // Os limites do WhatsApp: até 3 botões de até 20 letras; lista de até 10 linhas, título de até 24 letras.
 
@@ -10,8 +11,10 @@ export type Produto = { id: string; nome: string; precoCents: number; vasilhameC
 
 export type Contexto = {
   loja: string;
-  /** link de pedido da loja, para quem ainda não tem cadastro (null: a loja não recebe pelo site) */
-  link: string | null;
+  /** "Bom dia", "Boa tarde" ou "Boa noite" pela hora da loja (sem: "Olá") */
+  saudacao?: string;
+  /** link de pedido da loja (null: a loja não recebe pelo site); o cliente novo escolhe entre ele e o WhatsApp */
+  link?: string | null;
   cliente: { nome: string; endereco: string | null } | null;
   /** o último pedido de entrega do cliente, para repetir */
   ultimo: { itens: Item[]; pagamento: Pagamento | "fiado"; endereco: string } | null;
@@ -21,8 +24,13 @@ export type Contexto = {
 };
 
 export type Estado =
+  // cliente novo: escolhe entre o WhatsApp e o link, e o robô pergunta o nome e o endereço e deixa o cadastro feito;
+  // `pedido` guarda o que ele já disse que quer ("quero uma água") para seguir dali depois do cadastro
+  | { etapa: "canal" }
+  | { etapa: "nome"; pedido?: PedidoNaFrase }
+  | { etapa: "endereco"; nome: string; pedido?: PedidoNaFrase }
   | { etapa: "menu" }
-  | { etapa: "produto" }
+  | { etapa: "produto"; ids?: string[] }
   | { etapa: "quantidade"; productId: string }
   | { etapa: "vazio"; productId: string; quantity: number }
   | { etapa: "pagamento"; itens: Item[] }
@@ -38,7 +46,13 @@ export type Saida =
   | { tipo: "botoes"; texto: string; botoes: { id: string; titulo: string }[] }
   | { tipo: "lista"; texto: string; botao: string; itens: { id: string; titulo: string; descricao?: string }[] };
 
-export type Resposta = { saidas: Saida[]; estado: Estado | null; lancar?: { itens: Item[]; pagamento: Pagamento; trocoCents?: number | null } };
+export type Resposta = {
+  saidas: Saida[];
+  estado: Estado | null;
+  lancar?: { itens: Item[]; pagamento: Pagamento; trocoCents?: number | null };
+  /** cliente novo (ou sem endereço): quem chama grava o cadastro com o telefone da conversa */
+  cadastrar?: { nome: string; endereco: string };
+};
 
 const MAX_QTD = 20;
 // troco pelo robô: pagar com mais de R$ 1.000 acima do total é engano de digitação (e um valor absurdo derrubava o "Confirmar pedido")
@@ -78,21 +92,21 @@ function resumo(ctx: Contexto, itens: Item[], pagamento?: Pagamento | "fiado", t
   return linhas.join("\n");
 }
 
-const primeiroNome = (ctx: Contexto) => ctx.cliente!.nome.trim().split(/\s+/)[0];
+const nomeCurto = (nome: string) => nome.trim().split(/\s+/)[0];
+const primeiroNome = (ctx: Contexto) => nomeCurto(ctx.cliente!.nome);
+const ola = (ctx: Contexto) => ctx.saudacao ?? "Olá";
+// sem botões, "loja" digitado em qualquer etapa chama uma pessoa
+const DICA_LOJA = "\n\n_Para falar com alguém da loja, escreva *loja*._";
+const PEDE_ENDERECO = "Qual o endereço de entrega? Rua, número e bairro, numa mensagem só.";
 
-function semCadastro(ctx: Contexto): Saida {
-  const texto = ctx.link
-    ? `Olá! Aqui é da ${ctx.loja}. Para fazer seu pedido, é só tocar no link:\n${ctx.link}`
-    : `Olá! Aqui é da ${ctx.loja}. Ainda não temos seu cadastro por aqui.`;
-  return { tipo: "botoes", texto, botoes: [LOJA] };
-}
 
-function listaProdutos(ctx: Contexto, saudacao = ""): Saida {
-  const livres = ctx.produtos.filter((p) => p.disponivel > 0).slice(0, 10);
+/** A lista de produtos; `ids`: só esses (o cliente disse "gás" e a loja tem P13 e P45). */
+function listaProdutos(ctx: Contexto, saudacao = "", ids?: string[]): Saida {
+  const livres = ctx.produtos.filter((p) => p.disponivel > 0 && (!ids?.length || ids.includes(p.id))).slice(0, 10);
   if (!livres.length) return { tipo: "botoes", texto: `${saudacao}No momento estamos sem produto para entrega.`, botoes: [LOJA] };
   return {
     tipo: "lista",
-    texto: `${saudacao}Escolha o produto:`,
+    texto: `${saudacao}${ids?.length ? "Qual deles?" : "O que vai ser hoje?"}`,
     botao: "Ver produtos",
     itens: livres.map((p) => ({ id: `p:${p.id}`, titulo: curto(p.nome, 24), descricao: formatBRL(p.precoCents) })),
   };
@@ -101,18 +115,30 @@ function listaProdutos(ctx: Contexto, saudacao = ""): Saida {
 /** A pergunta da etapa em que a conversa está (reenviada quando o cliente responde outra coisa). */
 function pergunta(estado: Estado, ctx: Contexto): Saida[] {
   switch (estado.etapa) {
+    case "canal":
+      return [
+        {
+          tipo: "botoes",
+          texto: "Como prefere fazer o pedido?",
+          botoes: [{ id: "c:zap", titulo: "Por aqui mesmo" }, { id: "c:link", titulo: "Pelo link" }, LOJA],
+        },
+      ];
+    case "nome":
+      return [{ tipo: "texto", texto: `Qual é o seu nome?${DICA_LOJA}` }];
+    case "endereco":
+      return [{ tipo: "texto", texto: `${PEDE_ENDERECO}${DICA_LOJA}` }];
     case "menu": {
       const u = ultimo(ctx)!;
       return [
         {
           tipo: "botoes",
-          texto: `Olá, ${primeiroNome(ctx)}! Aqui é da ${ctx.loja}.\nQuer repetir seu último pedido?\n\n${resumo(ctx, u.itens, u.pagamento)}`,
+          texto: `${ola(ctx)}, ${primeiroNome(ctx)}! Aqui é da ${ctx.loja}.\nQuer repetir o último pedido?\n\n${resumo(ctx, u.itens, u.pagamento)}`,
           botoes: [{ id: "repetir", titulo: "Repetir pedido" }, { id: "outro", titulo: "Outro pedido" }, LOJA],
         },
       ];
     }
     case "produto":
-      return [listaProdutos(ctx)];
+      return [listaProdutos(ctx, "", estado.ids)];
     case "quantidade": {
       const p = produto(ctx, estado.productId)!;
       const ate = Math.min(MAX_QTD, p.disponivel);
@@ -129,8 +155,8 @@ function pergunta(estado: Estado, ctx: Contexto): Saida[] {
       return [
         {
           tipo: "botoes",
-          texto: `Você tem o vasilhame vazio para trocar?\nSem o vazio, cada ${p.nome} sai com o vasilhame por mais ${formatBRL(p.vasilhameCents)}.`,
-          botoes: [{ id: "v:sim", titulo: "Sim, tenho" }, { id: "v:nao", titulo: "Não, quero comprar" }],
+          texto: `Tem o vasilhame vazio para trocar?\nSem ele, cada ${p.nome} sai por mais ${formatBRL(p.vasilhameCents)} (o vasilhame).`,
+          botoes: [{ id: "v:sim", titulo: "Sim, tenho" }, { id: "v:nao", titulo: "Não, vou comprar" }],
         },
       ];
     }
@@ -157,7 +183,7 @@ function pergunta(estado: Estado, ctx: Contexto): Saida[] {
       return [
         {
           tipo: "botoes",
-          texto: `Confere seu pedido:\n\n${resumo(ctx, estado.itens, estado.pagamento, estado.trocoCents)}`,
+          texto: `Confere o pedido:\n\n${resumo(ctx, estado.itens, estado.pagamento, estado.trocoCents)}`,
           botoes: [{ id: "confirmar", titulo: "Confirmar pedido" }, { id: "inicio", titulo: "Começar de novo" }, LOJA],
         },
       ];
@@ -166,104 +192,177 @@ function pergunta(estado: Estado, ctx: Contexto): Saida[] {
   }
 }
 
-function inicio(ctx: Contexto): Resposta {
-  if (!ctx.cliente || !endereco(ctx)) return { saidas: [semCadastro(ctx)], estado: null };
-  if (ultimo(ctx)) return { saidas: pergunta({ etapa: "menu" }, ctx), estado: { etapa: "menu" } };
-  return { saidas: [listaProdutos(ctx, `Olá, ${primeiroNome(ctx)}! Aqui é da ${ctx.loja}.\n`)], estado: { etapa: "produto" } };
+const vaiPara = (estado: Estado, ctx: Contexto, antes: Saida[] = []): Resposta => ({ saidas: [...antes, ...pergunta(estado, ctx)], estado });
+const texto = (t: string): Saida => ({ tipo: "texto", texto: t });
+
+/** Começo da conversa. `pedido`: o que a primeira mensagem já pediu ("oi, quero 2 gás"), para ir direto a ele. */
+function inicio(ctx: Contexto, pedido?: PedidoNaFrase): Resposta {
+  const quer = pedido?.ids.length ? pedido : undefined;
+  if (!ctx.cliente) {
+    // quem já disse o que quer pede por aqui mesmo; os outros escolhem entre o WhatsApp e o link da loja
+    if (ctx.link && !quer) return vaiPara({ etapa: "canal" }, ctx, [texto(`${ola(ctx)}! Aqui é da ${ctx.loja}.`)]);
+    return { saidas: [texto(`${ola(ctx)}! Aqui é da ${ctx.loja}.\nPara o seu primeiro pedido, qual é o seu nome?${DICA_LOJA}`)], estado: { etapa: "nome", ...(quer ? { pedido: quer } : {}) } };
+  }
+  const oi = `${ola(ctx)}, ${primeiroNome(ctx)}! Aqui é da ${ctx.loja}.`;
+  if (!endereco(ctx)) return { saidas: [texto(`${oi}\n${PEDE_ENDERECO}${DICA_LOJA}`)], estado: { etapa: "endereco", nome: ctx.cliente.nome, ...(quer ? { pedido: quer } : {}) } };
+  if (quer) return escolher(ctx, quer, `${oi}\n`);
+  if (ultimo(ctx)) return vaiPara({ etapa: "menu" }, ctx);
+  return { saidas: [listaProdutos(ctx, `${oi}\n`)], estado: { etapa: "produto" } };
 }
 
-const vaiPara = (estado: Estado, ctx: Contexto): Resposta => ({ saidas: pergunta(estado, ctx), estado });
+/** O cliente disse o produto (e talvez a quantidade): segue para a próxima pergunta que falta. */
+function escolher(ctx: Contexto, pedido: PedidoNaFrase, prefixo = ""): Resposta {
+  if (pedido.ids.length !== 1) return { saidas: [listaProdutos(ctx, prefixo, pedido.ids)], estado: { etapa: "produto", ids: pedido.ids } };
+  const p = produto(ctx, pedido.ids[0])!;
+  if (p.disponivel <= 0) return { saidas: [listaProdutos(ctx, `${prefixo}${p.nome} acabou agora. `)], estado: { etapa: "produto" } };
+  if (pedido.qtd) return comQuantidade(ctx, p, pedido.qtd, prefixo);
+  return vaiPara({ etapa: "quantidade", productId: p.id }, ctx, prefixo ? [texto(prefixo.trim())] : []);
+}
 
-const semAcento = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+function comQuantidade(ctx: Contexto, p: Produto, n: number, prefixo = ""): Resposta {
+  const antes = prefixo ? [texto(prefixo.trim())] : [];
+  const ate = Math.min(MAX_QTD, p.disponivel);
+  if (n > ate) {
+    const aviso = texto(p.disponivel < MAX_QTD ? `Só temos ${p.disponivel} de ${p.nome} agora.` : `Pelo WhatsApp vão até ${MAX_QTD} de cada vez.`);
+    return vaiPara({ etapa: "quantidade", productId: p.id }, ctx, [...antes, aviso]);
+  }
+  if (p.retornavel && p.vasilhameCents > 0) return vaiPara({ etapa: "vazio", productId: p.id, quantity: n }, ctx, antes);
+  return vaiPara({ etapa: "pagamento", itens: [{ productId: p.id, quantity: n, returnsEmpty: true }] }, ctx, antes);
+}
 
 /**
  * Sem botões (WhatsApp por QR code), o cliente responde digitando: "2" é a segunda opção da pergunta, e o nome da
  * opção ("pix") também vale. Devolve o id da opção, ou "" se o texto não escolhe nenhuma.
  */
-function opcaoDigitada(estado: Estado | null, ctx: Contexto, texto: string) {
+function opcaoDigitada(estado: Estado | null, ctx: Contexto, t: string) {
   let saidas: Saida[];
   try {
-    // sem conversa guardada, só quem não tem cadastro viu opções (o "Falar com a loja"): quem tem cadastro recebe o menu
-    saidas = estado ? pergunta(estado, ctx) : !ctx.cliente || !endereco(ctx) ? [semCadastro(ctx)] : [];
+    // sem conversa guardada, um número solto não escolhe nada: a primeira mensagem sempre abre o começo
+    saidas = estado ? pergunta(estado, ctx) : [];
   } catch {
     return ""; // cadastro mudou no meio da conversa (produto saiu de venda): o fluxo normal recomeça a conversa
   }
   const ops = saidas.flatMap((s) => (s.tipo === "botoes" ? s.botoes : s.tipo === "lista" ? s.itens : []));
-  const n = /^\d{1,2}$/.test(texto) ? Number(texto) : 0;
+  const n = /^\d{1,2}$/.test(t) ? Number(t) : 0;
   // na quantidade, "2" já é a opção 2; acima das opções vale o número digitado
   if (n >= 1 && n <= ops.length) return ops[n - 1].id;
-  return ops.find((o) => semAcento(o.titulo) === semAcento(texto))?.id ?? "";
+  const limpo = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  return ops.find((o) => limpo(o.titulo) === limpo(t))?.id ?? "";
 }
+
+const LOJA_OK = "Certo! Alguém da loja vai responder você por aqui.";
 
 /** Responde a uma mensagem do cliente, a partir de onde a conversa parou. */
 export function responder(estado: Estado | null, entrada: Entrada, ctx: Contexto): Resposta {
-  const texto = (entrada.texto ?? "").trim();
-  const id = entrada.id || (estado?.etapa !== "loja" && texto ? opcaoDigitada(estado, ctx, texto) : "");
-
+  const t = (entrada.texto ?? "").trim();
   // passou para a loja: o robô fica quieto até a conversa expirar
   if (estado?.etapa === "loja") return { saidas: [], estado };
-  if (id === "loja") return { saidas: [{ tipo: "texto", texto: "Certo! Alguém da loja vai responder você por aqui." }], estado: { etapa: "loja" } };
-  // começo de conversa, "oi" no meio do caminho ou "Começar de novo"
-  if (!estado || id === "inicio" || /^(oi|ol[aá]|menu|in[ií]cio|bom dia|boa tarde|boa noite)\b/i.test(texto)) return inicio(ctx);
-  // o cadastro pode ter mudado no meio da conversa (cliente apagado, produto fora de venda)
-  if (!ctx.cliente || !endereco(ctx)) return inicio(ctx);
 
-  const naoEntendi = (): Resposta => ({ saidas: [{ tipo: "texto", texto: "Não entendi. Escolha uma das opções abaixo." }, ...pergunta(estado, ctx)], estado });
+  const id = entrada.id || (t ? opcaoDigitada(estado, ctx, t) : "");
+  const quer = id ? null : intencao(t);
+  // nome e endereço são texto livre: "Loja das Flores" ou "Rua do Sim" não são um pedido de atendente
+  const livre = estado?.etapa === "nome" || estado?.etapa === "endereco";
+  if (id === "loja" || (quer === "loja" && (!livre || /^\s*(loja|atendente)\s*$/i.test(t)))) return { saidas: [texto(LOJA_OK)], estado: { etapa: "loja" } };
+  if (estado && quer === "cancelar") return { saidas: [texto("Tudo bem, pedido cancelado. Quando quiser, é só mandar uma mensagem.")], estado: null };
+
+  // o que a mensagem pede de produto ("quero 2 gás"), fora das etapas de texto livre
+  const pedido = !id && t && !livre ? pedidoNaFrase(ctx.produtos, t) : null;
+  // começo de conversa, "oi" no meio do caminho ou "Começar de novo"
+  if (!estado || id === "inicio" || quer === "saudacao") return inicio(ctx, pedido ?? undefined);
+
+  if (estado.etapa === "canal") {
+    if (id === "c:link" && ctx.link) return { saidas: [texto(`É só tocar no link e escolher o que quer:\n${ctx.link}\n\nSe preferir pedir por aqui, é só mandar uma mensagem.`)], estado: null };
+    if (id === "c:zap" || quer === "sim") return { saidas: [texto(`Combinado! Qual é o seu nome?${DICA_LOJA}`)], estado: { etapa: "nome" } };
+    if (pedido?.ids.length) return inicio({ ...ctx, link: null }, pedido);
+    return vaiPara(estado, ctx, [texto("Não entendi. Responda com uma das opções.")]);
+  }
+
+  // cadastro pela conversa: nome, depois endereço; com o endereço, segue para o que ele pediu (ou para os produtos)
+  if (estado.etapa === "nome") {
+    if (ctx.cliente) return inicio(ctx, estado.pedido);
+    const nome = semPrefixo(t).replace(/\s+/g, " ");
+    const naFrase = pedidoNaFrase(ctx.produtos, t);
+    if (naFrase.ids.length) return { saidas: [texto(`Já anotei. Antes, me diga o seu nome, por favor.`)], estado: { etapa: "nome", pedido: naFrase } };
+    if (nome.length < 2 || nome.length > 60 || !/\p{L}{2}/u.test(nome) || /\d/.test(nome) || nome.split(" ").length > 6)
+      return { saidas: [texto(`Me diga só o seu nome, por favor.${DICA_LOJA}`)], estado };
+    return { saidas: [texto(`Prazer, ${nomeCurto(nome)}! ${PEDE_ENDERECO}`)], estado: { etapa: "endereco", nome, ...(estado.pedido ? { pedido: estado.pedido } : {}) } };
+  }
+  if (estado.etapa === "endereco") {
+    if (endereco(ctx)) return inicio(ctx, estado.pedido);
+    const end = semPrefixo(t).replace(/\s+/g, " ");
+    if (end.length < 8 || end.length > 160 || !/\p{L}{3}/u.test(end))
+      return { saidas: [texto(`Não consegui entender o endereço. ${PEDE_ENDERECO}`)], estado };
+    const anotado = `Anotado, ${nomeCurto(estado.nome)}!\n`;
+    const seguir = estado.pedido?.ids.length ? escolher(ctx, estado.pedido, anotado) : { saidas: [listaProdutos(ctx, anotado)], estado: { etapa: "produto" } as Estado };
+    return { ...seguir, cadastrar: { nome: estado.nome, endereco: end } };
+  }
+  // o cadastro pode ter mudado no meio da conversa (cliente apagado, produto fora de venda)
+  if (!ctx.cliente || !endereco(ctx)) return inicio(ctx, pedido ?? undefined);
+
+  const naoEntendi = (): Resposta => vaiPara(estado, ctx, [texto("Não entendi. Responda com uma das opções.")]);
 
   switch (estado.etapa) {
     case "menu": {
       const u = ultimo(ctx);
-      if (!u) return inicio(ctx);
-      if (id === "repetir") {
+      if (!u) return inicio(ctx, pedido ?? undefined);
+      const outro = id === "outro" || /\b(outr[oa]s?|diferente|novo pedido|mudar)\b/i.test(t);
+      if (id === "repetir" || (!id && !outro && (quer === "repetir" || quer === "sim") && !pedido?.ids.length)) {
         // fiado não se pede pelo robô: repete os produtos e pergunta como vai pagar
         if (u.pagamento === "fiado") return vaiPara({ etapa: "pagamento", itens: u.itens }, ctx);
         // em dinheiro o entregador precisa saber o troco: pergunta antes de anotar
         if (u.pagamento === "dinheiro") return vaiPara({ etapa: "troco", itens: u.itens }, ctx);
         return { saidas: [], estado: null, lancar: { itens: u.itens, pagamento: u.pagamento } };
       }
-      if (id === "outro") return vaiPara({ etapa: "produto" }, ctx);
+      if (pedido?.ids.length) return escolher(ctx, pedido);
+      if (outro || quer === "nao") return vaiPara({ etapa: "produto" }, ctx);
       return naoEntendi();
     }
     case "produto": {
-      const p = id.startsWith("p:") ? produto(ctx, id.slice(2)) : undefined;
-      if (!p) return naoEntendi();
-      if (p.disponivel <= 0) return { saidas: [{ tipo: "texto", texto: `${p.nome} acabou agora.` }, listaProdutos(ctx)], estado };
-      return vaiPara({ etapa: "quantidade", productId: p.id }, ctx);
+      const naLista = id.startsWith("p:") ? { ids: [id.slice(2)], qtd: pedido?.qtd } : null;
+      // "o de 13" escolhe entre os que estavam na pergunta
+      const escolhido = naLista ?? (pedido?.ids.length ? { ...pedido, ids: estado.ids?.length && pedido.ids.some((x) => estado.ids!.includes(x)) ? pedido.ids.filter((x) => estado.ids!.includes(x)) : pedido.ids } : null);
+      if (!escolhido) return naoEntendi();
+      return escolher(ctx, escolhido);
     }
     case "quantidade": {
       const p = produto(ctx, estado.productId);
       if (!p) return inicio(ctx);
-      const n = Number(id.startsWith("q:") ? id.slice(2) : /^\d{1,3}$/.test(texto) ? texto : NaN);
-      if (!Number.isInteger(n) || n < 1) return naoEntendi();
-      const ate = Math.min(MAX_QTD, p.disponivel);
-      if (n > ate) return { saidas: [{ tipo: "texto", texto: p.disponivel < MAX_QTD ? `Só temos ${p.disponivel} agora.` : `Pelo WhatsApp vão até ${MAX_QTD} de cada vez.` }, ...pergunta(estado, ctx)], estado };
-      if (p.retornavel && p.vasilhameCents > 0) return vaiPara({ etapa: "vazio", productId: p.id, quantity: n }, ctx);
-      return vaiPara({ etapa: "pagamento", itens: [{ productId: p.id, quantity: n, returnsEmpty: true }] }, ctx);
+      // trocou de produto no meio ("na verdade quero gás")
+      if (pedido?.ids.length && !pedido.ids.includes(p.id)) return escolher(ctx, pedido);
+      const n = id.startsWith("q:") ? Number(id.slice(2)) : (pedido?.qtd ?? numeroNaFrase(t));
+      if (!n || !Number.isInteger(n) || n < 1) return naoEntendi();
+      return comQuantidade(ctx, p, n);
     }
     case "vazio": {
-      if (id !== "v:sim" && id !== "v:nao") return naoEntendi();
-      return vaiPara({ etapa: "pagamento", itens: [{ productId: estado.productId, quantity: estado.quantity, returnsEmpty: id === "v:sim" }] }, ctx);
+      const tem = id === "v:sim" ? true : id === "v:nao" ? false : /compr/i.test(t) || quer === "nao" ? false : quer === "sim" ? true : null;
+      if (tem === null) return naoEntendi();
+      return vaiPara({ etapa: "pagamento", itens: [{ productId: estado.productId, quantity: estado.quantity, returnsEmpty: tem }] }, ctx);
     }
     case "pagamento": {
-      const pg = id.slice(3) as Pagamento;
-      if (!id.startsWith("pg:") || !Object.hasOwn(comoPaga, pg)) return naoEntendi();
+      const pg = id.startsWith("pg:") ? (id.slice(3) as Pagamento) : pagamentoNaFrase(t);
+      if (!pg || !Object.hasOwn(comoPaga, pg)) return naoEntendi();
       if (pg === "dinheiro") return vaiPara({ etapa: "troco", itens: estado.itens }, ctx);
       return vaiPara({ etapa: "confirmar", itens: estado.itens, pagamento: pg }, ctx);
     }
     case "troco": {
       if (estado.itens.some((i) => !produto(ctx, i.productId))) return inicio(ctx);
-      const valor = id.startsWith("t:") ? Number(id.slice(2)) : texto ? parseBRL(texto) : null;
+      const semTroco = quer === "nao" || /\b(sem troco|nao precis|n[aã]o precis|trocado|certinho|valor certo|exato)\b/i.test(t);
+      const valor = id.startsWith("t:") ? Number(id.slice(2)) : semTroco ? 0 : t ? (parseBRL(t) ?? valorNaFrase(t)) : null;
       if (valor == null || !Number.isInteger(valor) || valor < 0) return naoEntendi();
-      const t = total(ctx, estado.itens);
-      if (valor > 0 && valor < t) return { saidas: [{ tipo: "texto", texto: `Esse valor é menor que o total de ${formatBRL(t)}.` }, ...pergunta(estado, ctx)], estado };
+      const tot = total(ctx, estado.itens);
+      if (valor > 0 && valor < tot) return vaiPara(estado, ctx, [texto(`Esse valor é menor que o total de ${formatBRL(tot)}.`)]);
       // acima do teto é engano; muito acima, o pedido seria recusado lá na frente e a conversa caía
-      if (valor > t + TROCO_MAX) return { saidas: [{ tipo: "texto", texto: `Para troco, mande um valor até ${formatBRL(t + TROCO_MAX)}.` }, ...pergunta(estado, ctx)], estado };
-      return vaiPara({ etapa: "confirmar", itens: estado.itens, pagamento: "dinheiro", trocoCents: valor > t ? valor : null }, ctx);
+      if (valor > tot + TROCO_MAX) return vaiPara(estado, ctx, [texto(`Para troco, mande um valor até ${formatBRL(tot + TROCO_MAX)}.`)]);
+      return vaiPara({ etapa: "confirmar", itens: estado.itens, pagamento: "dinheiro", trocoCents: valor > tot ? valor : null }, ctx);
     }
     case "confirmar": {
       if (estado.itens.some((i) => !produto(ctx, i.productId))) return inicio(ctx);
-      if (id === "confirmar")
+      if (id === "confirmar" || (!id && quer === "sim"))
         return { saidas: [], estado: null, lancar: { itens: estado.itens, pagamento: estado.pagamento, ...(estado.trocoCents ? { trocoCents: estado.trocoCents } : {}) } };
+      if (!id && quer === "nao") return inicio(ctx);
+      // mudou de ideia no fim: "troca pra cartão"
+      const pg = pagamentoNaFrase(t);
+      if (pg && pg !== estado.pagamento) return vaiPara(pg === "dinheiro" ? { etapa: "troco", itens: estado.itens } : { etapa: "confirmar", itens: estado.itens, pagamento: pg }, ctx);
       return naoEntendi();
     }
   }

@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/src/vendor/stageshow/parts/Menu.css.css"],"sourcesContent":["/* Menu */\r\n\r\n@layer stageshow {\r\n  .ss-menu {\r\n    display: flex;\r\n    flex-direction: column;\r\n  }\r\n\r\n  .ss-menu__item {\r\n    display: flex;\r\n    align-items: center;\r\n    gap: 8px;\r\n    height: var(--ss-row);\r\n    padding: 0 8px;\r\n    border-radius: var(--ss-radius-sm);\r\n    font-size: 12px;\r\n    color: var(--ss-text-strong);\r\n    transition: background-color 0.12s ease;\r\n  }\r\n\r\n  .ss-menu__item[data-active] {\r\n    background-color: var(--ss-ink-2);\r\n  }\r\n\r\n  /* The item under the cursor highlights, as in a real menu; fast in, eased out */\r\n  .ss-menu__item {\r\n    transition: background-color 0.15s ease;\r\n  }\r\n\r\n  .ss-menu__item[data-hover] {\r\n    background-color: var(--ss-ink-2);\r\n    transition-duration: 0s;\r\n  }\r\n}\r\n"],"names":[],"mappings":"AAEA;EACE;;;;;EAKA;;;;;;;;;;;;EAYA;;;;EAKA;;;;EAIA"}}]
+}

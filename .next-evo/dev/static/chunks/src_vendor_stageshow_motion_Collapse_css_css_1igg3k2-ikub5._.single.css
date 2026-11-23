@@ -1,0 +1,70 @@
+/* [project]/src/vendor/stageshow/motion/Collapse.css.css [app-client] (css) */
+@layer stageshow {
+  .ss-collapse {
+    opacity: 0;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows .42s cubic-bezier(.4, 0, .2, 1) 50ms, opacity .42s cubic-bezier(0, .8, .5, 1);
+    display: grid;
+  }
+
+  .ss-collapse[data-open] {
+    opacity: 1;
+    grid-template-rows: 1fr;
+    transition: grid-template-rows .46s cubic-bezier(.4, 0, .2, 1), opacity .24s ease-out .15s;
+  }
+
+  .ss-collapse[data-solid], .ss-collapse[data-solid][data-open] {
+    opacity: 1;
+  }
+
+  .ss-collapse__inner {
+    overflow-clip-margin: 3px;
+    min-height: 0;
+    overflow: clip;
+  }
+
+  .ss-collapse[data-reveal="clip"] > .ss-collapse__inner {
+    overflow-clip-margin: 0;
+    flex-direction: column;
+    justify-content: center;
+    display: flex;
+  }
+
+  .ss-collapse[data-reveal="clip"][data-tall] > .ss-collapse__inner {
+    justify-content: flex-start;
+  }
+
+  .ss-collapse[data-reveal="clip"][data-tall][data-open] {
+    transition: grid-template-rows .46s cubic-bezier(.4, 0, .2, 1), opacity .24s ease-out .3s;
+  }
+
+  .ss-collapse[data-open]:not([data-moving]) > .ss-collapse__inner, .ss-collapse[data-reveal="drop"] > .ss-collapse__inner {
+    overflow: visible;
+  }
+
+  .ss-collapse__glide {
+    min-width: 0;
+    display: grid;
+  }
+
+  .ss-collapse[data-reveal="drop"] > .ss-collapse__inner > .ss-collapse__glide {
+    will-change: transform;
+    transition: transform .3s;
+    transform: translateY(-10px);
+  }
+
+  .ss-collapse[data-reveal="drop"][data-from="below"] > .ss-collapse__inner > .ss-collapse__glide {
+    transform: translateY(10px);
+  }
+
+  .ss-collapse[data-reveal="drop"][data-open] > .ss-collapse__inner > .ss-collapse__glide {
+    transition: transform .6s cubic-bezier(.22, 1, .36, 1) .2s;
+    transform: none;
+  }
+
+  .ss-collapse[data-reveal="drop"][data-open] {
+    transition: grid-template-rows .5s cubic-bezier(.45, 0, .2, 1), opacity .3s .24s;
+  }
+}
+
+/*# sourceMappingURL=src_vendor_stageshow_motion_Collapse_css_css_1igg3k2-ikub5._.single.css.map*/

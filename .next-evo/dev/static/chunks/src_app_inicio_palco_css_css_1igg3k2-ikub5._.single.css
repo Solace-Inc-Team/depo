@@ -1,0 +1,29 @@
+/* [project]/src/app/inicio/palco.css.css [app-client] (css) */
+.palco .ss-stage {
+  --ss-font: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --ss-accent: var(--marca);
+  --ss-accent-soft: var(--accent-soft);
+  --ss-accent-text: var(--marca);
+  --ss-surface: var(--surface);
+  --ss-canvas: var(--subtle);
+  --ss-chrome: var(--surface);
+  --ss-line: var(--line);
+  --ss-text-strong: var(--fg);
+  --ss-text: var(--muted);
+  --ss-success: var(--ok);
+  --ss-success-soft: var(--ok-soft);
+  --ss-success-text: var(--ok);
+  background: none;
+  overflow: hidden;
+}
+
+.palco .ss-button[data-variant="primary"] {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.palco .ss-button[data-variant="secondary"], .palco .ss-field:not([data-focused]) .ss-field__box {
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+/*# sourceMappingURL=src_app_inicio_palco_css_css_1igg3k2-ikub5._.single.css.map*/

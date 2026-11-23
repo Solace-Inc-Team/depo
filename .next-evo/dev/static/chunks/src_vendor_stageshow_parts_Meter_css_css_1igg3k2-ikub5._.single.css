@@ -1,0 +1,50 @@
+/* [project]/src/vendor/stageshow/parts/Meter.css.css [app-client] (css) */
+@layer stageshow {
+  .ss-meter {
+    background: var(--ss-ink-1);
+    border-radius: 3px;
+    height: 6px;
+    display: block;
+    overflow: hidden;
+  }
+
+  .ss-meter__fill {
+    background: linear-gradient(90deg, var(--ss-accent), var(--ss-accent-2, var(--ss-accent)));
+    width: 100%;
+    height: 100%;
+    transition: clip-path .8s cubic-bezier(.45, 0, .2, 1);
+    display: block;
+    position: relative;
+  }
+
+  .ss-meter__fill:after {
+    content: "";
+    background-color: var(--ss-meter-tone, var(--ss-accent));
+    opacity: 0;
+    transition: opacity .4s, background-color .4s;
+    position: absolute;
+    inset: 0;
+  }
+
+  .ss-meter[data-tone="danger"] {
+    --ss-meter-tone: var(--ss-danger);
+  }
+
+  .ss-meter[data-tone="warning"] {
+    --ss-meter-tone: var(--ss-warning);
+  }
+
+  .ss-meter[data-tone="success"] {
+    --ss-meter-tone: var(--ss-success);
+  }
+
+  .ss-meter[data-tone="ink"] {
+    --ss-meter-tone: var(--ss-ink-5);
+  }
+
+  .ss-meter:not([data-tone="accent"]) .ss-meter__fill:after {
+    opacity: 1;
+  }
+}
+
+/*# sourceMappingURL=src_vendor_stageshow_parts_Meter_css_css_1igg3k2-ikub5._.single.css.map*/

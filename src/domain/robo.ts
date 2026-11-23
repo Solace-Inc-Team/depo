@@ -3,6 +3,7 @@ import { db, withTenant, type Tx } from "@/db";
 import { branches, conversasWhatsapp, customers, orderItems, orders, products, tenants, users } from "@/db/schema";
 import { type Ctx, DomainError } from "@/lib/ctx";
 import { formatBRL } from "@/lib/money";
+import { formatarTelefone } from "@/lib/mascara";
 import { responder, type Contexto, type Entrada, type Estado, type Item, type Pagamento, type Saida } from "@/lib/robo";
 import { createOrder } from "./orders";
 import { disponivelNaLoja } from "./stock";
@@ -86,6 +87,7 @@ export async function conversar(tenantId: string, telefone: string, entrada: Ent
       const referencia = (ultimo?.endereco ? ultimo.referencia : cliente?.referencia) ?? "";
       const ctx: Contexto = {
         loja: loja.nome,
+        saudacao: saudacaoAgora(),
         link: loja.portal ? `${base}/pedir/${loja.slug}` : null,
         cliente: cliente ? { nome: cliente.nome, endereco: cliente.endereco || null } : null,
         ultimo: ultimo && itens.length && endereco ? { itens, pagamento: ultimo.pagamento as Pagamento | "fiado", endereco } : null,
@@ -95,6 +97,15 @@ export async function conversar(tenantId: string, telefone: string, entrada: Ent
 
       let r = responder(estado, entrada, ctx);
       let saidas = r.saidas;
+      // cliente novo pelo robô: fica cadastrado com o telefone da conversa; quem já existia sem endereço ganha o endereço
+      if (r.cadastrar && teste) {
+        // a tela de teste não deixa cliente nenhum: mostra até onde vai e recomeça
+        saidas = [{ tipo: "texto", texto: "(Teste: na conversa real o cliente fica cadastrado aqui e já escolhe o produto. Para testar o pedido, converse como um cliente cadastrado.)" }];
+        r = { ...r, estado: null };
+      } else if (r.cadastrar) {
+        if (cliente) await tx.update(customers).set({ address: r.cadastrar.endereco }).where(eq(customers.id, cliente.id));
+        else await tx.insert(customers).values({ tenantId, name: r.cadastrar.nome, phone: formatarTelefone(tel), address: r.cadastrar.endereco, notes: "Cadastrado pelo robô do WhatsApp" });
+      }
       if (r.lancar && cliente && endereco) {
         try {
           const dados = { customerId: cliente.id, ...r.lancar, taxaCents: ctx.taxaCents, endereco, referencia, teste };
@@ -111,10 +122,10 @@ export async function conversar(tenantId: string, telefone: string, entrada: Ent
               .catch((e) => {
                 if (e !== DESFAZER) throw e;
               });
-            texto = `Pedido #N anotado! Total ${formatBRL(total)}.${comoPagar(dados.pagamento)}\nAcompanhe a entrega por aqui: (link do pedido)\n\n(Teste: na conversa real o pedido cai em Entregas. Este não foi lançado.)`;
+            texto = `${anotado("N", total, dados.pagamento)}(link do pedido)\n\n(Teste: na conversa real o pedido cai em Entregas. Este não foi lançado.)`;
           } else {
             const pedido = await lancar(tx, tenantId, branchId, dados);
-            texto = `Pedido #${pedido.number} anotado! Total ${formatBRL(pedido.totalCents)}.${comoPagar(dados.pagamento)}\nAcompanhe a entrega por aqui: ${base}/pedir/${loja.slug}/acompanhar/${pedido.trackingId}`;
+            texto = `${anotado(String(pedido.number), pedido.totalCents, dados.pagamento)}${base}/pedir/${loja.slug}/acompanhar/${pedido.trackingId}`;
           }
           saidas = [{ tipo: "texto", texto }];
         } catch (e) {
@@ -132,7 +143,16 @@ export async function conversar(tenantId: string, telefone: string, entrada: Ent
 
 // Pix pelo robô entra na fila como o pedido por telefone (não espera o pagamento, como o do site): a mensagem diz
 // onde está o código, e que dá para pagar na entrega
-const comoPagar = (p: Pagamento) => (p === "pix" ? "\nPara pagar no Pix, o código está no link abaixo; se preferir, pague na entrega." : "");
+const anotado = (numero: string, totalCents: number, p: Pagamento) =>
+  `Pronto! Pedido #${numero} anotado.\nTotal: ${formatBRL(totalCents)}.\n\n` +
+  (p === "pix" ? "O código do Pix está no link abaixo; se preferir, pague na entrega.\n" : "") +
+  "Acompanhe a entrega por aqui:\n";
+
+/** "Bom dia", "Boa tarde" ou "Boa noite" no horário de Brasília (o das revendas). */
+export function saudacaoAgora(agora = new Date()) {
+  const h = Number(new Intl.DateTimeFormat("en-US", { hour: "numeric", hourCycle: "h23", timeZone: "America/Sao_Paulo" }).format(agora));
+  return h >= 5 && h < 12 ? "Bom dia" : h >= 12 && h < 18 ? "Boa tarde" : "Boa noite";
+}
 
 async function lancar(
   tx: Tx,

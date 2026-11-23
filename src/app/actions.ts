@@ -33,6 +33,7 @@ import { ativarFilial, criarFilial, mudarDeFilial } from "@/domain/filiais";
 import { alterarProgramado, alterarSchema, excluirProgramado, lancarProgramado, pausarProgramado, programar, programarSchema, pularProgramado } from "@/domain/programados";
 import { cookies } from "next/headers";
 import { conversar, recomecarConversa } from "@/domain/robo";
+import { conectarWhatsapp, conexaoWhatsapp, desconectarWhatsapp, type ConexaoWhatsapp } from "@/domain/whatsapp-conexao";
 import type { Saida } from "@/lib/robo";
 import { FILIAL_COOKIE } from "@/lib/auth";
 import { todayISO } from "@/lib/period";
@@ -960,4 +961,33 @@ export async function conversarTesteAction(telefone: unknown, entrada: unknown):
 export async function recomecarConversaAction(telefone: unknown) {
   const user = await requireUser("dono");
   return run(() => recomecarConversa(user.tenantId, String(telefone ?? "")), []);
+}
+
+// Conexão do WhatsApp da loja ao robô (Configurações > WhatsApp): devolvem o estado para a tela, ou o erro
+type RespostaConexao = { conexao?: ConexaoWhatsapp; error?: string };
+async function comConexao(fn: () => Promise<ConexaoWhatsapp>): Promise<RespostaConexao> {
+  try {
+    return { conexao: await fn() };
+  } catch (e) {
+    if (e instanceof DomainError) return { error: e.message };
+    throw e;
+  }
+}
+
+export async function conexaoWhatsappAction(qr: boolean): Promise<RespostaConexao> {
+  const user = await requireUser("dono");
+  return comConexao(() => conexaoWhatsapp(user, { qr }));
+}
+
+export async function conectarWhatsappAction(): Promise<RespostaConexao> {
+  const user = await requireUser("dono");
+  return comConexao(async () => conectarWhatsapp(user, await siteUrl()));
+}
+
+export async function desconectarWhatsappAction(): Promise<RespostaConexao> {
+  const user = await requireUser("dono");
+  return comConexao(async () => {
+    await desconectarWhatsapp(user);
+    return { estado: "sem" };
+  });
 }

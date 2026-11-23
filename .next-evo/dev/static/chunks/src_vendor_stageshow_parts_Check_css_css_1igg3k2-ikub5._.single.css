@@ -1,0 +1,91 @@
+/* [project]/src/vendor/stageshow/parts/Check.css.css [app-client] (css) */
+@layer stageshow {
+  .ss-check {
+    flex-shrink: 0;
+    place-items: center;
+    display: inline-grid;
+  }
+
+  .ss-check svg {
+    overflow: visible;
+  }
+
+  .ss-check__ring {
+    fill: none;
+    stroke: var(--ss-ink-4);
+    stroke-width: 1.5px;
+    transition: opacity .2s;
+  }
+
+  .ss-check__arc {
+    fill: none;
+    stroke: var(--ss-text-strong);
+    stroke-width: 1.5px;
+    stroke-linecap: round;
+    stroke-dasharray: .28 1;
+    opacity: 0;
+    transform-origin: 8px 8px;
+    transition: opacity .18s;
+    animation: .8s linear infinite ss-spin;
+  }
+
+  .ss-check[data-pending] .ss-check__arc {
+    opacity: 1;
+  }
+
+  .ss-check__fill {
+    fill: var(--ss-success);
+    opacity: 0;
+    transform-origin: 8px 8px;
+    transition: opacity .2s, transform .2s;
+    transform: scale(.35);
+  }
+
+  .ss-check[data-on] .ss-check__fill {
+    opacity: 1;
+    transition: transform .4s cubic-bezier(.22, 1, .36, 1), opacity;
+    transform: scale(1);
+  }
+
+  .ss-check[data-on] .ss-check__arc {
+    transition-duration: 80ms;
+  }
+
+  .ss-check[data-on] .ss-check__ring {
+    opacity: 0;
+  }
+
+  .ss-check__tick {
+    fill: none;
+    stroke: #fff;
+    stroke-width: 1.8px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1px;
+    opacity: 0;
+    transition: opacity .2s;
+  }
+
+  .ss-stage[data-theme="blueprint"] .ss-check__tick {
+    stroke: var(--ss-well);
+  }
+
+  .ss-check[data-on] .ss-check__tick {
+    stroke-dashoffset: 0;
+    opacity: 1;
+    transition: stroke-dashoffset .32s cubic-bezier(.65, 0, .35, 1) .16s, opacity 10ms .16s;
+  }
+
+  .ss-stage[data-palette="mono"][data-theme="dark"] .ss-check__tick {
+    stroke: #111;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ss-check__arc {
+      animation: none;
+    }
+  }
+}
+
+/*# sourceMappingURL=src_vendor_stageshow_parts_Check_css_css_1igg3k2-ikub5._.single.css.map*/

@@ -1,0 +1,51 @@
+/* [project]/src/vendor/stageshow/motion/Popover.css.css [app-client] (css) */
+@layer stageshow {
+  .ss-popover {
+    z-index: 25;
+    isolation: isolate;
+    border-radius: var(--ss-radius-lg);
+    opacity: 0;
+    pointer-events: none;
+    padding: 4px;
+    transition: opacity .3s;
+    position: absolute;
+    overflow: visible !important;
+  }
+
+  .ss-popover:before {
+    content: "";
+    z-index: -1;
+    border-radius: inherit;
+    background: var(--ss-popover-bg, var(--ss-raised));
+    box-shadow: var(--ss-popover-shadow, var(--ss-shadow-float));
+    transform-origin: var(--ss-popover-origin, top left);
+    pointer-events: none;
+    transition: transform .3s;
+    position: absolute;
+    inset: 0;
+    transform: scale(.96);
+  }
+
+  .ss-popover[data-show] {
+    opacity: 1;
+    transition: opacity .18s;
+  }
+
+  .ss-popover[data-show]:before {
+    transition: transform .24s cubic-bezier(.22, 1, .36, 1);
+    transform: none;
+  }
+
+  .ss-popover:not([data-show]):not([data-instant]) {
+    transform-origin: var(--ss-popover-origin, top left);
+    transition: opacity .24s, transform .24s cubic-bezier(.4, 0, 1, 1);
+    transform: scale(.96);
+  }
+
+  .ss-popover:not([data-show]):not([data-instant]):before {
+    transition: none;
+    transform: none;
+  }
+}
+
+/*# sourceMappingURL=src_vendor_stageshow_motion_Popover_css_css_1igg3k2-ikub5._.single.css.map*/

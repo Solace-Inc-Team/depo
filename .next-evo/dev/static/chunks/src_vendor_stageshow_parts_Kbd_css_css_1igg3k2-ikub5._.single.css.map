@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/src/vendor/stageshow/parts/Kbd.css.css"],"sourcesContent":["/* Kbd */\r\n\r\n@layer stageshow {\r\n  .ss-kbd {\r\n    display: inline-flex;\r\n    flex: none;\r\n    align-items: center;\r\n    gap: 3px;\r\n    vertical-align: middle;\r\n  }\r\n\r\n  .ss-kbd__key {\r\n    display: inline-grid;\r\n    place-items: center;\r\n    box-sizing: border-box;\r\n    min-width: 18px;\r\n    height: 18px;\r\n    padding: 0 4px;\r\n    border-radius: 4px;\r\n    font-family: inherit;\r\n    font-size: 11px;\r\n    font-weight: 500;\r\n    line-height: 1;\r\n    font-variant-numeric: tabular-nums;\r\n    color: var(--ss-text);\r\n    background: var(--ss-ink-1);\r\n    box-shadow: inset 0 0 0 1px var(--ss-ink-3), inset 0 -1px 0 var(--ss-ink-3);\r\n  }\r\n\r\n  .ss-kbd[data-plain] { gap: 1px; }\r\n  .ss-kbd[data-plain] .ss-kbd__key { min-width: 0; padding: 0; background: none; box-shadow: none; font-size: 12px; }\r\n}\r\n"],"names":[],"mappings":"AAEA;EACE;;;;;;;;EAQA;;;;;;;;;;;;;;;;;;EAkBA;;;;EACA"}}]
+}

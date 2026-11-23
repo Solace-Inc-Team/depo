@@ -1,0 +1,59 @@
+/* [project]/src/vendor/stageshow/parts/Chip.css.css [app-client] (css) */
+@layer stageshow {
+  .ss-chip {
+    will-change: transform;
+  }
+
+  .ss-chip-slot {
+    border-radius: var(--ss-radius-pill);
+    opacity: 0;
+    flex: none;
+    transition: width .4s cubic-bezier(.25, .8, .25, 1) .1s, margin .4s cubic-bezier(.25, .8, .25, 1) .1s, opacity .14s;
+    display: inline-flex;
+    overflow: hidden;
+  }
+
+  .ss-chip-slot[data-show] {
+    opacity: 1;
+    transition: width .4s cubic-bezier(.25, .8, .25, 1), margin .4s cubic-bezier(.25, .8, .25, 1), opacity .22s .16s;
+  }
+
+  .ss-chip-slot > .ss-chip {
+    flex: none;
+  }
+
+  .ss-chip {
+    border-radius: var(--ss-radius-pill);
+    background: var(--ss-accent-soft);
+    height: 24px;
+    color: var(--ss-text-strong);
+    white-space: nowrap;
+    align-items: center;
+    gap: 6px;
+    padding: 0 10px;
+    font-size: 12px;
+    font-weight: 500;
+    display: inline-flex;
+  }
+
+  .ss-chip[data-removable] {
+    padding-right: 4px;
+  }
+
+  .ss-chip__x {
+    width: 16px;
+    height: 16px;
+    color: var(--ss-text);
+    border-radius: 50%;
+    place-items: center;
+    transition: background-color .15s;
+    display: inline-grid;
+  }
+
+  .ss-chip__x[data-hover] {
+    background: var(--ss-ink-2);
+    transition-duration: 0s;
+  }
+}
+
+/*# sourceMappingURL=src_vendor_stageshow_parts_Chip_css_css_1igg3k2-ikub5._.single.css.map*/

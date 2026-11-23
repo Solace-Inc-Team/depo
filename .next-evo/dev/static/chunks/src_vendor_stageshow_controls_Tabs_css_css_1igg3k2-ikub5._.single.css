@@ -1,0 +1,34 @@
+/* [project]/src/vendor/stageshow/controls/Tabs.css.css [app-client] (css) */
+@layer stageshow {
+  .ss-tabs {
+    border-bottom: 1px solid var(--ss-line);
+    gap: 18px;
+    display: flex;
+    position: relative;
+  }
+
+  .ss-tabs__tab {
+    color: var(--ss-text);
+    padding-bottom: 9px;
+    font-size: 12.5px;
+    font-weight: 500;
+    transition: color .2s;
+  }
+
+  .ss-tabs__tab[data-on] {
+    color: var(--ss-text-strong);
+  }
+
+  .ss-tabs__bar {
+    background: var(--ss-text-strong);
+    transform-origin: 0 0;
+    width: 1px;
+    height: 2px;
+    transition: transform .35s cubic-bezier(.22, 1, .36, 1);
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+  }
+}
+
+/*# sourceMappingURL=src_vendor_stageshow_controls_Tabs_css_css_1igg3k2-ikub5._.single.css.map*/

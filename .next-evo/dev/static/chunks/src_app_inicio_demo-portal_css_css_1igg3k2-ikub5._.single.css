@@ -1,0 +1,245 @@
+/* [project]/src/app/inicio/demo-portal.css.css [app-client] (css) */
+.dp .dp-celular {
+  box-shadow: var(--ss-shadow-satellite), 0 30px 50px -20px #0f172a4d;
+  position: absolute;
+  top: 28px;
+  left: 30px;
+}
+
+.dp .dp-app {
+  background: var(--bg);
+  font-family: var(--ss-font);
+  padding: 72px 18px 0;
+  position: absolute;
+  inset: 0;
+}
+
+.dp .dp-sobre {
+  color: var(--ss-text);
+  font-size: 15px;
+  display: block;
+}
+
+.dp .dp-loja {
+  color: var(--ss-text-strong);
+  letter-spacing: -.02em;
+  margin: 2px 0 14px;
+  font-size: 30px;
+  font-weight: 600;
+  display: block;
+}
+
+.dp .dp-total__digitos {
+  text-align: right;
+  justify-content: flex-end;
+  min-width: 4.8ch;
+}
+
+.dp .dp-tela {
+  opacity: 0;
+  will-change: transform;
+  flex-direction: column;
+  transition: opacity .2s, translate .2s;
+  display: flex;
+  position: absolute;
+  top: 150px;
+  left: 18px;
+  right: 18px;
+  translate: 0 8px;
+}
+
+.dp .dp-tela[data-on] {
+  opacity: 1;
+  transition-delay: .12s;
+  translate: 0;
+}
+
+.dp .dp-card {
+  border: 1px solid var(--ss-line);
+  background: var(--ss-surface);
+  border-radius: 16px;
+  flex-direction: column;
+  display: flex;
+}
+
+.dp .dp-produto {
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  display: flex;
+}
+
+.dp .dp-produto + .dp-produto {
+  border-top: 1px solid var(--ss-line);
+}
+
+.dp .dp-produto__nome {
+  color: var(--ss-text-strong);
+  flex-direction: column;
+  gap: 2px;
+  font-size: 18px;
+  font-weight: 600;
+  display: flex;
+}
+
+.dp .dp-produto__nome small {
+  color: var(--ss-text);
+  font-size: 15px;
+  font-weight: 400;
+}
+
+.dp .dp-qtd {
+  align-items: center;
+  gap: 6px;
+  display: flex;
+}
+
+.dp .dp-qtd__b {
+  border: 1px solid var(--ss-line);
+  width: 44px;
+  height: 44px;
+  color: var(--ss-text-strong);
+  border-radius: 10px;
+  place-items: center;
+  font-size: 22px;
+  display: grid;
+}
+
+.dp .dp-qtd__n {
+  min-width: 26px;
+  color: var(--ss-text-strong);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.dp .dp-titulo {
+  color: var(--ss-text-strong);
+  margin: 20px 0 8px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.dp .dp-opcoes {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  display: grid;
+}
+
+.dp .dp-opcao {
+  border: 1px solid var(--ss-line);
+  height: 44px;
+  color: var(--ss-text-strong);
+  border-radius: 12px;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  transition: border-color .2s, background-color .2s;
+  display: flex;
+}
+
+.dp .dp-opcao[data-on] {
+  border-color: var(--marca);
+  background: color-mix(in srgb, var(--marca) 12%, transparent);
+}
+
+.dp .dp-opcao__marca {
+  border: 1.5px solid var(--ss-text-faint, var(--ss-icon));
+  border-radius: 50%;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  transition: border-color .2s;
+  display: grid;
+}
+
+.dp .dp-opcao__marca:after {
+  content: "";
+  background: var(--marca);
+  width: 7px;
+  height: 7px;
+  transition: scale .25s var(--ease-chegada, ease-out);
+  border-radius: 50%;
+  scale: 0;
+}
+
+.dp .dp-opcao[data-on] .dp-opcao__marca {
+  border-color: var(--marca);
+}
+
+.dp .dp-opcao[data-on] .dp-opcao__marca:after {
+  scale: 1;
+}
+
+.dp .dp-total {
+  gap: 14px;
+  margin-top: 16px;
+  padding: 16px;
+}
+
+.dp .dp-total__linha {
+  color: var(--ss-text-strong);
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 17px;
+  display: flex;
+}
+
+.dp .dp-total__valor {
+  letter-spacing: -.02em;
+  align-items: baseline;
+  gap: .25em;
+  font-size: 28px;
+  font-weight: 600;
+  display: flex;
+}
+
+.dp .dp-pedir, .dp .dp-copiar {
+  width: 100%;
+  height: 50px;
+  font-size: 17px;
+}
+
+.dp .dp-feito .dp-card {
+  gap: 10px;
+  padding: 18px;
+}
+
+.dp .dp-recebido {
+  color: var(--ss-text-strong);
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 600;
+  display: flex;
+}
+
+.dp .dp-recebido .ss-check {
+  color: var(--ss-success);
+}
+
+.dp .dp-linha {
+  color: var(--ss-text);
+  font-size: 15px;
+}
+
+.dp .dp-pix {
+  border-top: 1px solid var(--ss-line);
+  color: var(--ss-text-strong);
+  margin-top: 6px;
+  padding-top: 14px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.dp .dp-qr {
+  border-radius: 8px;
+  width: 136px;
+  height: 136px;
+}
+
+/*# sourceMappingURL=src_app_inicio_demo-portal_css_css_1igg3k2-ikub5._.single.css.map*/

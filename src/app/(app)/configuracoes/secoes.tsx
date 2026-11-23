@@ -30,6 +30,7 @@ import { todayISO } from "@/lib/period";
 import { formatBRL } from "@/lib/money";
 import { appMp } from "@/lib/mercadopago";
 import { AvisoMp } from "./aviso-mp";
+import { ConexaoWhatsappPainel } from "./conexao-whatsapp";
 import {
   ativarFilialAction,
   conectarMercadoPagoAction,
@@ -277,18 +278,17 @@ export async function secoesConfig(tenantId: string, pagoAte: string | null) {
 
     whatsapp: (
       <>
-        <Cabecalho titulo="WhatsApp" descricao="Um robô que atende o cliente no WhatsApp da loja com botões e lança o pedido sozinho, sem ninguém digitar." />
-        <Grupo>
-          <Linha
-            icone={MessageCircle}
-            titulo="Robô de pedidos"
-            descricao="Ainda não está ligado ao número da loja. Teste a conversa como se fosse o cliente."
-          >
-            <Link href="/whatsapp" className="btn btn-sm">
-              <MessageCircle size={14} aria-hidden="true" /> Testar conversa
-            </Link>
-          </Linha>
-        </Grupo>
+        <Cabecalho titulo="WhatsApp" descricao="Um robô que atende o cliente no WhatsApp da loja, cadastra quem é novo e lança o pedido sozinho." />
+        <div className="space-y-6">
+          <ConexaoWhatsappPainel />
+          <Grupo>
+            <Linha icone={MessageCircle} titulo="Testar a conversa" descricao="Converse com o robô como se fosse o cliente, sem lançar pedido.">
+              <Link href="/whatsapp" className="btn btn-sm">
+                <MessageCircle size={14} aria-hidden="true" /> Testar conversa
+              </Link>
+            </Linha>
+          </Grupo>
+        </div>
       </>
     ),
 

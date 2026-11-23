@@ -1,0 +1,59 @@
+/* [project]/src/vendor/stageshow/motion/Swap.css.css [app-client] (css) */
+@layer stageshow {
+  .ss-swap {
+    vertical-align: top;
+    display: inline-block;
+    position: relative;
+    overflow: clip visible;
+  }
+
+  .ss-swap[data-swapping] {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 8px), #0000);
+    mask-image: linear-gradient(to right, #000 calc(100% - 8px), #0000);
+  }
+
+  .ss-swap__in, .ss-swap__out {
+    text-box: inherit;
+    width: max-content;
+    max-width: 100%;
+    display: block;
+  }
+
+  .ss-swap__out {
+    animation: forwards ss-swap-out;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+  .ss-swap__in {
+    animation: cubic-bezier(.25, .8, .25, 1) both ss-swap-in;
+  }
+
+  @keyframes ss-swap-out {
+    to {
+      opacity: 0;
+      filter: blur(2px);
+    }
+  }
+
+  @keyframes ss-swap-in {
+    0%, 30% {
+      opacity: 0;
+      filter: blur(2px);
+    }
+
+    100% {
+      opacity: 1;
+      filter: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ss-swap__in, .ss-swap__out {
+      animation-duration: 1ms !important;
+    }
+  }
+}
+
+/*# sourceMappingURL=src_vendor_stageshow_motion_Swap_css_css_1igg3k2-ikub5._.single.css.map*/

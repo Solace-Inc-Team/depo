@@ -1,0 +1,42 @@
+/* [project]/src/vendor/stageshow/parts/Kbd.css.css [app-client] (css) */
+@layer stageshow {
+  .ss-kbd {
+    vertical-align: middle;
+    flex: none;
+    align-items: center;
+    gap: 3px;
+    display: inline-flex;
+  }
+
+  .ss-kbd__key {
+    box-sizing: border-box;
+    font-variant-numeric: tabular-nums;
+    min-width: 18px;
+    height: 18px;
+    color: var(--ss-text);
+    background: var(--ss-ink-1);
+    box-shadow: inset 0 0 0 1px var(--ss-ink-3), inset 0 -1px 0 var(--ss-ink-3);
+    border-radius: 4px;
+    place-items: center;
+    padding: 0 4px;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+    display: inline-grid;
+  }
+
+  .ss-kbd[data-plain] {
+    gap: 1px;
+  }
+
+  .ss-kbd[data-plain] .ss-kbd__key {
+    min-width: 0;
+    box-shadow: none;
+    background: none;
+    padding: 0;
+    font-size: 12px;
+  }
+}
+
+/*# sourceMappingURL=src_vendor_stageshow_parts_Kbd_css_css_1igg3k2-ikub5._.single.css.map*/

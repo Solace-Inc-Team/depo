@@ -1,0 +1,222 @@
+/* [project]/src/vendor/stageshow/cursor.css.css [app-client] (css) */
+@layer stageshow {
+  .ss-cursor {
+    z-index: 100;
+    pointer-events: none;
+    will-change: transform;
+    transition: opacity .25s;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+  .ss-cursor[data-idle] {
+    opacity: 0;
+    transition-duration: .6s;
+  }
+
+  .ss-cursor__press {
+    transform-origin: 0 0;
+    transition: transform .26s cubic-bezier(.22, 1, .36, 1);
+    display: grid;
+  }
+
+  .ss-cursor[data-pressed="true"] .ss-cursor__press {
+    transition: transform 80ms ease-out;
+    transform: scale(.9);
+  }
+
+  .ss-cursor__glyph {
+    opacity: 0;
+    grid-area: 1 / 1;
+    transition: transform .2s, opacity .2s;
+    transform: scale(0);
+  }
+
+  .ss-cursor__glyph[data-active="true"] {
+    transform: scale(var(--ss-cursor-size, 1));
+    opacity: 1;
+  }
+
+  .ss-cursor__glyph[data-glyph^="resize"] {
+    transform: scale(calc(var(--ss-cursor-size, 1) * .5));
+  }
+
+  .ss-cursor[data-kind^="resize"] .ss-cursor__glyph:not([data-active="true"]) {
+    transform: scale(calc(var(--ss-cursor-size, 1) * .6));
+  }
+
+  .ss-cursor[data-kind^="resize"] .ss-cursor__glyph, .ss-cursor__glyph[data-glyph^="resize"] {
+    transition: transform .28s cubic-bezier(.22, 1, .36, 1), opacity .2s;
+  }
+
+  .ss-cursor__glyph[data-glyph^="resize"][data-active="true"] {
+    transform: scale(var(--ss-cursor-size, 1));
+  }
+
+  .ss-cursor[data-kind^="resize"] .ss-cursor__glyph:not([data-active="true"]), .ss-cursor:not([data-kind^="resize"]) .ss-cursor__glyph[data-glyph^="resize"] {
+    transition: transform .28s cubic-bezier(.22, 1, .36, 1), opacity .1s;
+  }
+
+  .ss-cursor:is([data-kind="open"], [data-kind="grab"]) .ss-cursor__glyph:is([data-glyph="open"], [data-glyph="grab"]) {
+    transform: scale(var(--ss-cursor-size, 1));
+    transition: opacity 80ms linear;
+  }
+
+  .ss-cursor[data-style="large"] {
+    --ss-cursor-size: 1.5;
+  }
+
+  .ss-cursor[data-style="large"] .ss-cursor__glyph[data-glyph="ibeam"] {
+    --ss-cursor-size: 1.15;
+  }
+
+  .ss-cursor__dot {
+    -webkit-backdrop-filter: blur(5px) saturate(1.8) brightness(1.04);
+    backdrop-filter: blur(5px) saturate(1.8) brightness(1.04);
+    background: #76768042;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    margin: -11px 0 0 -11px;
+    transition: background .15s, width .2s cubic-bezier(.22, 1, .36, 1), height .2s cubic-bezier(.22, 1, .36, 1), margin .2s cubic-bezier(.22, 1, .36, 1), border-radius .2s;
+    display: block;
+    box-shadow: inset 0 1px 1px #fff6, inset 0 -1px 1px #0000000d, 0 2px 10px #0000001a;
+  }
+
+  .ss-cursor[data-style="circle"][data-kind="ibeam"] .ss-cursor__dot {
+    background: #3c3c438c;
+    border-radius: 2px;
+    width: 4px;
+    height: 20px;
+    margin: -10px 0 0 -2px;
+  }
+
+  .ss-stage[data-theme="dark"] .ss-cursor__dot {
+    background: #fff3;
+    box-shadow: inset 0 1px 1px #ffffff4d, 0 2px 10px #0000004d;
+  }
+
+  .ss-cursor[data-style="circle"][data-pressed="true"] .ss-cursor__press {
+    transform: scale(.8);
+  }
+
+  .ss-cursor[data-style="circle"][data-pressed="true"] .ss-cursor__dot {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background: #76768038;
+  }
+
+  .ss-stage[data-theme="dark"] .ss-cursor[data-style="circle"][data-pressed="true"] .ss-cursor__dot {
+    background: #ffffff2e;
+  }
+
+  .ss-cursor[data-style="circle"][data-pressed="true"] .ss-cursor__dot, .ss-cursor[data-style="circle"][data-kind="grab"] .ss-cursor__dot {
+    background: #76768066;
+  }
+
+  .ss-cursor[data-style="touch"] .ss-cursor__dot {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    opacity: 0;
+    background: #76768024;
+    width: 34px;
+    height: 34px;
+    margin: -17px 0 0 -17px;
+    transition: opacity .4s, transform .45s cubic-bezier(.22, 1, .36, 1);
+    transform: scale(.7);
+  }
+
+  .ss-cursor__streak {
+    transform-origin: 100%;
+    opacity: 0;
+    pointer-events: none;
+    background: linear-gradient(to right, #76768000, #76768029);
+    border-radius: 13px;
+    width: 0;
+    height: 26px;
+    transition: opacity .16s;
+    position: absolute;
+    top: -13px;
+    left: 0;
+  }
+
+  .ss-cursor[data-swiping] .ss-cursor__streak {
+    opacity: 1;
+    transition: none;
+  }
+
+  .ss-cursor[data-style="touch"][data-touching] .ss-cursor__dot {
+    opacity: 1;
+    transition: opacity .14s, transform .16s cubic-bezier(.22, 1, .36, 1);
+    transform: scale(1);
+  }
+
+  .ss-cursor[data-style="touch"][data-pressed="true"] .ss-cursor__dot, .ss-cursor[data-style="touch"][data-swiping] .ss-cursor__dot {
+    background: #76768038;
+    transition: background 80ms, transform .1s ease-out;
+    transform: scale(.82);
+  }
+
+  .ss-cursor__glyph svg {
+    filter: drop-shadow(0 1px 2px #0000004d);
+    display: block;
+  }
+
+  .ss-cursor__arrow path {
+    fill: var(--ss-cursor-ink, #111);
+    stroke: var(--ss-cursor-ink, #111);
+    stroke-width: 2.4px;
+    stroke-linejoin: round;
+  }
+
+  .ss-cursor__arrow {
+    filter: drop-shadow(0 1px 1.5px #0000002e);
+    display: block;
+  }
+
+  .ss-stage[data-theme="dark"] .ss-cursor__arrow, .ss-stage[data-theme="blueprint"] .ss-cursor__arrow {
+    --ss-cursor-ink: #fff;
+  }
+
+  .ss-stage[data-theme="dark"] .ss-cursor, .ss-stage[data-theme="blueprint"] .ss-cursor {
+    --ss-cursor-line: #fff;
+    --ss-cursor-edge: #000000bf;
+  }
+
+  .ss-ripple {
+    z-index: 99;
+    border: 1.5px solid var(--ss-accent);
+    background: color-mix(in srgb, var(--ss-accent) 10%, transparent);
+    pointer-events: none;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    margin: -18px 0 0 -18px;
+    animation: .55s cubic-bezier(.25, .8, .25, 1) forwards ss-ripple;
+    position: absolute;
+  }
+
+  @keyframes ss-ripple {
+    from {
+      opacity: 1;
+      transform: scale(.2);
+    }
+
+    to {
+      opacity: 0;
+      transform: scale(1);
+    }
+  }
+
+  .ss-stage[data-palette="mono"] .ss-ripple {
+    border-color: var(--ss-text-strong);
+    background: none;
+  }
+
+  .ss-stage[data-hit] :is(.ss-cursor, .ss-cursor *) {
+    pointer-events: none !important;
+  }
+}
+
+/*# sourceMappingURL=src_vendor_stageshow_cursor_css_css_1igg3k2-ikub5._.single.css.map*/

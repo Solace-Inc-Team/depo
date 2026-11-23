@@ -1,0 +1,84 @@
+/* [project]/src/vendor/stageshow/motion/Roll.css.css [app-client] (css) */
+@layer stageshow {
+  .ss-roll {
+    white-space: pre;
+  }
+
+  .ss-roll__mid {
+    vertical-align: bottom;
+    margin-block: -.45em;
+    padding-block: .45em;
+    transition: width .5s cubic-bezier(.22, 1, .36, 1);
+    display: inline-grid;
+    -webkit-mask-image: linear-gradient(#0000, #000 .5em calc(100% - .5em), #0000);
+    mask-image: linear-gradient(#0000, #000 .5em calc(100% - .5em), #0000);
+  }
+
+  .ss-roll__item {
+    grid-area: 1 / 1;
+    justify-self: start;
+    width: max-content;
+  }
+
+  .ss-roll[data-align="end"] .ss-roll__mid {
+    grid-template-columns: 100%;
+  }
+
+  .ss-roll[data-align="end"] .ss-roll__item {
+    justify-self: unsafe end;
+  }
+
+  .ss-roll__char {
+    white-space: pre;
+    animation: .42s cubic-bezier(.32, .72, 0, 1) both ss-roll-in;
+    display: inline-block;
+  }
+
+  .ss-roll__item[data-out] {
+    animation: .42s cubic-bezier(.32, .72, 0, 1) both ss-roll-out;
+  }
+
+  @keyframes ss-roll-in {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+  }
+
+  @keyframes ss-roll-out {
+    to {
+      opacity: 0;
+      transform: translateY(-100%);
+    }
+  }
+
+  .ss-roll[data-variant="fade"] .ss-roll__char {
+    animation-name: ss-fade-in;
+    animation-duration: .35s;
+    animation-delay: .12s;
+  }
+
+  .ss-roll[data-variant="fade"] .ss-roll__item[data-out] {
+    animation-name: ss-fade-out;
+    animation-duration: .16s;
+  }
+
+  .ss-roll[data-variant="fade"] .ss-roll__mid {
+    clip-path: inset(0);
+    margin-block: 0;
+    padding-block: 0;
+    transition-duration: .4s;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+
+  @keyframes ss-fade-out {
+    to {
+      opacity: 0;
+      filter: blur(2px);
+      transform: translateY(-3px);
+    }
+  }
+}
+
+/*# sourceMappingURL=src_vendor_stageshow_motion_Roll_css_css_1igg3k2-ikub5._.single.css.map*/

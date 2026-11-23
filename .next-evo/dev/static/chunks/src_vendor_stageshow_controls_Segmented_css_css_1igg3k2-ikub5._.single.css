@@ -1,0 +1,41 @@
+/* [project]/src/vendor/stageshow/controls/Segmented.css.css [app-client] (css) */
+@layer stageshow {
+  .ss-seg {
+    grid-template-columns: repeat(var(--n), 1fr);
+    border-radius: var(--ss-radius-md);
+    background: var(--ss-ink-2);
+    padding: 2px;
+    display: grid;
+    position: relative;
+  }
+
+  .ss-seg__thumb {
+    width: calc((100% - 4px) / var(--n));
+    border-radius: var(--ss-radius-sm);
+    background: var(--ss-raised);
+    transition: transform .3s cubic-bezier(.22, 1, .36, 1);
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    left: 2px;
+    box-shadow: 0 1px 2px #00000014, 0 0 0 .5px #0000000f;
+  }
+
+  .ss-seg__option {
+    height: var(--ss-row);
+    color: var(--ss-text);
+    place-items: center;
+    padding: 0 10px;
+    font-size: 12px;
+    font-weight: 500;
+    transition: color .2s;
+    display: grid;
+    position: relative;
+  }
+
+  .ss-seg__option[data-on] {
+    color: var(--ss-text-strong);
+  }
+}
+
+/*# sourceMappingURL=src_vendor_stageshow_controls_Segmented_css_css_1igg3k2-ikub5._.single.css.map*/

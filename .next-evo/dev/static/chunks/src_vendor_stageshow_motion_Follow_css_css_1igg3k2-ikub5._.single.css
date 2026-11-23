@@ -1,0 +1,18 @@
+/* [project]/src/vendor/stageshow/motion/Follow.css.css [app-client] (css) */
+@layer stageshow {
+  .ss-follow {
+    opacity: 0;
+    pointer-events: none;
+    will-change: transform;
+    transition: opacity .18s;
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+
+  .ss-follow[data-show] {
+    opacity: 1;
+  }
+}
+
+/*# sourceMappingURL=src_vendor_stageshow_motion_Follow_css_css_1igg3k2-ikub5._.single.css.map*/

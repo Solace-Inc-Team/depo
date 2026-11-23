@@ -1,0 +1,42 @@
+/* [project]/src/vendor/stageshow/motion/States.css.css [app-client] (css) */
+@layer stageshow {
+  .ss-states {
+    place-items: center;
+    display: inline-grid;
+  }
+
+  .ss-states__item {
+    opacity: 0;
+    filter: blur(2px);
+    will-change: transform;
+    grid-area: 1 / 1;
+    align-items: center;
+    gap: 6px;
+    transition: opacity .15s, filter .15s, transform 0s .15s;
+    display: inline-flex;
+    transform: translate3d(0, 4px, 0);
+  }
+
+  .ss-states__item[data-on] {
+    opacity: 1;
+    filter: none;
+    transition: opacity .25s ease-out 70ms, filter .25s ease-out 70ms, transform .3s cubic-bezier(.22, 1, .36, 1) 70ms;
+    transform: translate3d(0, 0, 0);
+  }
+
+  .ss-states[data-align="start"] {
+    justify-items: start;
+  }
+
+  .ss-states[data-align="end"] {
+    justify-items: end;
+  }
+
+  .ss-states[data-reduced] > .ss-states__item {
+    filter: none;
+    transition: opacity .12s;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/*# sourceMappingURL=src_vendor_stageshow_motion_States_css_css_1igg3k2-ikub5._.single.css.map*/

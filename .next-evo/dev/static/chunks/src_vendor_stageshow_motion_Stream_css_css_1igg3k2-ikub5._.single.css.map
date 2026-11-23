@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/src/vendor/stageshow/motion/Stream.css.css"],"sourcesContent":["/* Stream */\r\n\r\n@layer stageshow {\r\n  .ss-stream__w {\r\n    opacity: 0;\r\n    filter: blur(3px);\r\n    border-radius: 3px;\r\n    box-decoration-break: clone;\r\n    -webkit-box-decoration-break: clone;\r\n    transition: opacity 0.35s ease, filter 0.35s ease, background-color 0.3s ease;\r\n  }\r\n\r\n  .ss-stream__w[data-on] {\r\n    opacity: 1;\r\n    filter: none;\r\n  }\r\n\r\n  /* Changed words, joined into runs */\r\n  .ss-stream__w[data-mark] {\r\n    background-color: var(--ss-success-soft);\r\n  }\r\n\r\n  .ss-stream__w[data-join] {\r\n    border-top-right-radius: 0;\r\n    border-bottom-right-radius: 0;\r\n  }\r\n\r\n  .ss-stream__w[data-joined] {\r\n    border-top-left-radius: 0;\r\n    border-bottom-left-radius: 0;\r\n  }\r\n}\r\n"],"names":[],"mappings":"AAEA;EACE;;;;;;;;;EASA;;;;;EAMA;;;;EAIA;;;;;EAKA"}}]
+}

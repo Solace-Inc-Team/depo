@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/src/vendor/stageshow/parts/Tooltip.css.css"],"sourcesContent":["/* Tooltip */\r\n\r\n@layer stageshow {\r\n  .ss-tooltip {\r\n    position: absolute;\r\n    z-index: 20;\r\n    display: flex;\r\n    align-items: center;\r\n    height: 22px;\r\n    padding: 0 8px;\r\n    border-radius: var(--ss-radius-sm);\r\n    background: #26262a;\r\n    color: #fff;\r\n    font-size: 11px;\r\n    font-weight: 500;\r\n    white-space: nowrap;\r\n    pointer-events: none;\r\n    opacity: 0;\r\n    transform: translate(-50%, -2px);\r\n    transition: opacity 0.1s ease, transform 0.1s ease;\r\n  }\r\n\r\n  .ss-tooltip[data-side='above'] {\r\n    transform: translate(-50%, calc(-100% + 2px));\r\n  }\r\n\r\n  .ss-tooltip[data-show] {\r\n    opacity: 1;\r\n    transform: translate(-50%, 0);\r\n    transition-duration: 0.15s;\r\n  }\r\n\r\n  .ss-tooltip[data-side='above'][data-show] {\r\n    transform: translate(-50%, -100%);\r\n  }\r\n\r\n  /* Centered on its letters, not its line box */\r\n  .ss-tooltip__label {\r\n    display: block;\r\n    text-box: trim-both cap alphabetic;\r\n  }\r\n}\r\n"],"names":[],"mappings":"AAEA;EACE;;;;;;;;;;;;;;;;;;;EAmBA;;;;EAIA;;;;;;EAMA;;;;EAKA"}}]
+}

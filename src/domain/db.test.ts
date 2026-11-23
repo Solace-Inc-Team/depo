@@ -1804,13 +1804,13 @@ test("robô do WhatsApp: repete o último pedido uma vez só, cada empresa com o
   const teste = (entrada: { texto?: string; id?: string }) => m.robo.conversar(A.t.id, "+55 11 98888-7777", entrada, { base: "https://depo.test", teste: true });
   await teste({ texto: "Oi" });
   const [t1] = await teste({ id: "repetir" });
-  assert.match(t1.texto, /Total R\$\s113,00[\s\S]*não foi lançado/);
+  assert.match(t1.texto, /Total: R\$\s113,00[\s\S]*não foi lançado/);
   assert.equal((await db.select().from(orders).where(and(eq(orders.customerId, cliente.id), eq(orders.origin, "whatsapp")))).length, 0);
   await m.robo.recomecarConversa(A.t.id, "+55 11 98888-7777");
 
   const [menu] = await fala(A.t.id, { texto: "Oi" });
   assert.ok(menu.tipo === "botoes" && menu.botoes[0].id === "repetir");
-  assert.match(menu.texto, /Olá, Maria! .*\n.*\n\n1x Gás A\nTaxa de entrega: R\$\s3,00\nTotal: R\$\s113,00 no Pix\nEntrega: Rua do Robô, 7/);
+  assert.match(menu.texto, /(Bom dia|Boa tarde|Boa noite), Maria! .*\n.*\n\n1x Gás A\nTaxa de entrega: R\$\s3,00\nTotal: R\$\s113,00 no Pix\nEntrega: Rua do Robô, 7/);
 
   // dois toques ao mesmo tempo em "Repetir pedido": um pedido só
   const [r1, r2] = await Promise.all([fala(A.t.id, { id: "repetir" }), fala(A.t.id, { id: "repetir" })]);
@@ -1823,9 +1823,15 @@ test("robô do WhatsApp: repete o último pedido uma vez só, cada empresa com o
   assert.equal(novos[0].address, "Rua do Robô, 7");
   assert.equal(novos[0].status, "aberto", "Pix pelo robô entra na fila: paga na entrega");
 
-  // o mesmo telefone em outra empresa não é cliente dela
+  // o mesmo telefone em outra empresa não é cliente dela: o robô cadastra pela conversa
   const [outra] = await fala(B.t.id, { texto: "Oi" });
-  assert.match(outra.texto, /Ainda não temos seu cadastro/);
+  assert.match(outra.texto, /qual é o seu nome?/);
+  await fala(B.t.id, { texto: "Maria Nova" });
+  const [produtos] = await fala(B.t.id, { texto: "Rua Nova, 45, Centro" });
+  assert.match(produtos.texto, /Anotado, Maria!/);
+  const [cadB] = await db.select().from(customers).where(and(eq(customers.tenantId, B.t.id), eq(customers.name, "Maria Nova")));
+  assert.equal(cadB.phone, "(11) 98888-7777");
+  assert.equal(cadB.address, "Rua Nova, 45, Centro");
 
   // anonimizar o cliente apaga onde a conversa parou (é do telefone dele)
   for (const o of [origem, novos[0]]) await m.orders.cancelOrder(A.ctx, o.id, "teste");
