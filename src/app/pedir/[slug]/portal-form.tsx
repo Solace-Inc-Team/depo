@@ -283,16 +283,23 @@ export function PortalForm({
           </ul>
         </section>
 
+        {/* quem pede e onde entregar em blocos separados: a pessoa enxerga duas tarefas curtas em vez de uma lista longa */}
         <section id="entrega" className="panel scroll-mt-4 space-y-3 p-4">
-          <h2 className="h2">Entrega</h2>
-          <div>
-            <label className="label" htmlFor="name">Seu nome</label>
-            <input id="name" name="name" required minLength={2} maxLength={120} autoComplete="name" className="input" />
+          <h2 className="h2">Seus dados</h2>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className="label" htmlFor="name">Seu nome</label>
+              <input id="name" name="name" required minLength={2} maxLength={120} autoComplete="name" className="input" />
+            </div>
+            <div>
+              <label className="label" htmlFor="phone">Telefone com DDD</label>
+              <input id="phone" name="phone" required inputMode="tel" data-mascara="telefone" autoComplete="tel" className="input" />
+            </div>
           </div>
-          <div>
-            <label className="label" htmlFor="phone">Telefone com DDD</label>
-            <input id="phone" name="phone" required inputMode="tel" data-mascara="telefone" autoComplete="tel" className="input" />
-          </div>
+        </section>
+
+        <section className="panel space-y-3 p-4">
+          <h2 className="h2">Endereço de entrega</h2>
           {/* o endereço salvo do último pedido volta já separado; "Não sou eu" recria os campos vazios */}
           <CamposEndereco key={salvo ? "salvo" : "vazio"} nome="address" id="end" inicial={salvo?.endereco} obrigatorio />
           <div>

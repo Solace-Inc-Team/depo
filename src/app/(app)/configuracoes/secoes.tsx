@@ -74,12 +74,12 @@ function Linha({
   titulo: React.ReactNode;
   descricao?: React.ReactNode;
   htmlFor?: string;
-  campo?: boolean;
+  campo?: boolean | "largo";
   children?: React.ReactNode;
 }) {
   const Nome = htmlFor ? "label" : "p";
   return (
-    <div className="ajuste-linha" data-campo={campo || undefined}>
+    <div className="ajuste-linha" data-campo={campo === "largo" ? "largo" : campo || undefined}>
       <span aria-hidden="true" className="ajuste-icone">
         <Icone size={16} strokeWidth={1.75} />
       </span>
@@ -134,7 +134,7 @@ export async function secoesConfig(tenantId: string, pagoAte: string | null) {
             <Linha icone={Phone} titulo="Telefone ou WhatsApp" descricao="Para o cliente chamar a loja direto do pedido." htmlFor="emp-tel" campo>
               <input id="emp-tel" name="phone" type="tel" inputMode="tel" data-mascara="telefone" maxLength={30} defaultValue={s.phone} className="input num" placeholder="(11) 91111-1111" />
             </Linha>
-            <Linha icone={MapPin} titulo="Endereço" descricao="Onde fica a loja, para quem quiser buscar no balcão." campo>
+            <Linha icone={MapPin} titulo="Endereço" descricao="Onde fica a loja, para quem quiser buscar no balcão." campo="largo">
               <CamposEndereco nome="address" id="emp-end" inicial={s.address} />
             </Linha>
           </Grupo>

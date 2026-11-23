@@ -1886,6 +1886,14 @@ html[data-trocando-tema]:has(.janela[open]) .app-shell > :not(dialog) {
 .ajuste-linha[data-campo] .ajuste-controle {
   width: 17rem;
 }
+/* campo grande (endereço em partes): sempre embaixo do nome, alinhado ao texto e com a largura toda */
+.ajuste-linha[data-campo="largo"] {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+.ajuste-linha[data-campo="largo"] .ajuste-controle {
+  grid-column: 2 / -1;
+  width: 100%;
+}
 @media (max-width: 639px) {
   .ajuste-linha[data-campo] {
     grid-template-columns: auto minmax(0, 1fr);

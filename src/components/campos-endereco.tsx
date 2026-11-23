@@ -55,10 +55,12 @@ export function CamposEndereco({
   });
 
   return (
-    <div className={`grid grid-cols-6 gap-3 ${className}`}>
+    // @container: os campos se arrumam pela largura de onde estão (janela estreita ou seção larga), não pela tela
+    <div className={`@container ${className}`}>
+      <div className="grid grid-cols-12 gap-3">
       <input type="hidden" name={nome} value={juntarEndereco(p)} />
       {/* o CEP tem linha própria: estes campos vivem em janelas estreitas, onde lado a lado ele espremia */}
-      <div className="col-span-6">
+      <div className="col-span-12">
         <label className="label" htmlFor={`${id}-cep`}>
           CEP <span className="font-normal text-muted">(preenche a rua e o bairro)</span>
         </label>
@@ -79,23 +81,24 @@ export function CamposEndereco({
           </p>
         </div>
       </div>
-      <div className="col-span-6">
+      <div className="col-span-12 @lg:col-span-8">
         <label className="label" htmlFor={`${id}-rua`}>Rua</label>
         <input id={`${id}-rua`} value={p.rua} onChange={muda("rua")} required={obrigatorio} maxLength={120} autoComplete="address-line1" className="input" placeholder="Rua, avenida, travessa" />
       </div>
-      <div className="col-span-2">
+      <div className="col-span-4">
         <label className="label" htmlFor={`${id}-num`}>Número</label>
         <input ref={numero} id={`${id}-num`} value={p.numero} onChange={muda("numero")} required={obrigatorio} maxLength={12} className="input num" placeholder="120" />
       </div>
-      <div className="col-span-4">
+      <div className="col-span-8 @lg:col-span-6">
         <label className="label" htmlFor={`${id}-comp`}>
           Complemento <span className="font-normal text-muted">(opcional)</span>
         </label>
         <input id={`${id}-comp`} value={p.complemento} onChange={muda("complemento")} maxLength={40} autoComplete="address-line2" className="input" placeholder="Apto, bloco, casa 2" />
       </div>
-      <div className="col-span-6">
+      <div className="col-span-12 @lg:col-span-6">
         <label className="label" htmlFor={`${id}-bairro`}>Bairro</label>
         <input id={`${id}-bairro`} value={p.bairro} onChange={muda("bairro")} required={obrigatorio} maxLength={60} className="input" />
+      </div>
       </div>
     </div>
   );
