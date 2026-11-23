@@ -106,11 +106,11 @@ export default async function Admin() {
                               <input id={`dm-${t.id}`} name="motivo" required minLength={3} maxLength={200} autoComplete="off" placeholder="Ex.: Pix não caiu" className="input" />
                             </PopoverForm>
                           )}
-                          {/* o robô responde no número da Cloud API ligado aqui; vazio desliga */}
+                          {/* o robô responde no número ligado aqui (Meta ou Evolution); vazio desliga */}
                           <PopoverForm align="left" label={t.whatsappNumeroId ? "WhatsApp ligado" : "Ligar WhatsApp"} action={ligarWhatsappAction} submit="Salvar">
                             <input type="hidden" name="tenantId" value={t.id} />
-                            <label className="label mb-0" htmlFor={`wa-${t.id}`}>ID do número na Meta</label>
-                            <input id={`wa-${t.id}`} name="numeroId" inputMode="numeric" defaultValue={t.whatsappNumeroId ?? ""} pattern="[0-9\s]*" maxLength={40} autoComplete="off" placeholder="Phone Number ID" className="input num" />
+                            <label className="label mb-0" htmlFor={`wa-${t.id}`}>Instância na Evolution ou ID na Meta</label>
+                            <input id={`wa-${t.id}`} name="numeroId" defaultValue={t.whatsappNumeroId ?? ""} pattern="[a-z0-9\-]*" maxLength={40} autoComplete="off" placeholder="Ex.: depo-teste" className="input" />
                             <p className="text-[13px] text-muted">Deixe vazio para desligar.</p>
                           </PopoverForm>
                           <PopoverForm align="left" label="Redefinir acesso" action={resetOwnerAccessAction} submit="Redefinir" confirm="Redefinir o acesso do dono? A senha dele será trocada e a verificação em duas etapas, desligada.">

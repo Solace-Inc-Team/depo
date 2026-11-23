@@ -265,8 +265,8 @@ export async function darDias(admin: SessionUser, input: z.infer<typeof darDiasS
 
 export const whatsappSchema = z.object({
   tenantId: z.string().uuid(),
-  // o Phone Number ID da Meta são só dígitos; vazio desliga
-  numeroId: z.union([z.literal(""), z.string().regex(/^\d{6,30}$/, "O ID do número tem só dígitos, como aparece na Meta.")]),
+  // o Phone Number ID da Meta (só dígitos) ou o nome da instância na Evolution (letras minúsculas, números e hífen); vazio desliga
+  numeroId: z.union([z.literal(""), z.string().trim().regex(/^[a-z0-9-]{3,40}$/, "Use o ID da Meta ou o nome da instância (letras minúsculas, números e hífen).")]),
 });
 
 /** Liga (ou desliga, com vazio) o número do WhatsApp da Cloud API ao robô de uma empresa. */

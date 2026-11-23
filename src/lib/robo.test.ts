@@ -113,3 +113,18 @@ test("troco absurdo no robô volta a perguntar em vez de derrubar a conversa", (
   const ok = responder({ etapa: "troco", itens: [{ productId: "b", quantity: 20, returnsEmpty: true }] } as Estado, { texto: "2500" }, grande);
   assert.equal(ok.estado?.etapa, "confirmar");
 });
+
+test("robô: sem botões, o cliente responde com o número ou o nome da opção", () => {
+  let r = responder({ etapa: "menu" }, { texto: "2" }, ctx());
+  assert.deepEqual(r.estado, { etapa: "produto" }, "2 = Outro pedido");
+  r = responder(r.estado, { texto: "2" }, ctx());
+  assert.deepEqual(r.estado, { etapa: "quantidade", productId: "b" }, "2 = segundo produto da lista");
+  r = responder(r.estado, { texto: "2" }, ctx());
+  assert.equal(r.estado?.etapa, "pagamento", "2 = duas unidades");
+  r = responder(r.estado, { texto: "pix" }, ctx());
+  assert.equal(r.estado?.etapa, "confirmar", "o nome da opção também vale");
+  assert.ok(responder(r.estado, { texto: "1" }, ctx()).lancar, "1 = Confirmar pedido");
+  const q = responder({ etapa: "quantidade", productId: "g" }, { texto: "5" }, ctx());
+  assert.equal(q.estado?.etapa, "vazio", "acima das opções, vale a quantidade digitada");
+  assert.match(textos(responder({ etapa: "pagamento", itens: [] }, { texto: "9" }, ctx()).saidas), /Não entendi/);
+});

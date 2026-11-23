@@ -174,10 +174,30 @@ function inicio(ctx: Contexto): Resposta {
 
 const vaiPara = (estado: Estado, ctx: Contexto): Resposta => ({ saidas: pergunta(estado, ctx), estado });
 
+const semAcento = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
+
+/**
+ * Sem botões (WhatsApp por QR code), o cliente responde digitando: "2" é a segunda opção da pergunta, e o nome da
+ * opção ("pix") também vale. Devolve o id da opção, ou "" se o texto não escolhe nenhuma.
+ */
+function opcaoDigitada(estado: Estado, ctx: Contexto, texto: string) {
+  let saidas: Saida[];
+  try {
+    saidas = pergunta(estado, ctx);
+  } catch {
+    return ""; // cadastro mudou no meio da conversa (produto saiu de venda): o fluxo normal recomeça a conversa
+  }
+  const ops = saidas.flatMap((s) => (s.tipo === "botoes" ? s.botoes : s.tipo === "lista" ? s.itens : []));
+  const n = /^\d{1,2}$/.test(texto) ? Number(texto) : 0;
+  // na quantidade, "2" já é a opção 2; acima das opções vale o número digitado
+  if (n >= 1 && n <= ops.length) return ops[n - 1].id;
+  return ops.find((o) => semAcento(o.titulo) === semAcento(texto))?.id ?? "";
+}
+
 /** Responde a uma mensagem do cliente, a partir de onde a conversa parou. */
 export function responder(estado: Estado | null, entrada: Entrada, ctx: Contexto): Resposta {
-  const id = entrada.id ?? "";
   const texto = (entrada.texto ?? "").trim();
+  const id = entrada.id || (estado && estado.etapa !== "loja" && texto ? opcaoDigitada(estado, ctx, texto) : "");
 
   // passou para a loja: o robô fica quieto até a conversa expirar
   if (estado?.etapa === "loja") return { saidas: [], estado };
@@ -187,7 +207,7 @@ export function responder(estado: Estado | null, entrada: Entrada, ctx: Contexto
   // o cadastro pode ter mudado no meio da conversa (cliente apagado, produto fora de venda)
   if (!ctx.cliente || !endereco(ctx)) return inicio(ctx);
 
-  const naoEntendi = (): Resposta => ({ saidas: [{ tipo: "texto", texto: "Não entendi. Toque em uma das opções abaixo." }, ...pergunta(estado, ctx)], estado });
+  const naoEntendi = (): Resposta => ({ saidas: [{ tipo: "texto", texto: "Não entendi. Escolha uma das opções abaixo." }, ...pergunta(estado, ctx)], estado });
 
   switch (estado.etapa) {
     case "menu": {
