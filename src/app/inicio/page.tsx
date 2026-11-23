@@ -274,11 +274,9 @@ export default function Inicio() {
                   </li>
                 ))}
               </ul>
-              {/* o cartão é estreito: um botão por linha, da mesma largura */}
-              <div className="mt-8 grid gap-3">
-                <BotaoContato className="w-full justify-center" />
-                <BotaoZap className="w-full justify-center" />
-              </div>
+              {/* só criar conta: o WhatsApp está no fechamento logo abaixo, e os dois em seguida se repetiam */}
+              <BotaoContato className="mt-8 w-full justify-center" />
+
             </Peca>
           </div>
 
