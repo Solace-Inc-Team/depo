@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/src/vendor/stageshow/motion/Camera.css.css"],"sourcesContent":["/* Camera */\r\n\r\n@property --ss-feather {\r\n  syntax: '<length>';\r\n  inherits: false;\r\n  initial-value: 0px;\r\n}\r\n\r\n@layer stageshow {\r\n  /* The camera's frame: clips the zoomed scene and feathers its edges while\r\n     zoomed (the feather eases in and out with the move) */\r\n  .ss-camera-view {\r\n    position: absolute;\r\n    inset: 0;\r\n    overflow: clip;\r\n    mask-image:\r\n      linear-gradient(to right, transparent, #000 var(--ss-feather), #000 calc(100% - var(--ss-feather)), transparent),\r\n      linear-gradient(to bottom, transparent, #000 var(--ss-feather), #000 calc(100% - var(--ss-feather)), transparent);\r\n    mask-composite: intersect;\r\n  }\r\n\r\n  .ss-camera {\r\n    position: absolute;\r\n    inset: 0;\r\n    transform-origin: 0 0;\r\n  }\r\n}\r\n"],"names":[],"mappings":"AAEA;;;;;;AAMA;EAGE;;;;;;;;;;EAUA"}}]
-}

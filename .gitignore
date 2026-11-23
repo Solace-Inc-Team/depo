@@ -16,6 +16,8 @@
 # next.js
 /.next/
 /.next-e2e/
+# builds de teste locais (qa-cartao, qa-evo, ...)
+/.next-*/
 /test-results/
 /playwright-report/
 /out/

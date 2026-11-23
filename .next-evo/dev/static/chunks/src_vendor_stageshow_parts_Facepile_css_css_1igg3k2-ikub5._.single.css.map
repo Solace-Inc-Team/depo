@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/src/vendor/stageshow/parts/Facepile.css.css"],"sourcesContent":["/* Facepile */\r\n\r\n@layer stageshow {\r\n  /* Facepile: each face is cut out where the next overlaps it (a mask, not a ring) */\r\n  .ss-facepile {\r\n    display: inline-flex;\r\n    align-items: center;\r\n  }\r\n\r\n  .ss-facepile__face {\r\n    display: flex;\r\n  }\r\n\r\n  .ss-facepile__face + .ss-facepile__face {\r\n    margin-left: var(--ss-overlap);\r\n  }\r\n}\r\n"],"names":[],"mappings":"AAEA;EAEE;;;;;EAKA;;;;EAIA"}}]
-}

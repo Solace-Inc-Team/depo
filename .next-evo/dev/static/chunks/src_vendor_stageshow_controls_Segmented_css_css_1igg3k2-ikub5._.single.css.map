@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["turbopack:///[project]/src/vendor/stageshow/controls/Segmented.css.css"],"sourcesContent":["/* Segmented */\r\n\r\n@layer stageshow {\r\n  .ss-seg {\r\n    position: relative;\r\n    display: grid;\r\n    grid-template-columns: repeat(var(--n), 1fr);\r\n    padding: 2px;\r\n    border-radius: var(--ss-radius-md);\r\n    background: var(--ss-ink-2);\r\n  }\r\n\r\n  .ss-seg__thumb {\r\n    position: absolute;\r\n    top: 2px;\r\n    bottom: 2px;\r\n    left: 2px;\r\n    width: calc((100% - 4px) / var(--n));\r\n    border-radius: var(--ss-radius-sm);\r\n    background: var(--ss-raised);\r\n    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 0 0 0.5px rgba(0, 0, 0, 0.06);\r\n    transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);\r\n  }\r\n\r\n  .ss-seg__option {\r\n    position: relative;\r\n    display: grid;\r\n    place-items: center;\r\n    height: var(--ss-row);\r\n    padding: 0 10px;\r\n    font-size: 12px;\r\n    font-weight: 500;\r\n    color: var(--ss-text);\r\n    transition: color 0.2s ease;\r\n  }\r\n\r\n  .ss-seg__option[data-on] {\r\n    color: var(--ss-text-strong);\r\n  }\r\n}\r\n"],"names":[],"mappings":"AAEA;EACE;;;;;;;;;EASA;;;;;;;;;;;;EAYA;;;;;;;;;;;;EAYA"}}]
-}
