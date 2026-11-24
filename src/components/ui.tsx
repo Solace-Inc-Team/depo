@@ -24,14 +24,15 @@ export const paymentLabel = { dinheiro: "Dinheiro", pix: "Pix", cartao: "Cartão
 export const roleLabel = { dono: "Dono", atendente: "Atendente", caixa: "Caixa", entregador: "Entregador" } as const;
 
 export function Money({ cents, className = "" }: { cents: number; className?: string }) {
-  return <span className={`num ${className}`}>{formatBRL(cents)}</span>;
+  // valor nunca quebra: a tabela deixa quebrar palavra comprida em qualquer ponto, e "R$ 1" ficava longe de "15,00"
+  return <span className={`num whitespace-nowrap ${className}`}>{formatBRL(cents)}</span>;
 }
 
 export function Difference({ cents, className = "" }: { cents: number; className?: string }) {
   const color = cents < 0 ? "text-danger" : cents > 0 ? "text-ok" : "text-muted";
   const label = cents < 0 ? "falta " : cents > 0 ? "sobra " : "";
   return (
-    <span className={`num font-semibold ${color} ${className}`}>
+    <span className={`num font-semibold whitespace-nowrap ${color} ${className}`}>
       {cents === 0 ? "sem diferença" : `${label}${formatBRL(Math.abs(cents))}`}
     </span>
   );

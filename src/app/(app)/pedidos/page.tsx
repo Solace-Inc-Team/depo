@@ -87,9 +87,12 @@ export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
         <div className="w-full sm:max-w-xs">
           <CampoBusca name="q" defaultValue={q} placeholder="Cliente ou número do pedido" rotulo="Buscar pedido" />
         </div>
-        <p className="text-[13px] text-muted">
-          {orders.length} {orders.length === 1 ? "pedido" : "pedidos"}
-        </p>
+        {/* a contagem já está na aba; aqui só diz quanto a busca achou */}
+        {q && (
+          <p className="text-[13px] text-muted">
+            {orders.length} {orders.length === 1 ? "encontrado" : "encontrados"}
+          </p>
+        )}
       </form>
 
       <div className="rola-x panel overflow-x-auto">
@@ -143,10 +146,11 @@ export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
                     {o.customerAddress && <p className="text-[13px] text-muted">{o.customerAddress}</p>}
                   </td>
                   {/* entregue sem entregador é venda no balcão; sem entregador ainda é pedido esperando */}
-                  <td>{o.driverName ?? <span className="text-muted">{semEntregador[o.status] ?? ""}</span>}</td>
+                  <td>{o.driverName ?? <span className="whitespace-nowrap text-muted">{semEntregador[o.status] ?? ""}</span>}</td>
                   <td className="whitespace-nowrap text-muted">{fmtQuando(o.createdAt)}</td>
-                  <td>{paymentLabel[o.paymentMethod]}</td>
-                  <td><StatusBadge status={o.status} />{o.origin === "portal" && <SiteBadge />}</td>
+                  {/* pagamento é informação de apoio: no peso do cliente, competia com o nome */}
+                  <td className="whitespace-nowrap text-muted">{paymentLabel[o.paymentMethod]}</td>
+                  <td className="whitespace-nowrap"><StatusBadge status={o.status} />{o.origin === "portal" && <SiteBadge />}</td>
                   <td className="text-right font-medium"><Money cents={o.totalCents} /></td>
                 </tr>
               ))}

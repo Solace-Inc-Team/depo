@@ -40,8 +40,17 @@ const Card = ({ id, children }: { id: string; children: React.ReactElement<{ "da
   </ViewTransition>
 );
 
+// passou de um dia, conta em dias: "136 h 05" ninguém lê de primeira
 const waited = (min: number) =>
-  min < 60 ? `${min} min` : min % 60 ? `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, "0")}` : `${min / 60} h`;
+  min >= 1440
+    ? `${Math.floor(min / 1440)} ${min < 2880 ? "dia" : "dias"}`
+    : min < 60
+      ? `${min} min`
+      : min % 60
+        ? `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, "0")}`
+        : `${min / 60} h`;
+// na rua há mais de um dia não é atraso, é pedido esquecido: o aviso pede para conferir em vez de alarmar
+const esquecido = (min: number) => min >= 1440;
 
 // "há 0 min" parecia defeito: antes do primeiro minuto é "agora"
 const ha = (min: number) => (min < 1 ? "agora" : `há ${waited(min)}`);
@@ -182,7 +191,8 @@ export default async function Entregas() {
       )}
 
       <Desliza nome="entregas-colunas">
-      <div className="grid gap-6 lg:grid-cols-2">
+      {/* cada coluna com a altura do que tem: vazia, a da esquerda esticava até o fim da dos entregadores */}
+      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
         <section className="panel">
           <h2 className="h2 border-b border-line px-4 py-3">
             Aguardando saída <span className="font-normal text-muted">({queue.length})</span>
@@ -299,8 +309,9 @@ export default async function Entregas() {
                             <span className="num text-muted">#{o.number}</span> {o.customerName ?? "Cliente"}
                             <span className="block text-sm text-muted">{o.customerAddress}</span>
                           </Link>
-                          <span className={`text-[13px] ${late(o) ? "font-semibold text-danger" : "text-muted"}`}>
+                          <span className={`text-[13px] ${esquecido(minutesSince(o.dispatchedAt)) ? "font-medium text-warn-fg" : late(o) ? "font-semibold text-danger" : "text-muted"}`}>
                             saiu {ha(minutesSince(o.dispatchedAt))}
+                            {esquecido(minutesSince(o.dispatchedAt)) && ". Confira se foi entregue"}
                           </span>
                         </div>
                         {/* o entregador voltou ou ligou: a loja lança o que aconteceu */}

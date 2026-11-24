@@ -426,7 +426,8 @@ export const listShifts = scoped(async function listShifts(tenantId: string, bra
     .from(shifts)
     .innerJoin(driver, eq(driver.id, shifts.driverId))
     .where(and(eq(shifts.tenantId, tenantId), branchId ? eq(shifts.branchId, branchId) : undefined, status ? eq(shifts.status, status) : undefined))
-    .orderBy(desc(shifts.openedAt))
+    // o fechado vai pela data em que fechou (a que a tela mostra); pela abertura, um acerto de 15/11 caía depois de um de 10/11
+    .orderBy(desc(sql`coalesce(${shifts.closedAt}, ${shifts.openedAt})`))
     .limit(100);
   const openIds = rows.filter((r) => r.shift.status === "aberto").map((r) => r.shift.id);
   const handed = openIds.length
