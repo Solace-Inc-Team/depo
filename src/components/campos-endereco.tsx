@@ -167,7 +167,7 @@ export function CamposEndereco({
             ref={cepRef}
             aria-describedby={`${id}-cep-aviso`}
           />
-          <p id={`${id}-cep-aviso`} aria-live="polite" className={`min-w-40 flex-1 text-[12.5px] transition-colors ${comAviso ? "" : "h-0 overflow-hidden"} ${aviso?.erro ? "text-danger" : "text-muted"}`}>
+          <p id={`${id}-cep-aviso`} aria-live="polite" className={`min-w-40 flex-1 text-[12px] transition-colors ${comAviso ? "" : "h-0 overflow-hidden"} ${aviso?.erro ? "text-danger" : "text-muted"}`}>
             {/* quem não vê precisa saber o que mudou e por que o cursor foi para o número */}
             {aviso?.pulou && <span className="sr-only">Rua e bairro preenchidos. Cursor no número. </span>}
             <TextoQueTroca texto={aviso?.texto ?? ""} brilho={!!aviso?.buscando} />

@@ -24,3 +24,13 @@ export function parsePeriod(sp: Record<string, string | string[] | undefined>) {
   const to = new Date(new Date(`${toStr}T00:00:00-03:00`).getTime() + 864e5); // fim exclusivo
   return { fromStr, toStr, from, to };
 }
+
+/** Tempo de espera para ler de primeira: "12 min", "2 h 05", "3 h"; passou de um dia, conta em dias ("136 h 05" ninguém lê). */
+export const duracao = (min: number) =>
+  min >= 1440
+    ? `${Math.floor(min / 1440)} ${min < 2880 ? "dia" : "dias"}`
+    : min < 60
+      ? `${min} min`
+      : min % 60
+        ? `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, "0")}`
+        : `${min / 60} h`;

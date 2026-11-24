@@ -160,7 +160,7 @@ export default async function Estoque() {
                     )}
                     <div>
                       {p.name}
-                      {!p.returnable && <p className="text-[12.5px] font-normal whitespace-nowrap text-muted">não retornável</p>}
+                      {!p.returnable && <p className="text-[12px] font-normal whitespace-nowrap text-muted">não retornável</p>}
                     </div>
                   </div>
                 </td>

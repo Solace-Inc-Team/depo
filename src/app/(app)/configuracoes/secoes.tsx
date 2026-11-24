@@ -85,10 +85,10 @@ function Linha({
         <Icone size={16} strokeWidth={1.75} />
       </span>
       <div className="min-w-0">
-        <Nome htmlFor={htmlFor} className="block text-[13.5px] font-medium">
+        <Nome htmlFor={htmlFor} className="block text-[13px] font-medium">
           {titulo}
         </Nome>
-        {descricao && <p className="mt-0.5 text-[12.5px] text-muted">{descricao}</p>}
+        {descricao && <p className="mt-0.5 text-[12px] text-muted">{descricao}</p>}
       </div>
       {children && <div className="ajuste-controle">{children}</div>}
     </div>

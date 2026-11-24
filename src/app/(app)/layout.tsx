@@ -108,7 +108,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           {selo && (
             <Link
               href="/assinatura"
-              className={`ml-auto flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-[12.5px] font-medium lg:hidden ${selo.alerta ? "border-warn-fg/40 text-warn-fg" : "border-line"}`}
+              className={`ml-auto flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-[12px] font-medium lg:hidden ${selo.alerta ? "border-warn-fg/40 text-warn-fg" : "border-line"}`}
             >
               <CreditCard size={14} strokeWidth={1.75} aria-hidden="true" className={selo.alerta ? "" : "text-accent"} />
               {selo.curta}
@@ -124,8 +124,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
                   secoes={await secoesConfig(user.tenantId, user.pagoAte)}
                   rodape={
                     <>
-                      <p className="truncate text-[12.5px] font-medium text-fg">{user.tenantName}</p>
-                      <p className="text-[11.5px] text-muted">{user.pagoAte ? "Plano mensal" : "Sem mensalidade"}</p>
+                      <p className="truncate text-[12px] font-medium text-fg">{user.tenantName}</p>
+                      <p className="text-[12px] text-muted">{user.pagoAte ? "Plano mensal" : "Sem mensalidade"}</p>
                     </>
                   }
                   className="size-8 max-lg:hidden"

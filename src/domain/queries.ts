@@ -545,6 +545,7 @@ export const dashboard = scoped(async function dashboard(tenantId: string, f: { 
     deliveredCount: delivered.length,
     // a fila conta também o que sobrou de ontem
     pending: now.waiting,
+    oldestWaitingMin: now.oldestWaitingMin,
     inRoute: now.inRoute,
     late: now.late,
     returned: now.returned,
@@ -631,6 +632,8 @@ export const exceptionsNow = scoped(async function exceptionsNow(tenantId: strin
       returned: sql<number>`(count(*) filter (where ${orders.status} = 'aberto' and ${orders.occurrence} is not null))::int`,
       pixToCheck: sql<number>`(count(*) filter (where ${orders.status} = 'entregue' and ${orders.paymentMethod} = 'pix' and ${orders.pixConfirmedAt} is null))::int`,
       waiting: sql<number>`(count(*) filter (where ${orders.status} = 'aberto'))::int`,
+      // há quantos minutos espera o pedido mais antigo da fila (null sem fila)
+      oldestWaitingMin: sql<number | null>`(extract(epoch from now() - min(${orders.createdAt}) filter (where ${orders.status} = 'aberto')) / 60)::int`,
       // pedido do site no Pix sem cobrança do Mercado Pago: só entra na fila quando a loja confere o extrato
       pixSite: sql<number>`(count(*) filter (where ${orders.status} = 'aguardando_pagamento' and ${orders.mpPaymentId} is null))::int`,
       inRoute: sql<number>`(count(*) filter (where ${orders.status} = 'em_rota'))::int`,

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { withTenant } from "@/db";
 import { getSettings, listDrivers, listOrders, listShifts, listViagens, programadosParaHoje } from "@/domain/queries";
-import { todayISO } from "@/lib/period";
+import { duracao, todayISO } from "@/lib/period";
 import { ActionForm } from "@/components/action-form";
 import { confirmPixAction, dispatchAction, lancarProgramadoAction, pularProgramadoAction } from "@/app/actions";
 import { after } from "next/server";
@@ -40,20 +40,11 @@ const Card = ({ id, children }: { id: string; children: React.ReactElement<{ "da
   </ViewTransition>
 );
 
-// passou de um dia, conta em dias: "136 h 05" ninguém lê de primeira
-const waited = (min: number) =>
-  min >= 1440
-    ? `${Math.floor(min / 1440)} ${min < 2880 ? "dia" : "dias"}`
-    : min < 60
-      ? `${min} min`
-      : min % 60
-        ? `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, "0")}`
-        : `${min / 60} h`;
 // na rua há mais de um dia não é atraso, é pedido esquecido: o aviso pede para conferir em vez de alarmar
 const esquecido = (min: number) => min >= 1440;
 
 // "há 0 min" parecia defeito: antes do primeiro minuto é "agora"
-const ha = (min: number) => (min < 1 ? "agora" : `há ${waited(min)}`);
+const ha = (min: number) => (min < 1 ? "agora" : `há ${duracao(min)}`);
 
 export default async function Entregas() {
   const user = await requireUser("dono", "atendente", "caixa");
@@ -103,7 +94,7 @@ export default async function Entregas() {
         title="Entregas"
         description={
           lateCount
-            ? `${lateCount} ${lateCount === 1 ? "pedido passou" : "pedidos passaram"} de ${waited(settings.lateAfterMinutes)} desde que ${lateCount === 1 ? "foi lançado" : "foram lançados"}.`
+            ? `${lateCount} ${lateCount === 1 ? "pedido passou" : "pedidos passaram"} de ${duracao(settings.lateAfterMinutes)} desde que ${lateCount === 1 ? "foi lançado" : "foram lançados"}.`
             : undefined
         }
       />

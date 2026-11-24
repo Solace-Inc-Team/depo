@@ -27,7 +27,7 @@ export function SemanaBarras({ semana }: { semana: { day: string; cents: number 
       </Dicas>
       <div aria-hidden="true" className="mt-1 flex gap-0.5">
         {semana.map((d, i) => (
-          <span key={d.day} className={`flex-1 text-center text-[10.5px] ${i === ultimo ? "font-medium text-fg" : "text-muted"}`}>
+          <span key={d.day} className={`flex-1 text-center text-[11px] ${i === ultimo ? "font-medium text-fg" : "text-muted"}`}>
             {dia(d.day)}
           </span>
         ))}

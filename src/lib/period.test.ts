@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { dataISO, parsePeriod, somaDias } from "./period.ts";
+import { dataISO, duracao, parsePeriod, somaDias } from "./period.ts";
 
 test("período com o De depois do Até é trocado, em vez de sair vazio", () => {
   const p = parsePeriod({ de: "2026-11-16", ate: "2026-11-01" });
@@ -21,4 +21,12 @@ test("data impossível na URL cai no padrão em vez de derrubar a tela", () => {
   const p = parsePeriod({ de: "2026-02-30", ate: "2026-13-45" });
   assert.ok(dataISO(p.fromStr) && dataISO(p.toStr));
   assert.notEqual(p.fromStr, "2026-02-30");
+});
+
+test("duracao: minutos, horas e, passado de um dia, dias", () => {
+  assert.equal(duracao(12), "12 min");
+  assert.equal(duracao(125), "2 h 05");
+  assert.equal(duracao(180), "3 h");
+  assert.equal(duracao(1500), "1 dia");
+  assert.equal(duracao(8165), "5 dias");
 });

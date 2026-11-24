@@ -123,7 +123,7 @@ export function SeletorFilial({ empresa, atual, filiais }: { empresa: string; at
           {nome.charAt(0).toUpperCase()}
         </span>
         <span className="min-w-0 flex-1 leading-tight">
-          <span className="block truncate text-[11.5px] text-muted">{empresa}</span>
+          <span className="block truncate text-[12px] text-muted">{empresa}</span>
           <span ref={nomeRef} className={`block truncate text-[13px] font-medium ${trocando ? "filial-trocando" : ""}`}>{nome}</span>
         </span>
         <ChevronsUpDown aria-hidden="true" size={14} strokeWidth={1.75} className="shrink-0 text-muted transition-colors group-hover:text-fg" />
@@ -143,7 +143,7 @@ export function SeletorFilial({ empresa, atual, filiais }: { empresa: string; at
           onKeyDown={navegar}
           className="popover popover-left absolute top-full right-0 left-0 z-30 mt-1.5 rounded-lg border border-line bg-surface p-1 shadow-[0_12px_32px_rgb(0_0_0/0.18)]"
         >
-          <p className="px-2.5 pt-1.5 pb-1 text-[11.5px] text-muted">Filiais</p>
+          <p className="px-2.5 pt-1.5 pb-1 text-[12px] text-muted">Filiais</p>
           {filiais.map((f, i) => {
             const essa = f.id === mostrada;
             return (
@@ -159,7 +159,7 @@ export function SeletorFilial({ empresa, atual, filiais }: { empresa: string; at
                 onClick={() => escolher(f.id)}
                 className="flex min-h-10 w-full items-center gap-2.5 rounded-md px-2.5 text-left text-[13px] outline-none hover:bg-subtle focus-visible:bg-subtle"
               >
-                <span aria-hidden="true" className="grid size-5 shrink-0 place-items-center rounded bg-subtle text-[10.5px] font-semibold text-muted">
+                <span aria-hidden="true" className="grid size-5 shrink-0 place-items-center rounded bg-subtle text-[11px] font-semibold text-muted">
                   {f.name.charAt(0).toUpperCase()}
                 </span>
                 <span className={`min-w-0 flex-1 truncate ${essa ? "font-medium" : ""}`}>{f.name}</span>

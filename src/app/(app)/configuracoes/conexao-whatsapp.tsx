@@ -148,8 +148,8 @@ export function ConexaoWhatsappPainel() {
               <Smartphone size={16} strokeWidth={1.75} />
             </span>
             <div className="min-w-0">
-              <p className="block text-[13.5px] font-medium">WhatsApp da loja</p>
-              <p className="mt-0.5 text-[12.5px] text-muted" aria-live="polite">
+              <p className="block text-[13px] font-medium">WhatsApp da loja</p>
+              <p className="mt-0.5 text-[12px] text-muted" aria-live="polite">
                 {erro ?? descricao}
               </p>
             </div>
@@ -178,7 +178,7 @@ export function ConexaoWhatsappPainel() {
                   <span className="text-[13px] text-neutral-500">Gerando o QR…</span>
                 )}
               </div>
-              <div className="text-[13.5px]">
+              <div className="text-[13px]">
                 <ol className="list-inside list-decimal space-y-2">
                   <li>No celular da loja, abra o WhatsApp.</li>
                   <li>Toque em <b className="font-medium">Configurações</b> e depois em <b className="font-medium">Aparelhos conectados</b>.</li>
@@ -192,7 +192,7 @@ export function ConexaoWhatsappPainel() {
       </section>
             {/* já na conferência: o aviso entrando depois empurrava o "Testar a conversa" uns 70 px */}
       <Aparece quando={!conexao || conexao.estado === "sem" || conexao.estado === "conectando"}>
-        <p className="mt-3 flex items-start gap-2 text-[12.5px] text-muted">
+        <p className="mt-3 flex items-start gap-2 text-[12px] text-muted">
           <Info size={14} strokeWidth={1.75} aria-hidden="true" className="mt-0.5 shrink-0" />
           A conexão é pelo WhatsApp Web, que não é um serviço oficial do WhatsApp para robôs. Para evitar bloqueio, o robô só responde quem
           chamou primeiro e nunca manda mensagem em massa.

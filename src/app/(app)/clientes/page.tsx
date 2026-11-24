@@ -64,7 +64,7 @@ export default async function Clientes({ searchParams }: PageProps<"/clientes">)
                     </a>
                   )}
                   {/* no celular não cabe a coluna da direita: o mesmo resumo desce para baixo do telefone */}
-                  <p className="text-[12.5px] text-muted sm:hidden">
+                  <p className="text-[12px] text-muted sm:hidden">
                     {ultimoPedido(c.ultimoPedido)}
                     {deve.has(c.id) && (
                       <span className="text-warn-fg">

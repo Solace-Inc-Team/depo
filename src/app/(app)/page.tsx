@@ -6,7 +6,7 @@ import { previsao, vaziosFaltando } from "@/lib/relatorios";
 import { after } from "next/server";
 import { cancelarPixVencidos } from "@/domain/pix";
 import { contasVencendo } from "@/domain/contas";
-import { dataISO, todayISO } from "@/lib/period";
+import { dataISO, duracao, todayISO } from "@/lib/period";
 import { LiveNumber } from "@/components/live-number";
 import { SemanaBarras } from "@/components/semana-barras";
 import { comparar } from "@/lib/comparativo";
@@ -148,7 +148,7 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
             <p className="text-muted max-sm:text-[13px]">Dinheiro na rua<span className="max-sm:hidden"> agora</span></p>
             <LiveNumber value={d.cashInStreet} cents fromZero="once" className="text-[2rem] leading-tight font-semibold tracking-[-0.03em] max-sm:text-[1.375rem]" />
             {/* a linha de apoio logo embaixo do número, na mesma altura nos três cartões */}
-            <p className="mt-1 text-sm text-muted max-sm:text-[12.5px]">
+            <p className="mt-1 text-sm text-muted max-sm:text-[12px]">
               com {d.openShifts.length} {d.openShifts.length === 1 ? "entregador" : "entregadores"}
             </p>
             {/* com quem está o dinheiro: a mesma barra das formas de pagamento, um trecho por entregador */}
@@ -160,7 +160,14 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
               <LiveNumber value={d.pending} fromZero="once" /> <span className="text-xl font-medium text-muted max-sm:text-[15px]">aguardando</span>
             </p>
             {/* uma linha só: a barra com legenda repetia o número de cima ("Aguardando saída 11") */}
-            <p className="mt-1 text-sm text-muted max-sm:text-[12.5px]">{d.inRoute} em rota</p>
+            <p className="mt-1 text-sm text-muted max-sm:text-[12px]">{d.inRoute} em rota</p>
+            {/* a coluna ficava com meia altura vazia ao lado das outras duas: aqui cabe há quanto tempo a fila espera */}
+            <p className="mt-4 flex items-center gap-2 text-sm text-muted max-sm:hidden">
+              <span aria-hidden="true" className={`size-1.5 shrink-0 rounded-full ${d.oldestWaitingMin == null ? "bg-ok" : "bg-warn"}`} />
+              {d.oldestWaitingMin == null
+                ? "Fila em dia"
+                : `O mais antigo espera há ${d.oldestWaitingMin < 1 ? "menos de 1 min" : duracao(d.oldestWaitingMin)}`}
+            </p>
           </div>
         </section>
 
