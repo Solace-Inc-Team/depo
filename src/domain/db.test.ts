@@ -631,7 +631,12 @@ test("portal: só com portal ligado, reconhece o cliente pelo telefone e não us
   const [{ antes }] = await db.select({ antes: tenants.pagoAte }).from(tenants).where(eq(tenants.id, A.t.id));
   await db.update(tenants).set({ pagoAte: "2000-01-01" }).where(eq(tenants.id, A.t.id));
   assert.equal(await m.portal.portalTenant(t.slug), null);
+  // e o robô do WhatsApp fica quieto pelo mesmo motivo
+  await db.update(tenants).set({ whatsappNumeroId: "qa-pausada" }).where(eq(tenants.id, A.t.id));
+  assert.equal(await m.platform.empresaDoNumeroWhats("qa-pausada"), null);
   await db.update(tenants).set({ pagoAte: antes }).where(eq(tenants.id, A.t.id));
+  assert.equal(await m.platform.empresaDoNumeroWhats("qa-pausada"), A.t.id);
+  await db.update(tenants).set({ whatsappNumeroId: null }).where(eq(tenants.id, A.t.id));
   assert.ok((await m.portal.portalProducts(A.t.id, A.branch.id)).every((p) => p.name !== B.product.name));
 
   const input = {

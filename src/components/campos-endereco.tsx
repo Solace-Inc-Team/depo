@@ -45,6 +45,20 @@ export function CamposEndereco({
     }
   }
 
+  // o formulário limpo (janela fechada, salvo com sucesso) limpa as partes também: o reset nativo não alcança o
+  // estado do React, e o próximo cliente saía com o endereço do anterior
+  useEffect(() => {
+    const form = cepRef.current?.form;
+    if (!form) return;
+    const limpar = () => {
+      buscado.current = "";
+      setAviso(null);
+      setP(separarEndereco(inicial));
+    };
+    form.addEventListener("reset", limpar);
+    return () => form.removeEventListener("reset", limpar);
+  }, [inicial]);
+
   // ouvinte nativo: a máscara do CEP reescreve o campo antes do React, que então não vê a mudança no onChange
   useEffect(() => {
     const el = cepRef.current;

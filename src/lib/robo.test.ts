@@ -238,3 +238,20 @@ test("robô entende: o que não dá para entender pede de novo, sem inventar", (
     assert.match(textos(responder(e, { texto: f }, tres()).saidas), /Não entendi/, f);
   assert.match(textos(responder({ etapa: "quantidade", productId: "b" }, { texto: "50" }, tres()).saidas), /Só temos 9 de Gás P13/);
 });
+
+test("robô: o endereço do cadastro vale mais que o do último pedido (a loja pode ter corrigido)", () => {
+  const corrigido = ctx({ cliente: { nome: "Maria Souza", endereco: "Av. Nova, 50" } });
+  assert.match(textos(responder(null, { texto: "oi" }, corrigido).saidas), /Entrega: Av\. Nova, 50/);
+});
+
+test("robô: 'quero' numa frase não confirma, e trocar o pagamento no fim não lança com o antigo", () => {
+  const conf: Estado = { etapa: "confirmar", itens: [{ productId: "b", quantity: 1, returnsEmpty: true }], pagamento: "pix" };
+  assert.equal(responder(conf, { texto: "quero mudar o endereço" }, ctx()).lancar, undefined);
+  const cartao = responder(conf, { texto: "quero pagar no cartão" }, ctx());
+  assert.equal(cartao.lancar, undefined);
+  assert.deepEqual(cartao.estado, { ...conf, pagamento: "cartao" });
+  assert.equal(responder(conf, { texto: "manda no dinheiro" }, ctx()).estado?.etapa, "troco");
+  assert.ok(responder(conf, { texto: "pode sim" }, ctx()).lancar, "concordância curta confirma");
+  // menu de quem já pediu: pergunta não repete o último pedido
+  for (const t of ["pode me ajudar?", "tenho uma dúvida", "quero fazer um pedido"]) assert.equal(responder({ etapa: "menu" }, { texto: t }, ctx()).lancar, undefined, t);
+});

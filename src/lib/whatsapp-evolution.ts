@@ -1,10 +1,16 @@
-import { timingSafeEqual } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 import type { Entrada, Saida } from "./robo.ts";
 
 // A ponte entre a Evolution API (WhatsApp ligado por QR code, sem a Meta) e o robô: lê o aviso de mensagem que ela
 // manda e monta as respostas em texto, porque esse meio não mostra botões. Sem banco e sem rede, para dar para testar.
 
-/** O aviso veio da nossa Evolution: a chave combinada vai no endereço do webhook (?chave=). */
+/**
+ * A chave do webhook de uma instância: derivada do segredo e do nome dela, então quem vê o endereço de uma loja
+ * não fala em nome de outra. Vai no endereço do webhook (?chave=).
+ */
+export const chaveDaInstancia = (segredo: string, instancia: string) => createHmac("sha256", segredo).update(instancia).digest("base64url").slice(0, 32);
+
+/** O aviso veio da nossa Evolution: a chave combinada confere. */
 export function chaveOk(esperada: string, recebida: string | null) {
   if (!esperada || !recebida) return false;
   const a = Buffer.from(esperada);
@@ -33,7 +39,13 @@ export function mensagemDoAviso(aviso: unknown): MensagemEvolution | null {
   const k = a.data?.key;
   const texto = a.data?.message?.conversation ?? a.data?.message?.extendedTextMessage?.text;
   if (!k?.remoteJid || !k.id || k.fromMe || !texto?.trim()) return null;
-  const jidCelular = [k.remoteJid, k.remoteJidAlt, k.senderPn].find((j) => j?.endsWith("@s.whatsapp.net"));
+  // a resposta vai para remoteJid, então é ele quem diz quem é o cliente; o celular ao lado só vale para o @lid
+  // (grupo e status com senderPn ficam de fora: a resposta iria para o grupo, falando de outra pessoa)
+  const jidCelular = k.remoteJid.endsWith("@s.whatsapp.net")
+    ? k.remoteJid
+    : k.remoteJid.endsWith("@lid")
+      ? [k.remoteJidAlt, k.senderPn].find((j) => j?.endsWith("@s.whatsapp.net"))
+      : undefined;
   if (!jidCelular) return null;
   return { instancia: a.instance, jid: k.remoteJid, telefone: jidCelular.split("@")[0], id: k.id, entrada: { texto: texto.slice(0, 500) } };
 }

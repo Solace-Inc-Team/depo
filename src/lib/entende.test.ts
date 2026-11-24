@@ -35,6 +35,10 @@ test("entende: sim, não, loja, desistir e repetir", () => {
   for (const s of ["o mesmo de sempre", "repete", "igual da última vez", "mesmo pedido"]) assert.equal(intencao(s), "repetir", s);
   for (const s of ["oi", "Oiii", "boa tarde", "bom dia!", "olá", "opa"]) assert.equal(intencao(s), "saudacao", s);
   assert.equal(intencao("Maria Souza"), null);
+  for (const s of ["quero", "pode", "manda", "quero sim", "tá bom", "pode sim, manda"]) assert.equal(intencao(s), "sim", s);
+  // começo de outra coisa, não concordância
+  for (const s of ["quero mudar o endereço", "quero pagar no cartão", "quero fazer um pedido", "pode me ajudar?", "tenho uma dúvida", "ok, mas troca o gás", "manda no dinheiro"])
+    assert.equal(intencao(s), null, s);
 });
 
 test("entende: pagamento, números e valores", () => {

@@ -33,7 +33,7 @@ import { ativarFilial, criarFilial, mudarDeFilial } from "@/domain/filiais";
 import { alterarProgramado, alterarSchema, excluirProgramado, lancarProgramado, pausarProgramado, programar, programarSchema, pularProgramado } from "@/domain/programados";
 import { cookies } from "next/headers";
 import { conversar, recomecarConversa } from "@/domain/robo";
-import { conectarWhatsapp, conexaoWhatsapp, desconectarWhatsapp, type ConexaoWhatsapp } from "@/domain/whatsapp-conexao";
+import { apontarWebhook, conectarWhatsapp, conexaoWhatsapp, desconectarWhatsapp, type ConexaoWhatsapp } from "@/domain/whatsapp-conexao";
 import type { Saida } from "@/lib/robo";
 import { FILIAL_COOKIE } from "@/lib/auth";
 import { todayISO } from "@/lib/period";
@@ -829,7 +829,17 @@ export async function ligarWhatsappAction(fd: FormData): Promise<ActionState> {
   const r = await run(async () => {
     nome = await ligarWhatsapp(admin, whatsappSchema.parse({ tenantId: str(fd, "tenantId"), numeroId }));
   }, ["/admin"]);
-  return r?.error ? r : { ok: numeroId ? `Robô de ${nome} ligado ao WhatsApp.` : `Robô de ${nome} desligado do WhatsApp.` };
+  if (r?.error) return r;
+  if (!numeroId) return { ok: `Robô de ${nome} desligado do WhatsApp.` };
+  // instância da Evolution (nome com letras): o webhook dela passa a ter a chave certa
+  if (!/^\d+$/.test(numeroId)) {
+    try {
+      await apontarWebhook(numeroId, await siteUrl());
+    } catch (e) {
+      return { error: `Robô de ${nome} ligado, mas o webhook não foi apontado: ${(e as Error).message}` };
+    }
+  }
+  return { ok: `Robô de ${nome} ligado ao WhatsApp.` };
 }
 
 // o aviso aparece no topo do sistema de todas as empresas: revalida o layout delas também

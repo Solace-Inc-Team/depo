@@ -62,7 +62,8 @@ const LOJA = { id: "loja", titulo: "Falar com a loja" };
 const curto = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s);
 
 const produto = (ctx: Contexto, id: string) => ctx.produtos.find((p) => p.id === id);
-const endereco = (ctx: Contexto) => ctx.ultimo?.endereco || ctx.cliente?.endereco || null;
+// o do cadastro primeiro: a loja pode ter corrigido o endereço depois do último pedido
+const endereco = (ctx: Contexto) => ctx.cliente?.endereco || ctx.ultimo?.endereco || null;
 // o último pedido só se repete se todos os produtos dele ainda estão à venda
 const ultimo = (ctx: Contexto) => (ctx.ultimo?.itens.every((i) => produto(ctx, i.productId)) ? ctx.ultimo : null);
 
@@ -357,12 +358,12 @@ export function responder(estado: Estado | null, entrada: Entrada, ctx: Contexto
     }
     case "confirmar": {
       if (estado.itens.some((i) => !produto(ctx, i.productId))) return inicio(ctx);
+      // mudou de ideia no fim ("quero no cartão"): vem antes do sim, para não lançar com o pagamento antigo
+      const pg = id ? null : pagamentoNaFrase(t);
+      if (pg && pg !== estado.pagamento) return vaiPara(pg === "dinheiro" ? { etapa: "troco", itens: estado.itens } : { etapa: "confirmar", itens: estado.itens, pagamento: pg }, ctx);
       if (id === "confirmar" || (!id && quer === "sim"))
         return { saidas: [], estado: null, lancar: { itens: estado.itens, pagamento: estado.pagamento, ...(estado.trocoCents ? { trocoCents: estado.trocoCents } : {}) } };
       if (!id && quer === "nao") return inicio(ctx);
-      // mudou de ideia no fim: "troca pra cartão"
-      const pg = pagamentoNaFrase(t);
-      if (pg && pg !== estado.pagamento) return vaiPara(pg === "dinheiro" ? { etapa: "troco", itens: estado.itens } : { etapa: "confirmar", itens: estado.itens, pagamento: pg }, ctx);
       return naoEntendi();
     }
   }

@@ -83,8 +83,9 @@ export async function conversar(tenantId: string, telefone: string, entrada: Ent
         .orderBy(asc(products.name));
       const livre = await disponivelNaLoja(tx, tenantId, branchId, lista.map((p) => p.id));
 
-      const endereco = ultimo?.endereco || cliente?.endereco || null;
-      const referencia = (ultimo?.endereco ? ultimo.referencia : cliente?.referencia) ?? "";
+      // o endereço do cadastro manda: a loja pode ter corrigido em Clientes; o do último pedido só vale sem cadastro
+      const endereco = cliente?.endereco || ultimo?.endereco || null;
+      const referencia = (cliente?.endereco ? cliente.referencia : ultimo?.referencia) ?? "";
       const ctx: Contexto = {
         loja: loja.nome,
         saudacao: saudacaoAgora(),

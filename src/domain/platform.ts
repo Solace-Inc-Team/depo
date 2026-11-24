@@ -7,7 +7,7 @@ import { DomainError } from "@/lib/ctx";
 import { hashPassword } from "@/lib/password";
 import type { SessionUser } from "@/lib/auth";
 import { audit } from "./stock";
-import { PLANO, somarDias } from "@/lib/plano";
+import { PLANO, situacaoAssinatura, somarDias } from "@/lib/plano";
 import { todayISO } from "@/lib/period";
 
 // Tudo aqui é da equipe da Solace e atravessa empresas, por isso não recebe Ctx de tenant.
@@ -285,10 +285,14 @@ export async function ligarWhatsapp(admin: SessionUser, input: z.infer<typeof wh
   });
 }
 
-/** A empresa dona do número que recebeu a mensagem (só empresa ativa responde). */
+/**
+ * A empresa dona do número que recebeu a mensagem. Só responde empresa ativa e com o acesso em dia: pausada pela
+ * mensalidade, a loja nem vê os pedidos, então o robô fica quieto (como o link de pedidos, que sai do ar).
+ */
 export async function empresaDoNumeroWhats(numeroId: string) {
-  const [t] = await db.select({ id: tenants.id }).from(tenants).where(and(eq(tenants.whatsappNumeroId, numeroId), eq(tenants.active, true)));
-  return t?.id ?? null;
+  const [t] = await db.select({ id: tenants.id, pagoAte: tenants.pagoAte }).from(tenants).where(and(eq(tenants.whatsappNumeroId, numeroId), eq(tenants.active, true)));
+  if (!t || situacaoAssinatura(t.pagoAte, todayISO())?.bloqueado) return null;
+  return t.id;
 }
 
 /** As últimas liberações de dias, para o registro no painel. */

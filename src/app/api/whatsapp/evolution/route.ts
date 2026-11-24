@@ -5,22 +5,26 @@ import { DomainError } from "@/lib/ctx";
 import { attempt } from "@/lib/rate-limit";
 import { siteUrl } from "@/lib/request";
 import { telefoneDoWhats } from "@/lib/whatsapp-api";
-import { chaveOk, mensagemDoAviso, textoParaWhats } from "@/lib/whatsapp-evolution";
+import { chaveDaInstancia, chaveOk, mensagemDoAviso, textoParaWhats } from "@/lib/whatsapp-evolution";
 
 // Webhook da Evolution API (WhatsApp ligado por QR code, sem a Meta). Cada número é uma "instância" da Evolution;
 // no admin, "Ligar WhatsApp" da empresa recebe o nome da instância. Configuração no Coolify:
 // EVOLUTION_URL (endereço da Evolution), EVOLUTION_KEY (chave dela, para responder) e EVOLUTION_WEBHOOK_CHAVE
-// (vai no endereço do webhook: /api/whatsapp/evolution?chave=...).
+// (segredo de onde sai a chave de cada instância, que vai no endereço do webhook: /api/whatsapp/evolution?chave=...).
 // Só responde quem escreveu: nunca manda mensagem primeiro, para o número não ser bloqueado.
 
 export async function POST(req: Request) {
-  if (!chaveOk(process.env.EVOLUTION_WEBHOOK_CHAVE?.trim() ?? "", new URL(req.url).searchParams.get("chave"))) return new Response(null, { status: 401 });
+  const segredo = process.env.EVOLUTION_WEBHOOK_CHAVE?.trim() ?? "";
+  if (!segredo) return new Response(null, { status: 401 });
   let aviso: unknown;
   try {
     aviso = await req.json();
   } catch {
-    return new Response(null, { status: 200 });
+    return new Response(null, { status: 401 });
   }
+  const instancia = (aviso as { instance?: unknown })?.instance;
+  // cada instância tem a própria chave: a de uma loja não serve para falar em nome de outra
+  if (typeof instancia !== "string" || !chaveOk(chaveDaInstancia(segredo, instancia), new URL(req.url).searchParams.get("chave"))) return new Response(null, { status: 401 });
   const m = mensagemDoAviso(aviso);
   if (!m) return new Response(null, { status: 200 });
   console.info(`[whatsapp-evo] mensagem na instância ${m.instancia} de ...${m.telefone.slice(-4)}`);
@@ -30,7 +34,7 @@ export async function POST(req: Request) {
       // o mesmo aviso pode chegar duas vezes: cada mensagem é respondida uma vez só
       if (await attempt(`wa-msg:${m.id}`, 1)) return;
       const tenantId = await empresaDoNumeroWhats(m.instancia);
-      if (!tenantId) return console.warn(`[whatsapp-evo] instância sem empresa ligada (${m.instancia})`);
+      if (!tenantId) return console.warn(`[whatsapp-evo] instância sem empresa ligada ou com o acesso pausado (${m.instancia})`);
       const saidas = await conversar(tenantId, telefoneDoWhats(m.telefone), m.entrada, { base });
       await enviar(m.instancia, m.jid, saidas.map(textoParaWhats));
     } catch (e) {

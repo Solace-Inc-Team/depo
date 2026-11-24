@@ -121,8 +121,15 @@ export function intencao(texto: string): Intencao | null {
   if (algum(t, / (cancela|cancelar|cancelo|desisto|desistir|deixa pra la|esquece|nao quero mais) /)) return "cancelar";
   if (algum(t, / (repete|repetir|o mesmo|a mesma|mesma coisa|de sempre|igual|o de sempre|ultimo pedido|mesmo pedido) /)) return "repetir";
   if (algum(t, / (nao|n|nop|nope|negativo|nunca|nem) /)) return "nao";
-  if (algum(t, / (sim|s|ss|isso|isso mesmo|confirmo|confirma|confirmar|ok|okay|blz|beleza|pode|pode ser|pode mandar|manda|mande|fechado|fechou|certo|correto|claro|bora|vamos|tenho|quero|positivo|exato|perfeito|show|top|uhum|aham|yes) /))
-    return "sim";
+  // "sim" só quando a frase é uma concordância: pergunta, pedido de mudança ou frase comprida não confirmam nada
+  // ("quero pagar no cartão", "pode me ajudar?", "ok, mas muda o endereço")
+  const curta = t.trim().split(" ").length;
+  if (!texto.includes("?") && !algum(t, / (mudar|muda|mude|trocar|troca|troque|alterar|altera|corrigir|corrige|errado|errada|duvida|ajuda|ajudar|mas|porem) /)) {
+    if (curta <= 5 && algum(t, / (sim|s|ss|isso|isso mesmo|confirmo|confirma|confirmar|ok|okay|blz|beleza|pode ser|pode mandar|fechado|fechou|certo|correto|claro|positivo|exato|perfeito|show|top|uhum|aham|yes|ta bom|tá bom|ta certo|esta certo|tudo certo) /))
+      return "sim";
+    // "quero", "pode", "manda", "tenho" sozinhos (ou quase) também concordam; numa frase, são o começo de outra coisa
+    if (curta <= 2 && algum(t, / (pode|manda|mande|quero|tenho|bora|vamos) /)) return "sim";
+  }
   if (algum(t, /^ ?(oi+|ola|opa|eae|eai|e ai|bom dia|boa tarde|boa noite|boa|ei|hey|alo|salve|menu|inicio|comecar)( |$)/) && t.split(" ").length <= 4) return "saudacao";
   return null;
 }

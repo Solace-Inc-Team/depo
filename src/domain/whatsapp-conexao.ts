@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { tenants } from "@/db/schema";
 import { DomainError } from "@/lib/ctx";
 import { formatarTelefone } from "@/lib/mascara";
+import { chaveDaInstancia } from "@/lib/whatsapp-evolution";
 import type { SessionUser } from "@/lib/auth";
 import { audit } from "./stock";
 
@@ -67,10 +68,20 @@ export async function conexaoWhatsapp(user: SessionUser, { qr = false } = {}): P
   return { estado: "conectando", qr: c?.base64?.startsWith("data:image/") ? c.base64 : null };
 }
 
+/** O webhook que traz as mensagens de uma instância para o robô, com a chave dela. */
+function webhookDa(nome: string, siteUrl: string) {
+  const { webhook } = config();
+  return { url: `${siteUrl}/api/whatsapp/evolution?chave=${chaveDaInstancia(webhook, nome)}`, byEvents: false, base64: false, events: ["MESSAGES_UPSERT"] };
+}
+
+/** Aponta (de novo) o webhook de uma instância que já existe: depois de trocar o segredo, ou ligada à mão no admin. */
+export async function apontarWebhook(nome: string, siteUrl: string) {
+  await evo(`/webhook/set/${encodeURIComponent(nome)}`, { method: "POST", body: JSON.stringify({ webhook: { enabled: true, ...webhookDa(nome, siteUrl) } }) });
+}
+
 /** Cria a instância da loja (se ainda não tem) com o webhook do robô, e devolve o QR para ler. */
 export async function conectarWhatsapp(user: SessionUser, siteUrl: string): Promise<ConexaoWhatsapp> {
   if (user.role !== "dono") throw new DomainError("Só o dono conecta o WhatsApp.");
-  const { webhook } = config();
   const atual = await instanciaDa(user.tenantId);
   if (atual && /^\d+$/.test(atual)) return { estado: "meta" };
   const nome = atual ?? nomeDaInstancia(user.tenantId);
@@ -84,9 +95,10 @@ export async function conectarWhatsapp(user: SessionUser, siteUrl: string): Prom
         qrcode: true,
         // o robô só conversa com cliente: grupo e chamada ficam com o celular
         groupsIgnore: true,
-        webhook: { url: `${siteUrl}/api/whatsapp/evolution?chave=${encodeURIComponent(webhook)}`, byEvents: false, base64: false, events: ["MESSAGES_UPSERT"] },
+        webhook: webhookDa(nome, siteUrl),
       }),
     });
+  else await apontarWebhook(nome, siteUrl);
   if (!atual)
     await db.transaction(async (tx) => {
       await tx.update(tenants).set({ whatsappNumeroId: nome }).where(eq(tenants.id, user.tenantId));
