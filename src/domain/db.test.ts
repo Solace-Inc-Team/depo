@@ -1811,10 +1811,22 @@ test("robô do WhatsApp: repete o último pedido uma vez só, cada empresa com o
   const [t1] = await teste({ id: "repetir" });
   assert.match(t1.texto, /Total: R\$\s113,00[\s\S]*não foi lançado/);
   assert.equal((await db.select().from(orders).where(and(eq(orders.customerId, cliente.id), eq(orders.origin, "whatsapp")))).length, 0);
-  await m.robo.recomecarConversa(A.t.id, "+55 11 98888-7777");
+  // a conversa da tela de teste é separada: parar no meio dela não deixa o cliente de verdade preso
+  await teste({ texto: "Oi" });
+  await teste({ texto: "loja" });
+
+  // celular cadastrado sem o 9 e fixo com +55 também são achados pelo número que chega do WhatsApp
+  const [antigo] = await db.insert(customers).values({ tenantId: A.t.id, name: "Zé do Nove", phone: "(21) 8765-4321", address: "Rua Velha, 1" }).returning();
+  const [fixo] = await db.insert(customers).values({ tenantId: A.t.id, name: "Padaria Fixa", phone: "+55 (21) 3222-1111", address: "Rua Fixa, 2" }).returning();
+  assert.match((await m.robo.conversar(A.t.id, "5521987654321", { texto: "Oi" }, { base: "https://depo.test" }))[0].texto, /Zé!/);
+  assert.match((await m.robo.conversar(A.t.id, "552132221111", { texto: "Oi" }, { base: "https://depo.test" }))[0].texto, /Padaria!/);
+  for (const tel of ["21987654321", "2132221111"]) await db.delete(conversasWhatsapp).where(and(eq(conversasWhatsapp.tenantId, A.t.id), eq(conversasWhatsapp.telefone, tel)));
+  await db.delete(customers).where(and(eq(customers.tenantId, A.t.id), eq(customers.id, antigo.id)));
+  await db.delete(customers).where(and(eq(customers.tenantId, A.t.id), eq(customers.id, fixo.id)));
 
   const [menu] = await fala(A.t.id, { texto: "Oi" });
-  assert.ok(menu.tipo === "botoes" && menu.botoes[0].id === "repetir");
+  assert.ok(menu.tipo === "botoes" && menu.botoes[0].id === "repetir", "o \"loja\" da tela de teste não calou o cliente de verdade");
+  await m.robo.recomecarConversa(A.t.id, "+55 11 98888-7777");
   assert.match(menu.texto, /(Bom dia|Boa tarde|Boa noite), Maria! .*\n.*\n\n1x Gás A\nTaxa de entrega: R\$\s3,00\nTotal: R\$\s113,00 no Pix\nEntrega: Rua do Robô, 7/);
 
   // dois toques ao mesmo tempo em "Repetir pedido": um pedido só

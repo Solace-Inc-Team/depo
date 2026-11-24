@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* computador com mouse: o tamanho compacto; no toque (celular, tablet, celular deitado) fica o de 44 px */
+@custom-variant fino (@media (min-width: 640px) and (pointer: fine));
 
 :root {
   /* marca do depo: azul do ponto, âmbar chama (gás) e papel */
@@ -289,6 +291,8 @@ body {
     padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--line);
     vertical-align: middle;
+    /* palavra comprida sem espaço (e-mail, link) quebra na célula em vez de alargar a tabela */
+    overflow-wrap: anywhere;
   }
   .table tbody tr:last-child td {
     border-bottom: 0;
@@ -1895,6 +1899,14 @@ html[data-trocando-tema]:has(.janela[open]) .app-shell > :not(dialog) {
   width: 100%;
 }
 @media (max-width: 639px) {
+  /* linha com botão: no celular o botão desce para baixo do texto, que ficava com uma palavra por linha */
+  .ajuste-linha:has(.ajuste-controle .btn) {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .ajuste-linha:has(.ajuste-controle .btn) .ajuste-controle {
+    grid-column: 2 / -1;
+    justify-self: start;
+  }
   .ajuste-linha[data-campo] {
     grid-template-columns: auto minmax(0, 1fr);
   }
@@ -4077,6 +4089,13 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   position: absolute;
   top: 0;
   left: 0;
+}
+@media (max-width: 639px) {
+  /* a sobra fica depois do ponto, no fim da linha: no meio ("cada  casco.") parecia espaço dobrado */
+  .palavra-gira {
+    width: var(--maior) !important;
+    text-align: left;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .palavra-gira {

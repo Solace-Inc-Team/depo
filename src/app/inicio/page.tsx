@@ -83,7 +83,7 @@ export default function Inicio() {
             <Logo animar="entrada" />
           </Link>
           <nav className="flex items-center gap-6 text-[13px] text-muted">
-            <Link href="/login" className="btn px-3 text-[13px] sm:h-8">Entrar</Link>
+            <Link href="/login" className="btn px-3 text-[13px] fino:h-8">Entrar</Link>
           </nav>
         </div>
       </header>
@@ -103,7 +103,7 @@ export default function Inicio() {
                         {/* o que a revenda guarda muda de nome conforme o produto: a palavra troca sozinha */}
                         {w === "casco." ? (
                           <>
-                            <PalavraQueGira palavras={["casco", "galão", "botijão"]} />.
+                            <PalavraQueGira palavras={["casco", "galão", "botijão"]} sufixo="." />
                           </>
                         ) : (
                           w

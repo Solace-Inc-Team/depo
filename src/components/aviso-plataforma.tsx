@@ -38,7 +38,7 @@ export function AvisoPlataforma({ id, texto }: { id: string; texto: string }) {
               // sem armazenamento (aba privada): fecha só agora
             }
           }}
-          className="grid size-11 shrink-0 place-items-center rounded-md text-muted hover:bg-bg hover:text-fg sm:size-8"
+          className="grid size-11 shrink-0 place-items-center rounded-md text-muted hover:bg-bg hover:text-fg fino:size-8"
         >
           <X size={15} strokeWidth={1.75} aria-hidden="true" />
         </button>

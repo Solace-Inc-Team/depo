@@ -18,27 +18,39 @@ export function chaveOk(esperada: string, recebida: string | null) {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-export type MensagemEvolution = { instancia: string; jid: string; telefone: string; id: string; entrada: Entrada };
+/** `midia`: áudio, foto ou vídeo sem texto; o robô não entende, mas responde pedindo texto. */
+export type MensagemEvolution = { instancia: string; jid: string; telefone: string; id: string; entrada: Entrada; midia?: true };
 
 type Aviso = {
   event?: string;
   instance?: string;
   data?: {
     key?: { remoteJid?: string; remoteJidAlt?: string; senderPn?: string; fromMe?: boolean; id?: string };
-    message?: { conversation?: string; extendedTextMessage?: { text?: string } };
+    message?: {
+      conversation?: string;
+      extendedTextMessage?: { text?: string };
+      imageMessage?: { caption?: string };
+      videoMessage?: { caption?: string };
+      audioMessage?: object;
+      documentMessage?: { caption?: string };
+      stickerMessage?: object;
+    };
   };
 };
 
 /**
- * A mensagem do cliente que veio no aviso, ou null. Fica de fora: o que o próprio número mandou, grupo, status,
- * foto, áudio. Contato novo pode vir como "@lid" (id interno do WhatsApp): o celular de verdade vem no campo ao lado.
+ * A mensagem do cliente que veio no aviso, ou null. Fica de fora: o que o próprio número mandou, grupo, status.
+ * Áudio, foto e figurinha sem texto voltam com `midia`. Contato novo pode vir como "@lid" (id interno do WhatsApp): o celular de verdade vem no campo ao lado.
  */
 export function mensagemDoAviso(aviso: unknown): MensagemEvolution | null {
   const a = aviso as Aviso;
   if (a?.event?.toLowerCase().replace("_", ".") !== "messages.upsert" || !a.instance) return null;
   const k = a.data?.key;
-  const texto = a.data?.message?.conversation ?? a.data?.message?.extendedTextMessage?.text;
-  if (!k?.remoteJid || !k.id || k.fromMe || !texto?.trim()) return null;
+  const msg = a.data?.message;
+  // foto ou vídeo com legenda: a legenda é o texto
+  const texto = msg?.conversation ?? msg?.extendedTextMessage?.text ?? msg?.imageMessage?.caption ?? msg?.videoMessage?.caption ?? msg?.documentMessage?.caption;
+  const midia = !texto?.trim() && !!(msg?.audioMessage || msg?.imageMessage || msg?.videoMessage || msg?.documentMessage || msg?.stickerMessage);
+  if (!k?.remoteJid || !k.id || k.fromMe || (!texto?.trim() && !midia)) return null;
   // a resposta vai para remoteJid, então é ele quem diz quem é o cliente; o celular ao lado só vale para o @lid
   // (grupo e status com senderPn ficam de fora: a resposta iria para o grupo, falando de outra pessoa)
   const jidCelular = k.remoteJid.endsWith("@s.whatsapp.net")
@@ -47,7 +59,9 @@ export function mensagemDoAviso(aviso: unknown): MensagemEvolution | null {
       ? [k.remoteJidAlt, k.senderPn].find((j) => j?.endsWith("@s.whatsapp.net"))
       : undefined;
   if (!jidCelular) return null;
-  return { instancia: a.instance, jid: k.remoteJid, telefone: jidCelular.split("@")[0], id: k.id, entrada: { texto: texto.slice(0, 500) } };
+  const base = { instancia: a.instance, jid: k.remoteJid, telefone: jidCelular.split("@")[0], id: k.id };
+  if (midia) return { ...base, entrada: {}, midia: true };
+  return { ...base, entrada: { texto: texto!.slice(0, 500) } };
 }
 
 /** Uma resposta do robô em texto: as opções viram uma lista numerada para o cliente responder com o número. */

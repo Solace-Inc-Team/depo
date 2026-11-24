@@ -252,7 +252,13 @@ export function NewOrderForm({
             </div>
           )}
           {customer && !creating ? null : creating ? (
-            <div className="enter grid gap-3 sm:grid-cols-2">
+            <div
+              className="enter grid gap-3 sm:grid-cols-2"
+              // Enter no meio do cadastro (no CEP, no número) não lança o pedido pela metade: lançar é o botão ou Ctrl+Enter
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.ctrlKey && !e.metaKey && e.target instanceof HTMLInputElement) e.preventDefault();
+              }}
+            >
               <div className="sm:col-span-2">
                 <label className="label" htmlFor="nc-name">Nome</label>
                 <input id="nc-name" name="newCustomerName" required maxLength={120} defaultValue={q} className="input" autoFocus />
@@ -261,7 +267,7 @@ export function NewOrderForm({
                 <label className="label" htmlFor="nc-phone">Telefone</label>
                 <TelefoneCliente id="nc-phone" name="newCustomerPhone" className="input" />
               </div>
-              <CamposEndereco nome="newCustomerAddress" id="nc-end" className="sm:col-span-2" />
+              <CamposEndereco nome="newCustomerAddress" id="nc-end" obrigatorio={mode === "entrega"} className="sm:col-span-2" />
               <div className="sm:col-span-2">
                 <label className="label" htmlFor="nc-ref">Referência</label>
                 <input id="nc-ref" name="newCustomerReference" maxLength={200} className="input" />
@@ -362,12 +368,13 @@ export function NewOrderForm({
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold">{p.name}</p>
                       <p className="text-sm text-muted">
-                        <span className="num">{formatBRL(p.priceCents)}</span>, {p.available} {p.returnable ? "cheios livres" : "livres"}
+                        {/* reservado além do que há (a carga ainda não chegou): "nenhum livre", nunca um número negativo */}
+                        <span className="num">{formatBRL(p.priceCents)}</span>, {p.available > 0 ? `${p.available} ${p.returnable ? "cheios livres" : "livres"}` : p.returnable ? "nenhum cheio livre" : "nenhum livre"}
                         {p.reserved > 0 && ` (${p.reserved} ${p.reserved === 1 ? "reservado" : "reservados"})`}
                       </p>
                       {/* o pedido passa mesmo assim (a carga pode chegar antes da entrega), mas a pessoa fica sabendo */}
-                      <Aparece quando={n > p.available}>
-                        <p className="text-sm font-medium text-warn-fg">Acima do estoque livre ({p.available})</p>
+                      <Aparece quando={n > 0 && n > p.available}>
+                        <p className="text-sm font-medium text-warn-fg">Acima do estoque livre ({Math.max(0, p.available)})</p>
                       </Aparece>
                     </div>
                     <div className="flex items-center gap-1" role="group" aria-label={`Quantidade de ${p.name}`}>

@@ -30,7 +30,8 @@ export type Estado =
   | { etapa: "nome"; pedido?: PedidoNaFrase }
   | { etapa: "endereco"; nome: string; pedido?: PedidoNaFrase }
   | { etapa: "menu" }
-  | { etapa: "produto"; ids?: string[] }
+  // `qtd`: a quantidade que ele já disse, enquanto escolhe qual produto ("2 gás" numa loja com P13 e P45)
+  | { etapa: "produto"; ids?: string[]; qtd?: number }
   | { etapa: "quantidade"; productId: string }
   | { etapa: "vazio"; productId: string; quantity: number }
   | { etapa: "pagamento"; itens: Item[] }
@@ -213,7 +214,9 @@ function inicio(ctx: Contexto, pedido?: PedidoNaFrase): Resposta {
 
 /** O cliente disse o produto (e talvez a quantidade): segue para a próxima pergunta que falta. */
 function escolher(ctx: Contexto, pedido: PedidoNaFrase, prefixo = ""): Resposta {
-  if (pedido.ids.length !== 1) return { saidas: [listaProdutos(ctx, prefixo, pedido.ids)], estado: { etapa: "produto", ids: pedido.ids } };
+  if (pedido.varios)
+    return { saidas: [listaProdutos(ctx, `${prefixo}Por aqui eu anoto um produto por pedido. Escolha o primeiro; o outro você pede logo depois.\n`, pedido.ids)], estado: { etapa: "produto", ids: pedido.ids } };
+  if (pedido.ids.length !== 1) return { saidas: [listaProdutos(ctx, prefixo, pedido.ids)], estado: { etapa: "produto", ids: pedido.ids, ...(pedido.qtd ? { qtd: pedido.qtd } : {}) } };
   const p = produto(ctx, pedido.ids[0])!;
   if (p.disponivel <= 0) return { saidas: [listaProdutos(ctx, `${prefixo}${p.nome} acabou agora. `)], estado: { etapa: "produto" } };
   if (pedido.qtd) return comQuantidade(ctx, p, pedido.qtd, prefixo);
@@ -282,16 +285,24 @@ export function responder(estado: Estado | null, entrada: Entrada, ctx: Contexto
   if (estado.etapa === "nome") {
     if (ctx.cliente) return inicio(ctx, estado.pedido);
     const nome = semPrefixo(t).replace(/\s+/g, " ");
-    const naFrase = pedidoNaFrase(ctx.produtos, t);
-    if (naFrase.ids.length) return { saidas: [texto(`Já anotei. Antes, me diga o seu nome, por favor.`)], estado: { etapa: "nome", pedido: naFrase } };
-    if (nome.length < 2 || nome.length > 60 || !/\p{L}{2}/u.test(nome) || /\d/.test(nome) || nome.split(" ").length > 6)
+    // o que ele quer, dito antes do nome, fica guardado; uma vez só, para um nome como "Gaspar" não prender aqui
+    const naFrase = estado.pedido ? null : pedidoNaFrase(ctx.produtos, t);
+    if (naFrase?.ids.length) return { saidas: [texto(`Já anotei. Antes, me diga o seu nome, por favor.`)], estado: { etapa: "nome", pedido: naFrase } };
+    const resposta = intencao(t);
+    if (nome.length < 2 || nome.length > 60 || !/\p{L}{2}/u.test(nome) || /\d/.test(nome) || nome.split(" ").length > 6 || (resposta === "sim" || resposta === "nao" || resposta === "repetir") || pagamentoNaFrase(t))
       return { saidas: [texto(`Me diga só o seu nome, por favor.${DICA_LOJA}`)], estado };
     return { saidas: [texto(`Prazer, ${nomeCurto(nome)}! ${PEDE_ENDERECO}`)], estado: { etapa: "endereco", nome, ...(estado.pedido ? { pedido: estado.pedido } : {}) } };
   }
   if (estado.etapa === "endereco") {
     if (endereco(ctx)) return inicio(ctx, estado.pedido);
     const end = semPrefixo(t).replace(/\s+/g, " ");
-    if (end.length < 8 || end.length > 160 || !/\p{L}{3}/u.test(end))
+    // "quero 2 gás" no lugar do endereço: guarda o pedido e pergunta o endereço de novo
+    const naFrase = estado.pedido ? null : pedidoNaFrase(ctx.produtos, t);
+    if (naFrase?.ids.length && !/\d{2,}|\bs\/?n\b/i.test(t.replace(/\b\d{1,2}\s*(l|lt|kg)\b|\bp\s?\d{1,2}\b/gi, "")))
+      return { saidas: [texto(`Já anotei. Antes, ${PEDE_ENDERECO[0].toLowerCase()}${PEDE_ENDERECO.slice(1)}`)], estado: { ...estado, pedido: naFrase } };
+    // endereço tem número (ou "s/n"); "sim", "confirmar", "troco pra 50" não são endereço
+    const resposta = intencao(t);
+    if (end.length < 8 || end.length > 160 || !/\p{L}{3}/u.test(end) || !/\d|\bs\/?n\b/i.test(end) || (resposta === "sim" || resposta === "nao" || resposta === "repetir") || /\btroco\b/i.test(t))
       return { saidas: [texto(`Não consegui entender o endereço. ${PEDE_ENDERECO}`)], estado };
     const anotado = `Anotado, ${nomeCurto(estado.nome)}!\n`;
     const seguir = estado.pedido?.ids.length ? escolher(ctx, estado.pedido, anotado) : { saidas: [listaProdutos(ctx, anotado)], estado: { etapa: "produto" } as Estado };
@@ -323,13 +334,14 @@ export function responder(estado: Estado | null, entrada: Entrada, ctx: Contexto
       // "o de 13" escolhe entre os que estavam na pergunta
       const escolhido = naLista ?? (pedido?.ids.length ? { ...pedido, ids: estado.ids?.length && pedido.ids.some((x) => estado.ids!.includes(x)) ? pedido.ids.filter((x) => estado.ids!.includes(x)) : pedido.ids } : null);
       if (!escolhido) return naoEntendi();
-      return escolher(ctx, escolhido);
+      // a quantidade dita antes da pergunta "Qual deles?" continua valendo
+      return escolher(ctx, { ...escolhido, qtd: escolhido.qtd ?? estado.qtd });
     }
     case "quantidade": {
       const p = produto(ctx, estado.productId);
       if (!p) return inicio(ctx);
-      // trocou de produto no meio ("na verdade quero gás")
-      if (pedido?.ids.length && !pedido.ids.includes(p.id)) return escolher(ctx, pedido);
+      // trocou de produto no meio ("na verdade quero gás"); um número sozinho é a quantidade, mesmo sendo o 13 do P13
+      if (pedido?.ids.length && !pedido.ids.includes(p.id) && !/^\s*\d+\s*$/.test(t)) return escolher(ctx, pedido);
       const n = id.startsWith("q:") ? Number(id.slice(2)) : (pedido?.qtd ?? numeroNaFrase(t));
       if (!n || !Number.isInteger(n) || n < 1) return naoEntendi();
       return comQuantidade(ctx, p, n);

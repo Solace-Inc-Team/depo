@@ -7,8 +7,11 @@ import { TextoQueTroca } from "@/components/texto-que-troca";
  * Uma palavra do título que troca sozinha ("casco", "galão", "botijão"), como o Rotating Text do React Bits, mas
  * com a troca do próprio sistema (sobe desfocando, a nova vem de baixo). A largura acompanha a palavra devagar,
  * para o resto da linha não pular. O leitor de tela ouve só a primeira; com movimento reduzido, nada troca.
+ * `sufixo` (o ponto final) troca junto com a palavra. No celular a largura fica a da maior palavra: a quebra da
+ * linha não muda a cada troca (de 420 a 440 px o título pulava de 2 para 3 linhas).
  */
-export function PalavraQueGira({ palavras, intervalo = 2400, inicio = 2300 }: { palavras: string[]; intervalo?: number; inicio?: number }) {
+export function PalavraQueGira({ palavras: base, sufixo = "", intervalo = 2400, inicio = 2300 }: { palavras: string[]; sufixo?: string; intervalo?: number; inicio?: number }) {
+  const palavras = base.map((p) => p + sufixo);
   const [i, setI] = useState(0);
   const [larguras, setLarguras] = useState<number[]>([]);
   const medidas = useRef<HTMLSpanElement>(null);
@@ -38,7 +41,7 @@ export function PalavraQueGira({ palavras, intervalo = 2400, inicio = 2300 }: { 
   }, [palavras.length, intervalo, inicio]);
 
   return (
-    <span className="palavra-gira" style={larguras[i] ? { width: larguras[i] } : undefined}>
+    <span className="palavra-gira" style={larguras[i] ? ({ width: larguras[i], "--maior": `${Math.max(...larguras)}px` } as React.CSSProperties) : undefined}>
       <span className="sr-only">{palavras[0]}</span>
       <span aria-hidden="true">
         <TextoQueTroca texto={palavras[i]} />

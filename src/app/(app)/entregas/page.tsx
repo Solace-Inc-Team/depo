@@ -316,7 +316,7 @@ export default async function Entregas() {
                               : null;
                             return (
                               zap && (
-                                <a href={zap} target="_blank" rel="noopener noreferrer" className="btn h-11 px-4 text-[13px] sm:h-8 sm:px-3">
+                                <a href={zap} target="_blank" rel="noopener noreferrer" className="btn h-11 px-4 text-[13px] fino:h-8 fino:px-3">
                                   <MessageCircle size={14} strokeWidth={1.75} aria-hidden="true" /> Avisar cliente
                                 </a>
                               )

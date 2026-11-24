@@ -23,27 +23,69 @@ export function CamposEndereco({
   const [p, setP] = useState(() => separarEndereco(inicial));
   const [aviso, setAviso] = useState<{ texto: string; erro?: boolean } | null>(null);
   const numero = useRef<HTMLInputElement>(null);
+  const ruaRef = useRef<HTMLInputElement>(null);
   const cepRef = useRef<HTMLInputElement>(null);
   const buscado = useRef("");
+  // as partes de agora, para a resposta do CEP (que chega depois) comparar com o que a pessoa digitou enquanto isso
+  const atual = useRef(p);
+  useEffect(() => {
+    atual.current = p;
+  });
+  // o que o último CEP preencheu: um CEP novo (ou não encontrado) troca isso, mas não o que a pessoa digitou
+  const doCep = useRef({ rua: "", bairro: "" });
+  // o CEP preencheu: o formulário que salva sozinho (Configurações) precisa saber que mudou
+  const avisarMudanca = useRef(false);
   const muda = (k: keyof typeof p) => (e: React.ChangeEvent<HTMLInputElement>) => setP((x) => ({ ...x, [k]: e.target.value }));
 
   async function buscarCep(valor: string) {
     const cep = valor.replace(/\D/g, "");
-    if (cep.length !== 8 || cep === buscado.current) return;
+    if (cep.length !== 8) {
+      // apagou ou está corrigindo o CEP: o aviso do anterior sai, e o mesmo CEP pode ser buscado de novo
+      buscado.current = "";
+      setAviso(null);
+      return;
+    }
+    if (cep === buscado.current) return;
     buscado.current = cep;
+    const antes = atual.current;
     setAviso({ texto: "Buscando o CEP…" });
+    // a resposta só vale se o CEP no campo ainda for este (corrigido no meio, a resposta velha é descartada)
+    const valeAinda = () => buscado.current === cep;
     try {
-      const r = await fetch(`/api/cep/${cep}`);
+      const r = await fetch(`/api/cep/${cep}`, { signal: AbortSignal.timeout(8000) });
       const d = (await r.json()) as { rua?: string; bairro?: string; cidade?: string; uf?: string; erro?: string };
-      if (!r.ok) return setAviso({ texto: d.erro ?? "CEP não encontrado. Preencha à mão.", erro: true });
+      if (!valeAinda()) return;
+      if (!r.ok) {
+        buscado.current = "";
+        // o que o CEP anterior tinha preenchido não vale para este
+        setP((x) => ({ ...x, rua: x.rua === doCep.current.rua ? "" : x.rua, bairro: x.bairro === doCep.current.bairro ? "" : x.bairro }));
+        doCep.current = { rua: "", bairro: "" };
+        return setAviso({ texto: d.erro ?? "CEP não encontrado. Preencha à mão.", erro: true });
+      }
+      const agora = atual.current;
+      // a pessoa digitou a rua enquanto o CEP buscava: o que ela digitou fica, e o foco não pula para o número
+      const digitou = agora.rua !== antes.rua && agora.rua !== doCep.current.rua;
       // CEP de cidade pequena vem sem rua: só o que veio substitui o que estava
-      setP((x) => ({ ...x, rua: d.rua || x.rua, bairro: d.bairro || x.bairro }));
+      const rua = !digitou && d.rua ? d.rua : agora.rua;
+      const bairro = agora.bairro && agora.bairro !== antes.bairro && agora.bairro !== doCep.current.bairro ? agora.bairro : d.bairro || agora.bairro;
+      doCep.current = { rua: d.rua ?? "", bairro: d.bairro ?? "" };
+      avisarMudanca.current = rua !== agora.rua || bairro !== agora.bairro;
+      setP((x) => ({ ...x, rua, bairro }));
       setAviso(d.cidade ? { texto: `${d.cidade}/${d.uf}` } : null);
-      if (d.rua) numero.current?.focus();
+      if (d.rua && !digitou && document.activeElement === cepRef.current) numero.current?.focus();
     } catch {
-      setAviso({ texto: "Sem internet para buscar o CEP. Preencha à mão.", erro: true });
+      if (!valeAinda()) return;
+      buscado.current = "";
+      setAviso({ texto: "Não deu para buscar o CEP agora. Preencha à mão.", erro: true });
     }
   }
+
+  // o CEP preencheu a rua: avisa o formulário como se a pessoa tivesse digitado (o que salva sozinho grava)
+  useEffect(() => {
+    if (!avisarMudanca.current) return;
+    avisarMudanca.current = false;
+    ruaRef.current?.dispatchEvent(new Event("change", { bubbles: true }));
+  }, [p]);
 
   // o formulário limpo (janela fechada, salvo com sucesso) limpa as partes também: o reset nativo não alcança o
   // estado do React, e o próximo cliente saía com o endereço do anterior
@@ -53,6 +95,7 @@ export function CamposEndereco({
     const limpar = () => {
       buscado.current = "";
       setAviso(null);
+      doCep.current = { rua: "", bairro: "" };
       setP(separarEndereco(inicial));
     };
     form.addEventListener("reset", limpar);
@@ -70,7 +113,15 @@ export function CamposEndereco({
 
   return (
     // @container: os campos se arrumam pela largura de onde estão (janela estreita ou seção larga), não pela tela
-    <div className={`@container ${className}`}>
+    <div
+      className={`@container ${className}`}
+      // Enter no meio do endereço não envia o formulário pela metade; no CEP, busca
+      onKeyDown={(e) => {
+        if (e.key !== "Enter" || e.ctrlKey || e.metaKey || !(e.target instanceof HTMLInputElement)) return;
+        e.preventDefault();
+        if (e.target === cepRef.current) void buscarCep(e.target.value);
+      }}
+    >
       <div className="grid grid-cols-12 gap-3">
       <input type="hidden" name={nome} value={juntarEndereco(p)} />
       {/* o CEP tem linha própria: estes campos vivem em janelas estreitas, onde lado a lado ele espremia */}
@@ -97,7 +148,7 @@ export function CamposEndereco({
       </div>
       <div className="col-span-12 @lg:col-span-8">
         <label className="label" htmlFor={`${id}-rua`}>Rua</label>
-        <input id={`${id}-rua`} value={p.rua} onChange={muda("rua")} required={obrigatorio} maxLength={120} autoComplete="address-line1" className="input" placeholder="Rua, avenida, travessa" />
+        <input ref={ruaRef} id={`${id}-rua`} value={p.rua} onChange={muda("rua")} required={obrigatorio} maxLength={120} autoComplete="address-line1" className="input" placeholder="Rua, avenida, travessa" />
       </div>
       <div className="col-span-4">
         <label className="label" htmlFor={`${id}-num`}>Número</label>

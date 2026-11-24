@@ -66,13 +66,13 @@ export default async function Fiado() {
                           const zap = linkWhatsApp(d.phone, mensagemFiado({ cliente: d.name, loja: settings.name, devendoCents: d.owed, pixKey: settings.pixKey }));
                           return (
                             zap && (
-                              <a href={zap} target="_blank" rel="noopener noreferrer" className="btn tap text-[13px] sm:h-8" aria-label={`Cobrar ${d.name} no WhatsApp`}>
+                              <a href={zap} target="_blank" rel="noopener noreferrer" className="btn tap text-[13px] fino:h-8" aria-label={`Cobrar ${d.name} no WhatsApp`}>
                                 <MessageCircle size={14} strokeWidth={1.75} aria-hidden="true" /> Cobrar
                               </a>
                             )
                           );
                         })()}
-                        <Link href={`/clientes/${d.id}#receber`} className="btn tap text-[13px] sm:h-8">Receber</Link>
+                        <Link href={`/clientes/${d.id}#receber`} className="btn tap text-[13px] fino:h-8">Receber</Link>
                       </span>
                     </td>
                   </tr>

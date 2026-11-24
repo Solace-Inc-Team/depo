@@ -48,7 +48,8 @@ function marcas(p: Prod) {
   return { familias, numeros, outras };
 }
 
-export type PedidoNaFrase = { ids: string[]; qtd?: number };
+/** `varios`: a frase pede produtos diferentes ("2 águas e 1 gás"), e a quantidade não é de um só. */
+export type PedidoNaFrase = { ids: string[]; qtd?: number; varios?: true };
 
 /**
  * Os produtos e a quantidade que a frase pede. `ids` vazio: não falou de produto; mais de um: ficou em dúvida
@@ -87,6 +88,8 @@ export function pedidoNaFrase(produtos: Prod[], texto: string): PedidoNaFrase {
     if (pontos > melhor) [melhor, ids] = [pontos, [p.id]];
     else if (pontos > 0 && pontos === melhor) ids.push(p.id);
   }
+  // água e gás na mesma frase: são dois pedidos, e o número da frase não é a quantidade de nenhum deles sozinho
+  if (familias.size > 1 && ids.length > 1) return { ids, varios: true };
   return { ids, ...(qtd ? { qtd } : {}) };
 }
 

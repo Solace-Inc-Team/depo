@@ -255,3 +255,30 @@ test("robô: 'quero' numa frase não confirma, e trocar o pagamento no fim não 
   // menu de quem já pediu: pergunta não repete o último pedido
   for (const t of ["pode me ajudar?", "tenho uma dúvida", "quero fazer um pedido"]) assert.equal(responder({ etapa: "menu" }, { texto: t }, ctx()).lancar, undefined, t);
 });
+
+test("robô entende: cadastro não aceita resposta de outra pergunta como nome ou endereço", () => {
+  const novo = tres({ cliente: null, ultimo: null });
+  for (const t of ["sim", "dinheiro", "não"]) assert.equal(responder({ etapa: "nome" }, { texto: t }, novo).estado?.etapa, "nome", t);
+  // nome com jeito de produto não prende o cadastro: o pedido já guardado, o nome passa
+  assert.equal(responder({ etapa: "nome", pedido: { ids: ["g"] } }, { texto: "Gaspar Souza" }, novo).estado?.etapa, "endereco");
+  const end = { etapa: "endereco" as const, nome: "Ana" };
+  for (const t of ["confirmar", "troco pra 50", "sim, pode mandar", "perto da padaria"]) assert.equal(responder(end, { texto: t }, novo).estado?.etapa, "endereco", t);
+  const pediu = responder(end, { texto: "quero 2 gás" }, novo);
+  assert.equal(pediu.cadastrar, undefined, "pedido não vira endereço");
+  assert.match(textos(pediu.saidas), /Já anotei/);
+  assert.ok((pediu.estado as { pedido?: unknown }).pedido, "o pedido fica guardado para depois do endereço");
+  assert.deepEqual(responder(end, { texto: "Rua das Flores, 120, Centro" }, novo).cadastrar, { nome: "Ana", endereco: "Rua das Flores, 120, Centro" });
+});
+
+test("robô entende: quantidade que é número de produto, quantidade antes do 'Qual deles?' e dois produtos", () => {
+  // "13" na pergunta da quantidade é a quantidade, não o P13
+  assert.deepEqual(responder({ etapa: "quantidade", productId: "g" }, { texto: "13" }, tres()).estado, { etapa: "vazio", productId: "g", quantity: 13 });
+  // "2 gás" pergunta qual, e a quantidade continua
+  const qual = responder({ etapa: "menu" }, { texto: "quero 2 gás" }, tres());
+  assert.deepEqual(qual.estado, { etapa: "produto", ids: ["b", "p45"], qtd: 2 });
+  assert.equal(responder(qual.estado, { texto: "o de 13" }, tres()).estado?.etapa, "pagamento", "não pergunta a quantidade de novo");
+  // água e gás juntos: avisa que é um por pedido, sem inventar a quantidade
+  const dois = responder({ etapa: "menu" }, { texto: "2 águas e 1 gás" }, tres());
+  assert.match(textos(dois.saidas), /um produto por pedido/);
+  assert.equal((dois.estado as { qtd?: number }).qtd, undefined);
+});

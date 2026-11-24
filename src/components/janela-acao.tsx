@@ -80,7 +80,7 @@ export function JanelaAcao({
         <div className="janela-cartao outline-none" tabIndex={-1}>
           <div className="mb-4 flex items-center justify-between gap-3">
             <h2 className="font-semibold">{titulo}</h2>
-            <button type="button" onClick={fechar} aria-label="Fechar" className="-my-2 -mr-2 grid size-11 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg sm:size-8">
+            <button type="button" onClick={fechar} aria-label="Fechar" className="-my-2 -mr-2 grid size-11 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg fino:size-8">
               <X size={16} strokeWidth={1.75} aria-hidden="true" />
             </button>
           </div>

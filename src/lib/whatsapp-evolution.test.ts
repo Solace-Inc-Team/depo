@@ -9,7 +9,10 @@ test("evolution: lê a mensagem do cliente e ignora o resto", () => {
   assert.deepEqual(m, { instancia: "depo-teste", jid: "559184747881@s.whatsapp.net", telefone: "559184747881", id: "A1", entrada: { texto: "oi" } });
   assert.equal(mensagemDoAviso(aviso({ remoteJid: "559184747881@s.whatsapp.net", fromMe: true, id: "A2" })), null, "o que o próprio número mandou");
   assert.equal(mensagemDoAviso(aviso({ remoteJid: "1203630@g.us", id: "A3" })), null, "grupo");
-  assert.equal(mensagemDoAviso(aviso({ remoteJid: "559184747881@s.whatsapp.net", id: "A4" }, { imageMessage: {} })), null, "foto");
+  assert.equal(mensagemDoAviso(aviso({ remoteJid: "559184747881@s.whatsapp.net", id: "A4" }, { imageMessage: {} }))?.midia, true, "foto sem legenda: pede texto");
+  assert.equal(mensagemDoAviso(aviso({ remoteJid: "559184747881@s.whatsapp.net", id: "A4b" }, { audioMessage: {} }))?.midia, true, "áudio: pede texto");
+  assert.equal(mensagemDoAviso(aviso({ remoteJid: "559184747881@s.whatsapp.net", id: "A4c" }, { imageMessage: { caption: "2 gás" } }))?.entrada.texto, "2 gás", "legenda vale como texto");
+  assert.equal(mensagemDoAviso(aviso({ remoteJid: "559184747881@s.whatsapp.net", id: "A4d" }, {})), null, "aviso sem mensagem");
   assert.equal(mensagemDoAviso(aviso({ remoteJid: "559184747881@s.whatsapp.net", id: "A5" }, {}, "messages.update")), null, "outro evento");
   assert.equal(mensagemDoAviso(aviso({ remoteJid: "123@lid", id: "A6" })), null, "@lid sem o celular ao lado");
   const lid = mensagemDoAviso(aviso({ remoteJid: "123@lid", remoteJidAlt: "5591984747881@s.whatsapp.net", id: "A7" }, { extendedTextMessage: { text: "2" } }));

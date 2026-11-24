@@ -35,6 +35,8 @@ export async function POST(req: Request) {
       if (await attempt(`wa-msg:${m.id}`, 1)) return;
       const tenantId = await empresaDoNumeroWhats(m.instancia);
       if (!tenantId) return console.warn(`[whatsapp-evo] instância sem empresa ligada ou com o acesso pausado (${m.instancia})`);
+      // áudio ou foto: o robô só lê texto; responde pedindo texto, sem mexer na conversa
+      if (m.midia) return await enviar(m.instancia, m.jid, [SO_TEXTO]);
       const saidas = await conversar(tenantId, telefoneDoWhats(m.telefone), m.entrada, { base });
       await enviar(m.instancia, m.jid, saidas.map(textoParaWhats));
     } catch (e) {
@@ -44,19 +46,38 @@ export async function POST(req: Request) {
   return new Response(null, { status: 200 });
 }
 
+const SO_TEXTO = "Por aqui eu só consigo ler mensagens escritas. Escreva o que precisa, por favor.\n\n_Para falar com alguém da loja, escreva *loja*._";
+
+/** Manda uma resposta; se a Evolution falhar, tenta mais uma vez (o pedido pode já estar lançado). */
+async function mandar(url: string, chave: string, instancia: string, para: string, text: string) {
+  for (let tentativa = 1; ; tentativa++) {
+    try {
+      const r = await fetch(`${url}/message/sendText/${encodeURIComponent(instancia)}`, {
+        method: "POST",
+        headers: { apikey: chave, "Content-Type": "application/json" },
+        body: JSON.stringify({ number: para, text, delay: 1200 + Math.min(text.length * 15, 1800) }),
+        signal: AbortSignal.timeout(20_000),
+      });
+      if (r.ok) return true;
+      if (tentativa >= 2 || r.status < 500) {
+        console.error(`[whatsapp-evo] Evolution recusou a resposta (${r.status}): ${(await r.text()).slice(0, 300)}`);
+        return false;
+      }
+    } catch (e) {
+      if (tentativa >= 2) {
+        console.error(`[whatsapp-evo] não deu para enviar a resposta: ${(e as Error).message}`);
+        return false;
+      }
+    }
+    await new Promise((ok) => setTimeout(ok, 2000));
+  }
+}
+
 /** Manda as respostas em ordem, com "digitando..." antes de cada uma (resposta instantânea parece robô). */
 async function enviar(instancia: string, para: string, textos: string[]) {
   const url = process.env.EVOLUTION_URL?.trim().replace(/\/$/, "");
   const chave = process.env.EVOLUTION_KEY?.trim();
   if (!url || !chave) return console.warn(`[whatsapp-evo] sem EVOLUTION_URL/EVOLUTION_KEY: ${textos.length} resposta(s) não enviada(s)`);
-  for (const text of textos) {
-    const r = await fetch(`${url}/message/sendText/${encodeURIComponent(instancia)}`, {
-      method: "POST",
-      headers: { apikey: chave, "Content-Type": "application/json" },
-      body: JSON.stringify({ number: para, text, delay: 1200 + Math.min(text.length * 15, 1800) }),
-      signal: AbortSignal.timeout(20_000),
-    });
-    if (!r.ok) return console.error(`[whatsapp-evo] Evolution recusou a resposta (${r.status}): ${(await r.text()).slice(0, 300)}`);
-  }
+  for (const text of textos) if (!(await mandar(url, chave, instancia, para, text))) return;
   console.info(`[whatsapp-evo] ${textos.length} resposta(s) enviada(s) para ...${para.split("@")[0].slice(-4)}`);
 }

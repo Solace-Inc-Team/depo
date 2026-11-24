@@ -142,7 +142,7 @@ export default async function Admin() {
                           >
                             <input type="hidden" name="tenantId" value={t.id} />
                             <input type="hidden" name="active" value={String(!t.active)} />
-                            <button className={`btn sm:h-8 ${t.active ? "btn-danger" : ""}`}>{t.active ? "Suspender" : "Reativar"}</button>
+                            <button className={`btn fino:h-8 ${t.active ? "btn-danger" : ""}`}>{t.active ? "Suspender" : "Reativar"}</button>
                           </ActionForm>
                         </div>
                       </td>

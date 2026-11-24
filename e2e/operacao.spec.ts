@@ -95,7 +95,9 @@ test("portal: cliente pede pelo link e o pedido chega à fila com o selo do site
   await mais(page, "Galão de água 20L").click();
   await page.getByLabel("Seu nome").fill("Cliente do Portal");
   await page.getByLabel("Telefone com DDD").fill("(11) 95555-0101");
-  await page.getByLabel("Endereço").fill("Rua das Flores, 12 - Centro");
+  await page.getByLabel("Rua", { exact: true }).fill("Rua das Flores");
+  await page.getByLabel("Número", { exact: true }).fill("12");
+  await page.getByLabel("Bairro", { exact: true }).fill("Centro");
   await page.getByRole("button", { name: "Dinheiro na entrega" }).click();
   await page.getByRole("button", { name: "Fazer pedido" }).click();
   await expect(page.getByText(/Pedido #\d+ recebido/)).toBeVisible();
@@ -119,7 +121,9 @@ test("portal no Pix: o pedido só entra na fila depois que a loja confirma o pag
   await mais(page, "Galão de água 20L").click();
   await page.getByLabel("Seu nome").fill("Cliente do Pix");
   await page.getByLabel("Telefone com DDD").fill("(11) 95555-0202");
-  await page.getByLabel("Endereço").fill("Rua do Pix, 7 - Centro");
+  await page.getByLabel("Rua", { exact: true }).fill("Rua do Pix");
+  await page.getByLabel("Número", { exact: true }).fill("7");
+  await page.getByLabel("Bairro", { exact: true }).fill("Centro");
   await page.getByRole("button", { name: "Pix" }).click();
   await page.getByRole("button", { name: "Fazer pedido" }).click();
   // a loja de demonstração não tem Mercado Pago: quem libera é a loja, ao conferir o extrato

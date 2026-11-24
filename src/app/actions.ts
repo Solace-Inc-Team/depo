@@ -213,6 +213,9 @@ export async function createOrderAction(fd: FormData): Promise<ActionState> {
     let customerId = optId(fd, "customerId");
     const newName = str(fd, "newCustomerName");
     if (!customerId && newName) {
+      // cliente novo para entregar sem endereço: o pedido cairia na fila sem ninguém saber para onde ir
+      if (str(fd, "mode") === "entrega" && !str(fd, "newCustomerAddress").trim())
+        throw new DomainError("Para entregar, preencha o endereço do cliente novo (ou mude para balcão).");
       const c = await saveCustomer(
         user,
         customerSchema.parse({
@@ -980,7 +983,9 @@ async function comConexao(fn: () => Promise<ConexaoWhatsapp>): Promise<RespostaC
     return { conexao: await fn() };
   } catch (e) {
     if (e instanceof DomainError) return { error: e.message };
-    throw e;
+    // Evolution fora do ar ou demorando: avisa na linha em vez de derrubar a tela de Configurações
+    console.error("[whatsapp-conexao] falhou:", (e as Error).message);
+    return { error: "O WhatsApp não respondeu agora. Tente de novo em instantes." };
   }
 }
 

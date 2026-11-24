@@ -4,11 +4,13 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { Info, Link2, Smartphone } from "lucide-react";
 import { chamarAcao } from "@/components/action-form";
 import { confirmar } from "@/components/confirm-dialog";
+import { Aparece } from "@/components/saida";
 import { conectarWhatsappAction, conexaoWhatsappAction, desconectarWhatsappAction } from "@/app/actions";
 import type { ConexaoWhatsapp } from "@/domain/whatsapp-conexao";
 
 // Configurações > WhatsApp: o dono liga o número da loja ao robô lendo um QR code, sem depender da Solace.
-// Enquanto o QR está na tela, confere a cada 3 s se já conectou e troca o QR antes de ele vencer.
+// Enquanto o QR está na tela, confere a cada 3 s se já conectou e troca o QR antes de ele vencer. A seção vive
+// montada no menu de toda tela: só confere com ela à vista e com a aba do navegador aberta.
 const CONFERE_MS = 3000;
 const NOVO_QR_MS = 30_000;
 
@@ -17,6 +19,11 @@ export function ConexaoWhatsappPainel() {
   const [erro, setErro] = useState<string | null>(null);
   const [pendente, iniciar] = useTransition();
   const ultimoQr = useRef(0);
+  // o último QR fica para a saída animada do painel (o estado já mudou quando ele recolhe)
+  const [qrNaTela, setQrNaTela] = useState<string | null>(null);
+  if (conexao?.estado === "conectando" && conexao.qr && conexao.qr !== qrNaTela) setQrNaTela(conexao.qr);
+  const raiz = useRef<HTMLDivElement>(null);
+  const [visivel, setVisivel] = useState(false);
 
   type Resultado = Awaited<ReturnType<typeof chamarAcao<{ conexao?: ConexaoWhatsapp; error?: string }>>>;
   function aplicar(c: Resultado) {
@@ -28,19 +35,45 @@ export function ConexaoWhatsappPainel() {
   const atualizar = async (fn: () => Promise<{ conexao?: ConexaoWhatsapp; error?: string }>) => aplicar(await chamarAcao(fn));
 
   useEffect(() => {
-    chamarAcao(() => conexaoWhatsappAction(false)).then(aplicar);
+    const el = raiz.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => setVisivel(e.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
   }, []);
+
+  // a primeira conferência só quando a seção aparece, não a cada tela que o dono abre
+  const conferido = useRef(false);
+  const conferir = () => {
+    conferido.current = true;
+    chamarAcao(() => conexaoWhatsappAction(false)).then(aplicar);
+  };
+  useEffect(() => {
+    if (visivel && !conferido.current) conferir();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- conferir só usa refs e o setState; muda a cada render
+  }, [visivel]);
 
   const conectando = conexao?.estado === "conectando";
   useEffect(() => {
-    if (!conectando) return;
-    const t = setInterval(() => {
-      const qr = Date.now() - ultimoQr.current > NOVO_QR_MS;
-      if (qr) ultimoQr.current = Date.now();
-      void atualizar(() => conexaoWhatsappAction(qr));
-    }, CONFERE_MS);
-    return () => clearInterval(t);
-  }, [conectando]);
+    if (!conectando || !visivel) return;
+    // uma conferência de cada vez: com a Evolution lenta, elas não se acumulam na frente das outras ações
+    let parar = false;
+    let t: ReturnType<typeof setTimeout>;
+    const rodada = async () => {
+      if (document.visibilityState === "visible") {
+        const qr = Date.now() - ultimoQr.current > NOVO_QR_MS;
+        if (qr) ultimoQr.current = Date.now();
+        await atualizar(() => conexaoWhatsappAction(qr));
+      }
+      if (!parar) t = setTimeout(rodada, CONFERE_MS);
+    };
+    t = setTimeout(rodada, CONFERE_MS);
+    return () => {
+      parar = true;
+      clearTimeout(t);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- atualizar só chama a ação e o setState
+  }, [conectando, visivel]);
 
   const conectar = () =>
     iniciar(async () => {
@@ -48,14 +81,21 @@ export function ConexaoWhatsappPainel() {
       await atualizar(conectarWhatsappAction);
     });
   // a pergunta vem antes da transição: dentro dela o React seguraria a janela de confirmação até a transição acabar
-  const desconectar = async (pergunta: string) => {
-    if (!(await confirmar(pergunta, { rotulo: "Desconectar", perigo: true }))) return;
+  const desconectar = async (pergunta: string, rotulo: string) => {
+    if (!(await confirmar(pergunta, { rotulo, perigo: true }))) return;
     iniciar(() => atualizar(desconectarWhatsappAction));
   };
 
   let descricao: React.ReactNode = "Conferindo…";
   let controle: React.ReactNode = null;
-  if (conexao?.estado === "sem") {
+  if (!conexao && erro) {
+    // a primeira conferência falhou: sem isso a linha ficava sem botão nenhum
+    controle = (
+      <button type="button" onClick={conferir} className="btn btn-sm tap">
+        Tentar de novo
+      </button>
+    );
+  } else if (conexao?.estado === "sem") {
     descricao = "Ainda não conectado.";
     controle = (
       <button type="button" onClick={conectar} disabled={pendente} data-state={pendente ? "loading" : undefined} className="btn btn-primary btn-sm">
@@ -65,7 +105,7 @@ export function ConexaoWhatsappPainel() {
   } else if (conexao?.estado === "conectando") {
     descricao = "Esperando você ler o QR code com o celular da loja.";
     controle = (
-      <button type="button" onClick={() => desconectar("Cancelar a conexão do WhatsApp?")} disabled={pendente} className="btn btn-sm tap">
+      <button type="button" onClick={() => desconectar("Cancelar a conexão do WhatsApp?", "Cancelar conexão")} disabled={pendente} className="btn btn-sm tap">
         Cancelar
       </button>
     );
@@ -79,7 +119,7 @@ export function ConexaoWhatsappPainel() {
     controle = (
       <button
         type="button"
-        onClick={() => desconectar("Desconectar o WhatsApp? O robô para de responder e o celular sai dos aparelhos conectados.")}
+        onClick={() => desconectar("Desconectar o WhatsApp? O robô para de responder e o celular sai dos aparelhos conectados.", "Desconectar")}
         disabled={pendente}
         className="btn btn-sm tap hover:text-danger"
       >
@@ -91,7 +131,7 @@ export function ConexaoWhatsappPainel() {
   }
 
   return (
-    <div>
+    <div ref={raiz}>
       <section className="ajuste-grupo">
         <div className="ajuste-lista">
           <div className="ajuste-linha">
@@ -106,12 +146,12 @@ export function ConexaoWhatsappPainel() {
             </div>
             {controle && <div className="ajuste-controle">{controle}</div>}
           </div>
-          {conexao?.estado === "conectando" && (
-            <div className="enter grid gap-5 border-t border-line p-4 sm:grid-cols-[auto_1fr] sm:items-center">
+          <Aparece quando={conexao?.estado === "conectando"}>
+            <div className="grid gap-5 border-t border-line p-4 sm:grid-cols-[auto_1fr] sm:items-center">
               {/* o QR é branco com borda própria: lê bem também no tema escuro */}
               <div className="mx-auto grid size-56 place-items-center rounded-lg bg-white p-2">
                 {/* eslint-disable-next-line @next/next/no-img-element -- QR em data URL, que muda a cada 30 s */}
-                {conexao.qr ? <img src={conexao.qr} alt="QR code para conectar o WhatsApp" className="size-full" /> : <span className="text-[13px] text-neutral-500">Gerando o QR…</span>}
+                {qrNaTela ? <img src={qrNaTela} alt="QR code para conectar o WhatsApp" className="size-full" /> : <span className="text-[13px] text-neutral-500">Gerando o QR…</span>}
               </div>
               <ol className="space-y-2 text-[13.5px]">
                 <li>1. No celular da loja, abra o WhatsApp.</li>
@@ -120,16 +160,16 @@ export function ConexaoWhatsappPainel() {
                 <li className="text-muted">Esta tela muda sozinha quando conectar.</li>
               </ol>
             </div>
-          )}
+          </Aparece>
         </div>
       </section>
-      {(conexao?.estado === "sem" || conexao?.estado === "conectando") && (
+      <Aparece quando={conexao?.estado === "sem" || conexao?.estado === "conectando"}>
         <p className="mt-3 flex items-start gap-2 text-[12.5px] text-muted">
           <Info size={14} strokeWidth={1.75} aria-hidden="true" className="mt-0.5 shrink-0" />
           A conexão é pelo WhatsApp Web, que não é um serviço oficial do WhatsApp para robôs. Para evitar bloqueio, o robô só responde quem
           chamou primeiro e nunca manda mensagem em massa.
         </p>
-      )}
+      </Aparece>
     </div>
   );
 }

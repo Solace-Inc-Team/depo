@@ -17,12 +17,18 @@ const LOJA_MIN = 120;
 // lança e desfaz: a tela de teste não deixa pedido nenhum
 const DESFAZER = Symbol("desfazer");
 
-/** Os 11 dígitos do telefone (DDD + número), venha como vier ("+55 (11) 9...", "5511..."). */
+/** DDD + número (11 dígitos no celular, 10 no fixo), venha como vier ("+55 (11) 9...", "5511..."). */
 export function digitosTelefone(telefone: string) {
-  const d = telefone.replace(/\D/g, "").slice(-11);
+  let d = telefone.replace(/\D/g, "");
+  // o 55 do Brasil sai: sem isso, o fixo "55 91 3222-1111" virava "5913222..." e não achava o cliente
+  if (d.length >= 12 && d.startsWith("55")) d = d.slice(2);
+  d = d.slice(-11);
   if (d.length < 10) throw new DomainError("Telefone com DDD, como (11) 91111-1111.");
   return d;
 }
+
+/** Onde fica a conversa: a da tela de teste é separada, para o teste do dono não mexer na do cliente de verdade. */
+const chaveConversa = (tel: string, teste: boolean) => (teste ? `teste:${tel}` : tel);
 
 /**
  * Responde a uma mensagem do cliente. `base` é o endereço do site (para os links de pedido e de acompanhamento);
@@ -30,15 +36,18 @@ export function digitosTelefone(telefone: string) {
  */
 export async function conversar(tenantId: string, telefone: string, entrada: Entrada, { base, teste = false }: { base: string; teste?: boolean }): Promise<Saida[]> {
   const tel = digitosTelefone(telefone);
+  const chave = chaveConversa(tel, teste);
+  // fixo, ou celular cadastrado do jeito antigo, sem o 9 ("(91) 8474-7881"): os 10 dígitos
+  const tel10 = tel.length === 11 && tel[2] === "9" ? tel.slice(0, 2) + tel.slice(3) : tel;
   return withTenant(tenantId, () =>
     db.transaction(async (tx) => {
       // trava a conversa: dois toques seguidos em "Confirmar" não lançam dois pedidos (o segundo espera e já
       // encontra a conversa recomeçada)
-      await tx.insert(conversasWhatsapp).values({ tenantId, telefone: tel, estado: null }).onConflictDoNothing();
+      await tx.insert(conversasWhatsapp).values({ tenantId, telefone: chave, estado: null }).onConflictDoNothing();
       const [conversa] = await tx
         .select()
         .from(conversasWhatsapp)
-        .where(and(eq(conversasWhatsapp.tenantId, tenantId), eq(conversasWhatsapp.telefone, tel)))
+        .where(and(eq(conversasWhatsapp.tenantId, tenantId), eq(conversasWhatsapp.telefone, chave)))
         .for("update");
       const parada = (Date.now() - conversa.atualizadoEm.getTime()) / 60e3;
       let estado: Estado | null = conversa.estado;
@@ -52,7 +61,8 @@ export async function conversar(tenantId: string, telefone: string, entrada: Ent
           and(
             eq(customers.tenantId, tenantId),
             isNull(customers.anonymizedAt),
-            sql`right(regexp_replace(${customers.phone}, '\\D', '', 'g'), 11) = ${tel}`,
+            sql`(right(regexp_replace(${customers.phone}, '\\D', '', 'g'), 11) = ${tel}
+              or (length(regexp_replace(${customers.phone}, '\\D', '', 'g')) in (10, 12) and right(regexp_replace(${customers.phone}, '\\D', '', 'g'), 10) = ${tel10}))`,
           ),
         )
         .orderBy(desc(customers.createdAt))
@@ -188,8 +198,8 @@ async function lancar(
 
 /** Tela de teste: apaga onde a conversa parou, para começar do zero. */
 export async function recomecarConversa(tenantId: string, telefone: string) {
-  const tel = digitosTelefone(telefone);
-  await withTenant(tenantId, () => db.delete(conversasWhatsapp).where(and(eq(conversasWhatsapp.tenantId, tenantId), eq(conversasWhatsapp.telefone, tel))));
+  const chave = chaveConversa(digitosTelefone(telefone), true);
+  await withTenant(tenantId, () => db.delete(conversasWhatsapp).where(and(eq(conversasWhatsapp.tenantId, tenantId), eq(conversasWhatsapp.telefone, chave))));
 }
 
 /** Clientes com telefone, para escolher com quem simular na tela de teste. */

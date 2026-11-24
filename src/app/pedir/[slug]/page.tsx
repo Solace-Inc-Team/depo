@@ -30,7 +30,7 @@ export default async function Pedir({ params, searchParams }: PageProps<"/pedir/
       </div>
     <main className="stagger mx-auto min-h-screen max-w-lg px-5 py-8">
       {/* o feixe de luz passa por trás do topo: um véu escuro, como o dos cartões, mantém o texto legível */}
-      <header className="mb-6 rounded-2xl bg-bg/60 px-4 py-3 backdrop-blur-md">
+      <header className="mb-6 rounded-2xl bg-bg/80 px-4 py-3 backdrop-blur-md">
         <p className="text-[13px] text-muted">Pedido pelo site</p>
         <h1 className="h1">{t.name}</h1>
         {t.branchName && <p className="mt-0.5 font-medium">{t.branchName}</p>}

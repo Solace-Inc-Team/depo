@@ -149,7 +149,7 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
         <button className="btn">Ver</button>
       </form>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
         {/* min-w-0: a tabela larga rola dentro do quadro em vez de alargar a coluna e a página */}
         <div className="min-w-0 space-y-6">
           {/* com o menu lateral e a coluna da direita, o total fica em cima das categorias até sobrar largura (xl) */}

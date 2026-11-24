@@ -247,7 +247,8 @@ export function PortalForm({
         </Aparece>
         {/* cada produto num cartão: o fundo (fios, fixo na tela) aparece entre eles e deixa claro que são eles que se tocam */}
         <section>
-          <h2 className="h2 px-1 pb-2.5">Produtos</h2>
+          {/* o mesmo véu do topo: sobre os feixes de luz, o título sozinho ficava sem contraste */}
+          <h2 className="h2 mb-2.5 w-fit rounded-lg bg-bg/80 px-2.5 py-1 backdrop-blur-md">Produtos</h2>
           <ul className="space-y-4">
             {products.map((p) => {
               const n = qty[p.id] ?? 0;
