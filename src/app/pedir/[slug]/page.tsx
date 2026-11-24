@@ -25,8 +25,9 @@ export default async function Pedir({ params, searchParams }: PageProps<"/pedir/
     // Um fundo só, fixo na tela (feixes de luz azul): a página rola por cima e sempre há luz atrás dos cartões.
     // Mais calmo e em resolução menor que o padrão: roda o tempo todo enquanto a página está aberta
     <div className="pagina-escura isolate">
-      <div aria-hidden="true" className="fundo-tela">
-        <Beams color="#6d9dff" quality={0.5} grain={0.15} speed={0.6} brightness={1.3} mouseInteraction={false} backgroundColor={undefined} dpr={undefined} style={undefined} />
+      {/* mais baixo e esmaecendo para o pé da tela: o brilho forte disputava com os produtos, onde o cliente escolhe */}
+      <div aria-hidden="true" className="fundo-tela fundo-portal">
+        <Beams color="#6d9dff" quality={0.5} grain={0.15} speed={0.6} brightness={0.9} mouseInteraction={false} backgroundColor={undefined} dpr={undefined} style={undefined} />
       </div>
     <main className="stagger mx-auto min-h-screen max-w-lg px-5 py-8">
       {/* o feixe de luz passa por trás do topo: um véu escuro, como o dos cartões, mantém o texto legível */}

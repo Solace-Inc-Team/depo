@@ -1,11 +1,11 @@
 import { requireUser } from "@/lib/auth";
-import Link from "next/link";
 import { Package, Plus } from "lucide-react";
 import { listProducts, listSuppliers, recentMovements, stockOverview, vendidosPorProduto } from "@/domain/queries";
 import { previsao, vaziosFaltando } from "@/lib/relatorios";
 import { ActionForm } from "@/components/action-form";
 import { damagedAction, purchaseAction, transferirAction } from "@/app/actions";
 import { JanelaAcao } from "@/components/janela-acao";
+import { MaisAcoes } from "@/components/mais-acoes";
 import { PagamentoCompra } from "./pagamento-compra";
 import { PageHeader, fmtQuando } from "@/components/ui";
 import { NivelVasilhame } from "@/components/nivel-vasilhame";
@@ -31,8 +31,7 @@ export default async function Estoque() {
   return (
     <>
       <PageHeader title="Estoque">
-        <Link href="/fornecedores" className="btn">Fornecedores</Link>
-        {user.role === "dono" && <Link href="/estoque/inventario" className="btn">Fazer inventário</Link>}
+        {/* à vista só o que se lança toda semana; o resto no "Mais" (no celular eram cinco botões antes do estoque) */}
         <JanelaAcao label="Registrar avaria" titulo="Registrar avaria">
           <ActionForm action={damagedAction} className="grid gap-3 sm:grid-cols-2" reset>
             <div>
@@ -59,8 +58,15 @@ export default async function Estoque() {
             <button className="btn btn-primary mt-1 sm:col-span-2">Registrar avaria</button>
           </ActionForm>
         </JanelaAcao>
+        <MaisAcoes
+          itens={[
+            ...(outras.length > 0 ? [{ label: "Transferir para outra filial", janela: "janela-transferir" }] : []),
+            ...(user.role === "dono" ? [{ label: "Fazer inventário", href: "/estoque/inventario" }] : []),
+            { label: "Fornecedores", href: "/fornecedores" },
+          ]}
+        />
         {outras.length > 0 && (
-          <JanelaAcao label="Transferir" titulo="Transferir para outra filial">
+          <JanelaAcao label="Transferir" titulo="Transferir para outra filial" id="janela-transferir" semBotao>
             <ActionForm action={transferirAction} className="grid gap-3 sm:grid-cols-2" reset>
               <div>
                 <label className="label" htmlFor="t-product">Produto</label>
@@ -123,7 +129,7 @@ export default async function Estoque() {
         </JanelaAcao>
       </PageHeader>
       <section className="rola-x panel overflow-x-auto">
-        <table className="table tabela-pilha rotulada sm:min-w-[46rem]">
+        <table className="table tabela-pilha rotulada estoque-grade sm:min-w-[46rem]">
           <thead>
             <tr>
               <th>Produto</th>

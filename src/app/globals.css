@@ -2280,6 +2280,33 @@ input[type="date"].input:hover::-webkit-calendar-picker-indicator {
     font-weight: 400;
     text-align: left;
   }
+  /* estoque: o produto e os cheios na loja em linha inteira; os outros cinco números numa grade de três, rótulo
+     pequeno em cima. Um embaixo do outro, cada produto ocupava quase uma tela do celular */
+  .tabela-pilha.estoque-grade tr {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 0.75rem;
+  }
+  .tabela-pilha.estoque-grade td:nth-child(-n + 2) {
+    grid-column: 1 / -1;
+  }
+  .tabela-pilha.rotulada.estoque-grade td[data-rotulo]:nth-child(n + 3) {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+    margin-top: 0.75rem;
+    text-align: left;
+    font-size: 15px;
+  }
+  .tabela-pilha.rotulada.estoque-grade td[data-rotulo]:nth-child(n + 3)::before {
+    font-size: 12px;
+    line-height: 1.3;
+  }
+  .tabela-pilha.rotulada.estoque-grade td[data-rotulo]:nth-child(n + 3) > .block {
+    text-align: left;
+    white-space: normal;
+  }
   /* despesas: o nome vem primeiro, a data desce para o pé */
   .tabela-pilha.despesas tr {
     display: flex;
@@ -3778,8 +3805,9 @@ button.gaveta-mais-linha:active {
   }
   /* das outras, se sobrar uma ímpar, ela ocupa a linha inteira. Conta só botões: a janela de cada ação
      (dialog) também é filha e desfazia a conta */
+  /* o menu "Mais" conta como um botão */
   .acoes-topo:has(> :nth-child(3))
-    > .btn:not(.btn-primary):nth-last-child(1 of .btn:not(.btn-primary)):nth-child(odd of .btn:not(.btn-primary)) {
+    > :is(.btn:not(.btn-primary), .mais-acoes):nth-last-child(1 of :is(.btn:not(.btn-primary), .mais-acoes)):nth-child(odd of :is(.btn:not(.btn-primary), .mais-acoes)) {
     grid-column: 1 / -1;
   }
 }
@@ -3893,6 +3921,10 @@ button.gaveta-mais-linha:active {
   height: 100lvh;
   z-index: -1;
   pointer-events: none;
+}
+.fundo-portal {
+  opacity: 0.75;
+  mask-image: linear-gradient(to bottom, #000 25%, transparent 90%);
 }
 
 /* saída de vários pedidos juntos (Entregas): a barra sobe no pé da tela quando há pedido marcado.
@@ -4096,6 +4128,10 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   }
 }
 
+/* no computador, o zero fica apagado: continua dizendo zero, mas não disputa com os valores de verdade */
+.table td[data-zero] {
+  color: var(--muted);
+}
 /* no celular, a linha de valor zero some do bloco de cada dia: "Cartão R$ 0,00" em todo dia só alongava a tela */
 @media (max-width: 639px) {
   .tabela-pilha.rotulada td[data-zero][data-rotulo]:not(:first-child) {

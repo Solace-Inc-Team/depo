@@ -379,8 +379,9 @@ export function NewOrderForm({
                     </div>
                     <div className="flex items-center gap-1" role="group" aria-label={`Quantidade de ${p.name}`}>
                       <button type="button" className="btn h-11 w-11 px-0 text-xl" onClick={() => step(p.id, -1)} aria-label="Diminuir">−</button>
-                      {/* a chave muda a cada clique e o número dá um pulinho (CSS): mais leve que rolar a cada toque */}
-                      <span aria-live="polite" className="num w-10 text-center text-2xl font-semibold"><LiveNumber value={n} /></span>
+                      {/* a chave muda a cada clique e o número dá um pulinho (CSS): mais leve que rolar a cada toque.
+                          Zero fica apagado: cinco zeros brancos chamavam mais atenção que os nomes dos produtos */}
+                      <span aria-live="polite" className={`num w-10 text-center text-2xl font-semibold transition-colors ${n ? "" : "text-muted/60"}`}><LiveNumber value={n} /></span>
                       <button type="button" className="btn h-11 w-11 px-0 text-xl" onClick={() => step(p.id, 1)} aria-label="Aumentar">+</button>
                     </div>
                   </div>

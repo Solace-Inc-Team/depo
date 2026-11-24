@@ -14,6 +14,12 @@ import { AvaliacaoEntregadores } from "./avaliacao";
 
 export const metadata = { title: "Relatórios" };
 
+const FORMAS = [["cash", "Dinheiro"], ["pix", "Pix"], ["card", "Cartão"], ["credit", "Fiado"]] as const;
+const semFormas = (usadas: readonly (typeof FORMAS)[number][]) => {
+  const fora = FORMAS.filter((f) => !usadas.includes(f)).map(([, l]) => (l === "Pix" ? l : l.toLowerCase()));
+  return fora.length ? `Sem ${fora.length > 1 ? `${fora.slice(0, -1).join(", ")} e ${fora.at(-1)}` : fora[0]} no período` : null;
+};
+
 export default async function Relatorios({ searchParams }: PageProps<"/relatorios">) {
   const user = await requireUser("dono", "atendente", "caixa");
   const sp = await searchParams;
@@ -29,6 +35,9 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
   const diasNoPeriodo = Math.max(1, Math.round((to.getTime() - from.getTime()) / 86400e3));
   const fiadoTotal = fiadoPaid.reduce((s, d) => s + d.total, 0);
   const sum = (k: "total" | "cash" | "pix" | "card" | "credit" | "count") => days.reduce((s, d) => s + d[k], 0);
+  // forma de pagamento sem nenhum real no período não vira coluna de "R$ 0,00": some, e o cabeçalho diz que não houve
+  const formasDia = FORMAS.filter(([k]) => sum(k) > 0);
+  const formasEntregador = FORMAS.filter(([k]) => breakdown.byDriver.some((r) => r[k] > 0));
   const diffTotal = closed.reduce((s, c) => s + (c.shift.differenceCents ?? 0), 0);
   const fmtDay = (d: string) => d.split("-").reverse().join("/");
   // a filial escolhida vai junto para o fechamento e para o CSV
@@ -59,13 +68,17 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
       </form>
 
       <section className="panel mb-6 overflow-x-auto">
-        <h2 className="h2 border-b border-line px-4 py-3">Vendas entregues por dia</h2>
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 border-b border-line px-4 py-3">
+          <h2 className="h2">Vendas entregues por dia</h2>
+          {days.length > 0 && semFormas(formasDia) && <p className="text-[12px] text-muted">{semFormas(formasDia)}</p>}
+        </div>
         {days.length ? (
-          <table className="table tabela-pilha rotulada sm:min-w-[44rem]">
+          <table className="table tabela-pilha rotulada sm:min-w-[32rem]">
             <thead>
               <tr>
-                <th>Dia</th><th className="text-right">Pedidos</th><th className="text-right">Dinheiro</th><th className="text-right">Pix</th>
-                <th className="text-right">Cartão</th><th className="text-right">Fiado</th><th className="text-right">Total</th>
+                <th>Dia</th><th className="text-right">Pedidos</th>
+                {formasDia.map(([k, l]) => <th key={k} className="text-right">{l}</th>)}
+                <th className="text-right">Total</th>
               </tr>
             </thead>
             <tbody>
@@ -73,20 +86,18 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
                 <tr key={d.day}>
                   <td className="num">{fmtDay(d.day)}</td>
                   <td data-rotulo="Pedidos" className="num text-right">{d.count}</td>
-                  <td data-rotulo="Dinheiro" data-zero={d.cash === 0 || undefined} className="text-right"><Money cents={d.cash} /></td>
-                  <td data-rotulo="Pix" data-zero={d.pix === 0 || undefined} className="text-right"><Money cents={d.pix} /></td>
-                  <td data-rotulo="Cartão" data-zero={d.card === 0 || undefined} className="text-right"><Money cents={d.card} /></td>
-                  <td data-rotulo="Fiado" data-zero={d.credit === 0 || undefined} className="text-right"><Money cents={d.credit} /></td>
+                  {formasDia.map(([k, l]) => (
+                    <td key={k} data-rotulo={l} data-zero={d[k] === 0 || undefined} className="text-right"><Money cents={d[k]} /></td>
+                  ))}
                   <td data-rotulo="Total" className="text-right font-semibold"><Money cents={d.total} /></td>
                 </tr>
               ))}
               <tr className="bg-subtle font-semibold">
                 <td>Período</td>
                 <td data-rotulo="Pedidos" className="num text-right">{sum("count")}</td>
-                <td data-rotulo="Dinheiro" className="text-right"><Money cents={sum("cash")} /></td>
-                <td data-rotulo="Pix" className="text-right"><Money cents={sum("pix")} /></td>
-                <td data-rotulo="Cartão" className="text-right"><Money cents={sum("card")} /></td>
-                <td data-rotulo="Fiado" className="text-right"><Money cents={sum("credit")} /></td>
+                {formasDia.map(([k, l]) => (
+                  <td key={k} data-rotulo={l} className="text-right"><Money cents={sum(k)} /></td>
+                ))}
                 <td data-rotulo="Total" className="text-right"><Money cents={sum("total")} /></td>
               </tr>
             </tbody>
@@ -144,13 +155,17 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
 
       <div className="mb-6 grid gap-6">
         <section className="panel overflow-x-auto">
-          <h2 className="h2 border-b border-line px-4 py-3">Por entregador</h2>
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3 border-b border-line px-4 py-3">
+            <h2 className="h2">Por entregador</h2>
+            {breakdown.byDriver.length > 0 && semFormas(formasEntregador) && <p className="text-[12px] text-muted">{semFormas(formasEntregador)}</p>}
+          </div>
           {breakdown.byDriver.length ? (
             <table className="table tabela-pilha rotulada sm:min-w-[32rem]">
               <thead>
                 <tr>
-                  <th>Quem entregou</th><th className="text-right">Pedidos</th><th className="text-right">Itens</th><th className="text-right">Dinheiro</th>
-                  <th className="text-right">Pix</th><th className="text-right">Cartão</th><th className="text-right">Fiado</th><th className="text-right">Total</th>
+                  <th>Quem entregou</th><th className="text-right">Pedidos</th><th className="text-right">Itens</th>
+                  {formasEntregador.map(([k, l]) => <th key={k} className="text-right">{l}</th>)}
+                  <th className="text-right">Total</th>
                 </tr>
               </thead>
               <tbody>
@@ -159,10 +174,9 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
                     <td>{r.name}</td>
                     <td data-rotulo="Pedidos" className="num text-right">{r.count}</td>
                     <td data-rotulo="Itens" className="num text-right">{r.units}</td>
-                    <td data-rotulo="Dinheiro" className="text-right"><Money cents={r.cash} /></td>
-                    <td data-rotulo="Pix" className="text-right"><Money cents={r.pix} /></td>
-                    <td data-rotulo="Cartão" className="text-right"><Money cents={r.card} /></td>
-                    <td data-rotulo="Fiado" className="text-right"><Money cents={r.credit} /></td>
+                    {formasEntregador.map(([k, l]) => (
+                      <td key={k} data-rotulo={l} data-zero={r[k] === 0 || undefined} className="text-right"><Money cents={r[k]} /></td>
+                    ))}
                     <td data-rotulo="Total" className="text-right font-semibold"><Money cents={r.total} /></td>
                   </tr>
                 ))}

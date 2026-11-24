@@ -9,12 +9,22 @@ import { AlturaSuave } from "./altura-suave";
  * que se consulta e o formulário só aparece quando alguém vai lançar. Fecha no X, no Esc, clicando fora
  * ou quando o formulário dá certo (o ActionForm dispara o evento "fechar").
  */
+/** Abre a janela e põe o cursor no primeiro campo: quem abre para lançar já pode digitar. */
+export function abrirJanela(d: HTMLDialogElement | null) {
+  if (!d) return;
+  d.showModal();
+  const campo = d.querySelector<HTMLElement>("input:not([type=hidden]):not([type=checkbox]),select,textarea");
+  (campo ?? d.querySelector<HTMLElement>(".janela-cartao"))?.focus();
+}
+
 export function JanelaAcao({
   label,
   titulo,
   primario = false,
   perigo = false,
   icone,
+  id,
+  semBotao = false,
   children,
 }: {
   label: string;
@@ -23,6 +33,9 @@ export function JanelaAcao({
   perigo?: boolean;
   /** ícone antes do rótulo, quando o botão fica ao lado de outros que têm */
   icone?: ReactNode;
+  /** com `semBotao`, quem abre é outro controle (o menu "Mais"), pelo id */
+  id?: string;
+  semBotao?: boolean;
   children: ReactNode;
 }) {
   const janela = useRef<HTMLDialogElement>(null);
@@ -39,23 +52,19 @@ export function JanelaAcao({
   };
   return (
     <>
-      <button
-        type="button"
-        aria-haspopup="dialog"
-        onClick={() => {
-          const d = janela.current;
-          if (!d) return;
-          d.showModal();
-          // quem abre para lançar já pode digitar: o cursor vai para o primeiro campo
-          const campo = d.querySelector<HTMLElement>("input:not([type=hidden]):not([type=checkbox]),select,textarea");
-          (campo ?? d.querySelector<HTMLElement>(".janela-cartao"))?.focus();
-        }}
-        className={`btn ${primario ? "btn-primary" : ""} ${perigo ? "text-danger" : ""}`}
-      >
-        {icone}
-        {label}
-      </button>
+      {!semBotao && (
+        <button
+          type="button"
+          aria-haspopup="dialog"
+          onClick={() => abrirJanela(janela.current)}
+          className={`btn ${primario ? "btn-primary" : ""} ${perigo ? "text-danger" : ""}`}
+        >
+          {icone}
+          {label}
+        </button>
+      )}
       <dialog
+        id={id}
         ref={(d) => {
           janela.current = d;
           if (!d) return;
