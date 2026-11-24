@@ -314,11 +314,18 @@ body {
 .janela-cartao:focus-visible {
   outline: none;
 }
-/* janela aberta no celular e no tablet: a página de trás não rola. No iPhone o arrasto na gaveta (que cabe sem
-   rolar) ou no fundo escuro passava para a página, e o painel subia e descia por trás */
-@media (max-width: 1023px) {
-  html:has(.janela[open]) {
-    overflow: hidden;
+/* janela aberta: a página de trás não rola. No iPhone o arrasto na gaveta (que cabe sem rolar) ou no fundo escuro
+   passava para a página; no computador a roda do mouse no fundo escuro rolava o painel por trás das Configurações */
+html:has(.janela[open]) {
+  overflow: hidden;
+  /* fora do sistema (confirmação na assinatura, no portal): página que rolava não pula ao esconder a barra */
+  scrollbar-gutter: stable;
+}
+/* o lugar da barra de rolagem fica reservado no sistema: sem ela, a página pularia para a direita ao abrir a janela.
+   Só onde há janela: no login, que não rola, a faixa vazia tiraria o formulário do centro */
+@media (min-width: 1024px) {
+  html:has(.app-shell) {
+    scrollbar-gutter: stable;
   }
 }
 
