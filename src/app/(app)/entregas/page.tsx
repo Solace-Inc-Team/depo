@@ -305,6 +305,17 @@ export default async function Entregas() {
                             {esquecido(minutesSince(o.dispatchedAt)) && ". Confira se foi entregue"}
                           </span>
                         </div>
+                        {/* quanto do tempo de atraso da loja já passou: o dono vê quem está perto do limite antes de ler o número.
+                            Cinza até 70%, âmbar perto do limite, vermelho passado; esquecido há dias fica âmbar, como o texto */}
+                        {(() => {
+                          const parte = minutesSince(o.createdAt) / Math.max(1, settings.lateAfterMinutes);
+                          const cor = esquecido(minutesSince(o.dispatchedAt)) ? "bg-warn" : parte >= 1 ? "bg-danger" : parte >= 0.7 ? "bg-warn" : "bg-muted/50";
+                          return (
+                            <div aria-hidden="true" className="mt-2 h-0.5 overflow-hidden rounded-full bg-line">
+                              <div className={`h-full rounded-full ${cor}`} style={{ width: `${Math.min(100, Math.round(parte * 100))}%` }} />
+                            </div>
+                          );
+                        })()}
                         {/* o entregador voltou ou ligou: a loja lança o que aconteceu */}
                         <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
                           <ResultadoRua id={o.id} numero={o.number} totalCents={o.totalCents} pagamento={paymentLabel[o.paymentMethod]} />
