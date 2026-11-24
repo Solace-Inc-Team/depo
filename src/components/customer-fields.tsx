@@ -1,7 +1,7 @@
 import { TelefoneCliente } from "./aviso-telefone";
 import { CamposEndereco } from "@/components/campos-endereco";
 
-type C = { id?: string; name?: string; phone?: string; address?: string; reference?: string; notes?: string };
+type C = { id?: string; name?: string; phone?: string; address?: string; cep?: string; reference?: string; notes?: string };
 
 // na ordem em que se pergunta ao cliente: nome, telefone, onde entregar e como achar
 export function CustomerFields({ c = {} }: { c?: C }) {
@@ -15,7 +15,7 @@ export function CustomerFields({ c = {} }: { c?: C }) {
         <label className="label" htmlFor="c-phone">Telefone</label>
         <TelefoneCliente id="c-phone" name="phone" defaultValue={c.phone} className="input" outroQue={c.id} />
       </div>
-      <CamposEndereco nome="address" id="c-end" inicial={c.address} className="sm:col-span-2" />
+      <CamposEndereco nome="address" id="c-end" inicial={c.address} cep={c.cep} className="sm:col-span-2" />
       <div className="sm:col-span-2">
         <label className="label" htmlFor="c-ref">Referência</label>
         <input id="c-ref" name="reference" defaultValue={c.reference} className="input" />

@@ -33,13 +33,13 @@ function tables(t: string): Record<string, { header: string[]; query: SQL }> {
         where u.tenant_id = ${t} order by u.created_at`,
     },
     "clientes.csv": {
-      header: ["ID", "Nome", "Telefone", "Endereço", "Referência", "Observações", "Criado em"],
-      query: sql`select id, name, phone, address, reference, notes, ${when("created_at")} from customers where tenant_id = ${t} order by name`,
+      header: ["ID", "Nome", "Telefone", "Endereço", "CEP", "Referência", "Observações", "Criado em"],
+      query: sql`select id, name, phone, address, cep, reference, notes, ${when("created_at")} from customers where tenant_id = ${t} order by name`,
     },
     "enderecos_de_clientes.csv": {
-      header: ["Cliente", "Nome do endereço", "Endereço", "Referência"],
+      header: ["Cliente", "Nome do endereço", "Endereço", "CEP", "Referência"],
       query: sql`
-        select c.name, a.label, a.address, a.reference
+        select c.name, a.label, a.address, a.cep, a.reference
         from customer_addresses a join customers c on c.id = a.customer_id
         where a.tenant_id = ${t} order by c.name`,
     },

@@ -7,7 +7,8 @@ import { useSaida } from "@/components/saida";
 
 /**
  * O endereço em partes: CEP (que preenche rua e bairro sozinho), rua, número, complemento e bairro. O formulário
- * recebe uma linha só, no campo escondido `nome`, como sempre recebeu. `id`: prefixo dos ids, para dois na mesma tela.
+ * recebe uma linha só, no campo escondido `nome`, como sempre recebeu, e o CEP à parte em `${nome}Cep`. `id`: prefixo
+ * dos ids, para dois na mesma tela.
  * `proprio`: quem digita é o dono do endereço (portal). Nas telas da equipe o preenchimento automático do navegador
  * ofereceria o endereço do próprio atendente.
  */
@@ -15,6 +16,7 @@ export function CamposEndereco({
   nome,
   id,
   inicial,
+  cep,
   obrigatorio = false,
   className = "",
   proprio = false,
@@ -22,6 +24,7 @@ export function CamposEndereco({
   nome: string;
   id: string;
   inicial?: string | null;
+  cep?: string | null;
   obrigatorio?: boolean;
   className?: string;
   proprio?: boolean;
@@ -153,6 +156,8 @@ export function CamposEndereco({
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <input
             id={`${id}-cep`}
+            name={`${nome}Cep`}
+            defaultValue={cep ? `${cep.slice(0, 5)}-${cep.slice(5)}` : undefined}
             inputMode="numeric"
             autoComplete={auto("postal-code")}
             data-mascara="cep"

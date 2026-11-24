@@ -11,10 +11,18 @@ import { filialAtiva } from "./filiais";
 import { fiadoBalance } from "./receivables";
 import { randomUUID } from "node:crypto";
 
+// o CEP vai só com os números; vazio vale (endereço antigo, cidade sem CEP por rua)
+export const cepSchema = z
+  .string()
+  .trim()
+  .transform((v) => v.replace(/\D/g, ""))
+  .refine((v) => !v || v.length === 8, "O CEP tem 8 números.");
+
 export const customerSchema = z.object({
   name: z.string().trim().min(2, "Nome muito curto.").max(120, "O nome pode ter até 120 letras."),
   phone: telefoneSchema,
   address: z.string().trim().max(240, "O endereço pode ter até 240 letras."),
+  cep: cepSchema.optional(),
   reference: z.string().trim().max(200, "A referência pode ter até 200 letras."),
   notes: z.string().trim().max(500, "A observação pode ter até 500 letras."),
 });
@@ -65,7 +73,7 @@ export async function anonymizeCustomer(ctx: Ctx, customerId: string) {
     );
     await tx
       .update(customers)
-      .set({ name: "Cliente removido", phone: "", address: "", reference: "", notes: "", anonymizedAt: new Date() })
+      .set({ name: "Cliente removido", phone: "", address: "", cep: "", reference: "", notes: "", anonymizedAt: new Date() })
       .where(eq(customers.id, c.id));
     await tx.delete(customerAddresses).where(eq(customerAddresses.customerId, c.id));
     // o pedido programado guarda o endereço: sai junto
@@ -80,6 +88,7 @@ export const addressSchema = z.object({
   customerId: z.uuid(),
   label: z.string().trim().min(2, "Dê um nome ao endereço (ex.: Trabalho).").max(40, "O nome do endereço pode ter até 40 letras."),
   address: z.string().trim().min(5, "Informe o endereço.").max(240, "O endereço pode ter até 240 letras."),
+  cep: cepSchema.optional(),
   reference: z.string().trim().max(200, "A referência pode ter até 200 letras."),
 });
 
@@ -126,6 +135,7 @@ export const settingsSchema = z
       .refine((v) => !v || telefoneValido(v), "Telefone com DDD, como (11) 91111-1111.")
       .transform((v) => (v ? formatarTelefone(v) : "")),
     address: z.string().trim().max(160, "Endereço muito longo."),
+    cep: cepSchema,
   })
   .partial()
   .refine((s) => !s.pixKey || ((s.pixName?.length ?? 0) >= 2 && (s.pixCity?.length ?? 0) >= 2), {

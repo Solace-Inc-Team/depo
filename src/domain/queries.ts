@@ -255,6 +255,7 @@ export const getSettings = scoped(async function getSettings(tenantId: string) {
       name: tenants.name,
       phone: tenants.phone,
       address: tenants.address,
+      cep: tenants.cep,
       staffDiscountPct: tenants.staffDiscountPct,
       lateAfterMinutes: tenants.lateAfterMinutes,
       pixKey: tenants.pixKey,

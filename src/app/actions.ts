@@ -222,6 +222,7 @@ export async function createOrderAction(fd: FormData): Promise<ActionState> {
           name: newName,
           phone: str(fd, "newCustomerPhone"),
           address: str(fd, "newCustomerAddress"),
+          cep: str(fd, "newCustomerAddressCep"),
           reference: str(fd, "newCustomerReference"),
           notes: "",
         }),
@@ -337,6 +338,7 @@ export async function portalOrderAction(slug: string, filial: string, fd: FormDa
         name: str(fd, "name"),
         phone: str(fd, "phone"),
         address: str(fd, "address"),
+        cep: str(fd, "addressCep"),
         reference: str(fd, "reference"),
         items: JSON.parse(str(fd, "items") || "[]"),
         paymentMethod: str(fd, "paymentMethod"),
@@ -368,7 +370,7 @@ export async function addAddressAction(fd: FormData) {
   const user = await requireUser("dono", "atendente", "caixa");
   return run(
     async () =>
-      addAddress(user, addressSchema.parse({ customerId: str(fd, "customerId"), label: str(fd, "label"), address: str(fd, "address"), reference: str(fd, "reference") })),
+      addAddress(user, addressSchema.parse({ customerId: str(fd, "customerId"), label: str(fd, "label"), address: str(fd, "address"), cep: str(fd, "addressCep"), reference: str(fd, "reference") })),
     ["/"],
     "Endereço adicionado.",
   );
@@ -392,7 +394,7 @@ export async function saveSettingsAction(fd: FormData) {
             : section === "pix"
               ? { pixKey: str(fd, "pixKey"), pixName: str(fd, "pixName"), pixCity: str(fd, "pixCity") }
               : section === "empresa"
-                ? { name: str(fd, "empresaNome"), phone: str(fd, "phone"), address: str(fd, "address") }
+                ? { name: str(fd, "empresaNome"), phone: str(fd, "phone"), address: str(fd, "address"), cep: str(fd, "addressCep") }
                 : section === "portal"
                   ? { portalEnabled: fd.get("portalEnabled") === "on" }
                   : // formulário sem seção não pode cair no portal e desligá-lo
@@ -538,6 +540,7 @@ export async function saveCustomerAction(fd: FormData) {
           name: str(fd, "name"),
           phone: str(fd, "phone"),
           address: str(fd, "address"),
+          cep: str(fd, "addressCep"),
           reference: str(fd, "reference"),
           notes: str(fd, "notes"),
         }),

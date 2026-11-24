@@ -42,6 +42,8 @@ export const tenants = pgTable("tenants", {
   // dados da empresa que o cliente vê no portal de pedidos e no acompanhamento
   phone: text("phone").notNull().default(""),
   address: text("address").notNull().default(""),
+  // só os 8 números; vazio quando não informado
+  cep: text("cep").notNull().default(""),
   active: boolean("active").notNull().default(true),
   // conta o prazo da política: dados de empresa cancelada saem em até 90 dias
   suspendedAt: timestamp("suspended_at", { withTimezone: true }),
@@ -183,6 +185,7 @@ export const customers = pgTable(
     name: text("name").notNull(),
     phone: text("phone").notNull().default(""),
     address: text("address").notNull().default(""),
+    cep: text("cep").notNull().default(""),
     reference: text("reference").notNull().default(""),
     notes: text("notes").notNull().default(""),
     // LGPD: dados pessoais apagados a pedido do cliente; os pedidos continuam nos relatórios
@@ -486,6 +489,7 @@ export const customerAddresses = pgTable(
       .references(() => customers.id),
     label: text("label").notNull(),
     address: text("address").notNull(),
+    cep: text("cep").notNull().default(""),
     reference: text("reference").notNull().default(""),
     createdAt: createdAt(),
   },

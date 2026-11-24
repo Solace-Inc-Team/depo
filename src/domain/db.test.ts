@@ -434,7 +434,11 @@ test("anonimizar cliente: exige fiado quitado, apaga dados e some da busca", asy
   const { auditLog } = m.schema;
   const { and, eq } = await import("drizzle-orm");
   const c = await m.registry.saveCustomer(A.ctx, { name: "Maria Sigilo", phone: "11999990000", address: "Rua X", reference: "", notes: "" });
-  await m.registry.saveCustomer(A.ctx, { name: "Maria Sigilo", phone: "11999990000", address: "Rua Y", reference: "", notes: "" }, c.id);
+  // o CEP chega com a máscara e fica só com os números; incompleto é recusado
+  const comCep = m.registry.customerSchema.parse({ name: "Maria Sigilo", phone: "11999990000", address: "Rua Y", cep: "66.035-000", reference: "", notes: "" });
+  assert.throws(() => m.registry.customerSchema.parse({ ...comCep, cep: "66035" }), /8 números/);
+  await m.registry.saveCustomer(A.ctx, comCep, c.id);
+  assert.equal((await m.q.getCustomer(A.t.id, c.id))!.cep, "66035000");
   const fiado = await m.orders.createOrder(A.ctx, {
     mode: "balcao", customerId: c.id, items: [{ productId: A.product.id, quantity: 1, returnsEmpty: true }],
     paymentMethod: "fiado", deliveryFeeCents: 0, changeForCents: null, notes: "tocar na casa da Maria, portão azul", driverId: null,
@@ -445,6 +449,7 @@ test("anonimizar cliente: exige fiado quitado, apaga dados e some da busca", asy
   await assert.rejects(m.registry.anonymizeCustomer({ ...A.ctx, role: "atendente" }, c.id), /Sem permissão/);
 
   await m.registry.anonymizeCustomer(A.ctx, c.id);
+  assert.equal((await m.q.getCustomer(A.t.id, c.id))!.cep, "");
   const [after] = await m.q.listCustomers(A.t.id, "Sigilo");
   assert.equal(after, undefined);
   const logs = await db.select().from(auditLog).where(and(eq(auditLog.entity, "customer"), eq(auditLog.entityId, c.id)));

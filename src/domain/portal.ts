@@ -6,6 +6,7 @@ import { type Ctx, DomainError, isUuid } from "@/lib/ctx";
 import { createOrder } from "./orders";
 import { audit, disponivelNaLoja } from "./stock";
 import { telefoneSchema } from "./telefone";
+import { cepSchema } from "./registry";
 import { salvarInscricao } from "./aviso";
 import { situacaoAssinatura } from "@/lib/plano";
 import { todayISO } from "@/lib/period";
@@ -49,6 +50,7 @@ export const portalOrderSchema = z.object({
   // no portal o telefone é obrigatório; a regra e o formato são os mesmos do cadastro
   phone: telefoneSchema.refine((p) => p !== "", "Informe o telefone com DDD."),
   address: z.string().trim().min(5, "Informe o endereço de entrega.").max(240, "O endereço pode ter até 240 letras."),
+  cep: cepSchema.optional(),
   reference: z.string().trim().max(200, "A referência pode ter até 200 letras."),
   items: z
     .array(z.object({ productId: z.uuid(), quantity: z.int().min(1).max(20, "No máximo 20 unidades por item."), returnsEmpty: z.boolean() }))
@@ -93,7 +95,7 @@ export async function placePortalOrder(tenantId: string, branchId: string, input
       if (!customerId) {
         const [c] = await tx
           .insert(customers)
-          .values({ tenantId, name: input.name, phone: input.phone, address: input.address, reference: input.reference })
+          .values({ tenantId, name: input.name, phone: input.phone, address: input.address, cep: input.cep, reference: input.reference })
           .returning({ id: customers.id });
         customerId = c.id;
         await audit(tx, ctx, "cliente.criar", "customer", c.id, { origin: "portal" });

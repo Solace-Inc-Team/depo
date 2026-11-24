@@ -136,7 +136,7 @@ export async function secoesConfig(tenantId: string, pagoAte: string | null) {
               <input id="emp-tel" name="phone" type="tel" inputMode="tel" data-mascara="telefone" maxLength={30} defaultValue={s.phone} className="input num" placeholder="(11) 91111-1111" />
             </Linha>
             <Linha icone={MapPin} titulo="Endereço" descricao="Onde fica a loja, para quem quiser buscar no balcão." campo="largo">
-              <CamposEndereco nome="address" id="emp-end" inicial={s.address} />
+              <CamposEndereco nome="address" id="emp-end" inicial={s.address} cep={s.cep} />
             </Linha>
           </Grupo>
         </ActionForm>

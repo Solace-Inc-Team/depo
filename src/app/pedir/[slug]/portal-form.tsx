@@ -20,6 +20,7 @@ type Salvo = {
   nome: string;
   fone: string;
   endereco: string;
+  cep?: string;
   referencia: string;
   itens: { productId: string; quantity: number; returnsEmpty: boolean }[];
   pagamento: string;
@@ -207,7 +208,7 @@ export function PortalForm({
             const r = await action(fd);
             if (r.number) {
               setEnviado({ endereco: campo("address"), referencia: campo("reference"), pagamento: payment, troco: payment === "dinheiro" && parseBRL(campo("changeFor")) ? formatBRL(parseBRL(campo("changeFor"))!) : "" });
-              const novo: Salvo = { nome: campo("name"), fone: campo("phone"), endereco: campo("address"), referencia: campo("reference"), itens: items, pagamento: payment, numero: r.number, acompanhar: r.acompanhar, salvoEm: Date.now() };
+              const novo: Salvo = { nome: campo("name"), fone: campo("phone"), endereco: campo("address"), cep: campo("addressCep"), referencia: campo("reference"), itens: items, pagamento: payment, numero: r.number, acompanhar: r.acompanhar, salvoEm: Date.now() };
               try {
                 localStorage.setItem(chaveSalvo(slug), JSON.stringify(novo));
               } catch {}
@@ -309,7 +310,7 @@ export function PortalForm({
         <section className="panel space-y-3 p-4">
           <h2 className="h2">Endereço de entrega</h2>
           {/* o endereço salvo do último pedido volta já separado; "Não sou eu" recria os campos vazios */}
-          <CamposEndereco key={salvo?.salvoEm ?? "vazio"} nome="address" id="end" inicial={salvo?.endereco} obrigatorio proprio />
+          <CamposEndereco key={salvo?.salvoEm ?? "vazio"} nome="address" id="end" inicial={salvo?.endereco} cep={salvo?.cep?.replace(/\D/g, "")} obrigatorio proprio />
           <div>
             <label className="label" htmlFor="reference">Ponto de referência (opcional)</label>
             <input id="reference" name="reference" maxLength={200} className="input" />

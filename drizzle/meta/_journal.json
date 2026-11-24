@@ -246,6 +246,13 @@
       "when": 1795089152070,
       "tag": "0034_whatsapp_numero",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1795551305725,
+      "tag": "0035_cep",
+      "breakpoints": true
     }
   ]
 }
