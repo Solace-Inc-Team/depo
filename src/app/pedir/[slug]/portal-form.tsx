@@ -136,6 +136,13 @@ export function PortalForm({
 
   useEffect(() => {
     if (result?.error) errorRef.current?.scrollIntoView({ block: "center", behavior: "smooth" });
+    // o campo marcado aponta para a mensagem, como no ActionForm: quem volta a ele ouve o erro de novo
+    for (const c of document.querySelectorAll<HTMLElement>("[aria-describedby~=portal-erro], [aria-invalid=true]")) {
+      const ids = (c.getAttribute("aria-describedby") ?? "").split(" ").filter((t) => t && t !== "portal-erro");
+      if (result?.error && c.getAttribute("aria-invalid") === "true") ids.push("portal-erro");
+      if (ids.length) c.setAttribute("aria-describedby", ids.join(" "));
+      else c.removeAttribute("aria-describedby");
+    }
   }, [result]);
 
   const price = (p: Product) => p.priceCents + (p.returnable && noBottle[p.id] ? p.containerPriceCents : 0);
@@ -302,7 +309,7 @@ export function PortalForm({
         <section className="panel space-y-3 p-4">
           <h2 className="h2">Endereço de entrega</h2>
           {/* o endereço salvo do último pedido volta já separado; "Não sou eu" recria os campos vazios */}
-          <CamposEndereco key={salvo ? "salvo" : "vazio"} nome="address" id="end" inicial={salvo?.endereco} obrigatorio />
+          <CamposEndereco key={salvo?.salvoEm ?? "vazio"} nome="address" id="end" inicial={salvo?.endereco} obrigatorio proprio />
           <div>
             <label className="label" htmlFor="reference">Ponto de referência (opcional)</label>
             <input id="reference" name="reference" maxLength={200} className="input" />
@@ -344,7 +351,7 @@ export function PortalForm({
         </section>
 
         {result?.error && (
-          <p ref={errorRef} role="alert" className="erro-form flex items-start gap-2 rounded-lg bg-danger-soft px-3 py-2 text-[13px] font-medium text-danger">
+          <p ref={errorRef} id="portal-erro" role="alert" className="erro-form flex items-start gap-2 rounded-lg bg-danger-soft px-3 py-2 text-[13px] font-medium text-danger">
             <CircleAlert size={16} strokeWidth={2} className="mt-px shrink-0" aria-hidden="true" />
             {result.error}
           </p>

@@ -4,7 +4,7 @@
 export type Comparativo = { texto: string; tom: "sobe" | "desce" | "igual" };
 
 const frases = {
-  andamento: { ref: "ontem até agora", vazio: "ontem não tinha venda a esta hora" },
+  andamento: { ref: "ontem até agora", vazio: "sem venda ontem a esta hora" },
   fechado: { ref: "o dia anterior", vazio: "o dia anterior não teve venda" },
 };
 

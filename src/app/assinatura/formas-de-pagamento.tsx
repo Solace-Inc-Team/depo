@@ -25,7 +25,7 @@ export function FormasDePagamento({ pix, cartao, inicial = "pix" }: { pix: React
       <div role="tablist" aria-label="Forma de pagamento" className="relative grid grid-cols-2 rounded-lg bg-subtle p-1">
         <span
           aria-hidden="true"
-          className="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-md bg-surface shadow-[0_1px_2px_rgb(0_0_0/0.08)] ring-1 ring-line transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+          className="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-md bg-surface shadow-[0_1px_2px_rgb(0_0_0/0.08)] ring-1 ring-line transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none"
           style={{ transform: aba === "cartao" ? "translateX(100%)" : "none" }}
         />
         {(["pix", "cartao"] as const).map((a) => (
@@ -36,7 +36,17 @@ export function FormasDePagamento({ pix, cartao, inicial = "pix" }: { pix: React
             role="tab"
             aria-selected={aba === a}
             aria-controls={`aba-${a}`}
+            // uma aba só na ordem do Tab; as setas, Home e End trocam (como o leitor de tela anuncia "guia 1 de 2")
+            tabIndex={aba === a ? 0 : -1}
             onClick={() => setAba(a)}
+            onKeyDown={(e) => {
+              const outra = a === "pix" ? "cartao" : "pix";
+              const vai = e.key === "Home" ? "pix" : e.key === "End" ? "cartao" : e.key === "ArrowLeft" || e.key === "ArrowRight" ? outra : null;
+              if (!vai) return;
+              e.preventDefault();
+              setAba(vai);
+              document.getElementById(`botao-${vai}`)?.focus();
+            }}
             className={`relative min-h-11 rounded-md px-3.5 py-1.5 text-[14px] font-medium transition-colors [@media(min-width:640px)_and_(pointer:fine)]:min-h-9 ${aba === a ? "text-fg" : "text-muted hover:text-fg"}`}
           >
             {a === "pix" ? "Pix" : "Cartão"}

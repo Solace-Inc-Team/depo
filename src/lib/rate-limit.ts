@@ -32,13 +32,13 @@ export async function attempt(key: string, max = MAX_FAILURES) {
  * true na primeira vez que a chave aparece na janela (o mesmo aviso do WhatsApp chegando duas vezes). Com a trava,
  * dois iguais ao mesmo tempo não se anulam: com `attempt(key, 1)` os dois gravavam, contavam 2 e desistiam juntos.
  */
-export async function primeiraVez(key: string) {
+export async function primeiraVez(key: string, janelaMs = WINDOW_MS) {
   return db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"uma-vez:" + key}))`);
     const [{ n }] = await tx
       .select({ n: count() })
       .from(loginAttempts)
-      .where(and(eq(loginAttempts.key, key), gte(loginAttempts.createdAt, new Date(Date.now() - WINDOW_MS))));
+      .where(and(eq(loginAttempts.key, key), gte(loginAttempts.createdAt, new Date(Date.now() - janelaMs))));
     if (n) return false;
     await tx.insert(loginAttempts).values({ key });
     return true;

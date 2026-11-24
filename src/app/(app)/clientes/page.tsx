@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Phone, Plus } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { listCustomers } from "@/domain/queries";
 import { listDebtors } from "@/domain/receivables";
@@ -56,7 +56,11 @@ export default async function Clientes({ searchParams }: PageProps<"/clientes">)
                   {/* telefone inteiro: é o que mais se usa da lista, e no celular liga com um toque */}
                   {c.phone && (
                     <a href={`tel:${c.phone.replace(/\D/g, "")}`} className="alvo num relative text-sm text-muted hover:text-accent">
-                      {c.phone}
+                      {/* o ícone diz que é para ligar: só pela cor, o link não se distinguia do texto em volta */}
+                      <span className="inline-flex items-center gap-1">
+                        <Phone size={12} strokeWidth={1.75} aria-hidden="true" />
+                        {c.phone}
+                      </span>
                     </a>
                   )}
                   {/* no celular não cabe a coluna da direita: o mesmo resumo desce para baixo do telefone */}

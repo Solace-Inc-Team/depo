@@ -13,6 +13,12 @@ import { TextoQueTroca } from "@/components/texto-que-troca";
 export function PalavraQueGira({ palavras: base, sufixo = "", intervalo = 2400, inicio = 2300 }: { palavras: string[]; sufixo?: string; intervalo?: number; inicio?: number }) {
   const palavras = base.map((p) => p + sufixo);
   const [i, setI] = useState(0);
+  // a anterior, enquanto ainda sai (150 ms): a largura só encolhe depois, senão ela passava por cima do ponto
+  const [saindo, setSaindo] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => setSaindo(i), 160);
+    return () => clearTimeout(t);
+  }, [i]);
   const [larguras, setLarguras] = useState<number[]>([]);
   const medidas = useRef<HTMLSpanElement>(null);
 
@@ -41,7 +47,7 @@ export function PalavraQueGira({ palavras: base, sufixo = "", intervalo = 2400, 
   }, [palavras.length, intervalo, inicio]);
 
   return (
-    <span className="palavra-gira" style={larguras[i] ? ({ width: larguras[i], "--maior": `${Math.max(...larguras)}px` } as React.CSSProperties) : undefined}>
+    <span className="palavra-gira" style={larguras[i] ? ({ width: Math.max(larguras[i], larguras[saindo] ?? 0), "--maior": `${Math.max(...larguras)}px` } as React.CSSProperties) : undefined}>
       <span className="sr-only">{palavras[0]}</span>
       <span aria-hidden="true">
         <TextoQueTroca texto={palavras[i]} />

@@ -5,7 +5,7 @@ import { type Ctx, DomainError } from "@/lib/ctx";
 import { formatBRL } from "@/lib/money";
 import { formatarTelefone } from "@/lib/mascara";
 import { responder, type Contexto, type Entrada, type Estado, type Item, type Pagamento, type Saida } from "@/lib/robo";
-import { createOrder } from "./orders";
+import { criarPedidoNaTx, newOrderSchema } from "./orders";
 import { disponivelNaLoja } from "./stock";
 
 // O robô do WhatsApp com o banco: acha o cliente pelo telefone, monta o que ele pode pedir, guarda onde a conversa
@@ -180,7 +180,8 @@ async function lancar(
     .limit(1);
   if (!dono) throw new DomainError("Esta loja não está recebendo pedidos agora.");
   const ctx: Ctx = { tenantId, userId: dono.id, role: "dono", branchId };
-  return createOrder(ctx, {
+  // na transação que recebeu (o savepoint do teste, que é desfeito), não numa nova aberta no escopo de fora
+  return criarPedidoNaTx(tx, ctx, newOrderSchema.parse({
     mode: "entrega",
     exigirEstoque: true,
     customerId: p.customerId,
@@ -193,7 +194,7 @@ async function lancar(
     notes: p.teste ? "Teste do robô do WhatsApp: pode cancelar" : "Pedido pelo robô do WhatsApp",
     driverId: null,
     origin: "whatsapp",
-  });
+  }));
 }
 
 /** Tela de teste: apaga onde a conversa parou, para começar do zero. */

@@ -105,7 +105,8 @@ export function ConexaoWhatsappPainel() {
       </button>
     );
   } else if (conexao?.estado === "conectando") {
-    descricao = "Esperando você ler o QR code com o celular da loja.";
+    // "Gerando o QR…" também aqui: esta linha é a região viva, o quadro do QR não
+    descricao = qrNaTela ? "Esperando você ler o QR code com o celular da loja." : "Gerando o QR…";
     controle = (
       <button type="button" onClick={() => desconectar("Cancelar a conexão do WhatsApp?", "Cancelar conexão")} aria-disabled={pendente} data-state={pendente ? "loading" : undefined} className="btn btn-sm tap">
         Cancelar
@@ -153,15 +154,18 @@ export function ConexaoWhatsappPainel() {
             <div className="grid gap-5 border-t border-line p-4 sm:grid-cols-[auto_1fr] sm:items-center">
               {/* o QR é branco com borda própria: lê bem também no tema escuro */}
               <div className="mx-auto grid size-56 place-items-center rounded-lg bg-white p-2">
+                {/* o QR novo (a cada 30 s) entra esmaecendo: trocado seco, parecia piscar na frente da câmera */}
                 {/* eslint-disable-next-line @next/next/no-img-element -- QR em data URL, que muda a cada 30 s */}
-                {qrNaTela ? <img src={qrNaTela} alt="QR code para conectar o WhatsApp" className="size-full" /> : <span className="text-[13px] text-neutral-500">Gerando o QR…</span>}
+                {qrNaTela ? <img key={qrNaTela} src={qrNaTela} alt="QR code para conectar o WhatsApp" className="enter size-full" /> : <span className="text-[13px] text-neutral-500">Gerando o QR…</span>}
               </div>
-              <ol className="space-y-2 text-[13.5px]">
-                <li>1. No celular da loja, abra o WhatsApp.</li>
-                <li>2. Toque em <b className="font-medium">Configurações</b> e depois em <b className="font-medium">Aparelhos conectados</b>.</li>
-                <li>3. Toque em <b className="font-medium">Conectar aparelho</b> e aponte para o QR.</li>
-                <li className="text-muted">Esta tela muda sozinha quando conectar.</li>
-              </ol>
+              <div className="text-[13.5px]">
+                <ol className="list-inside list-decimal space-y-2">
+                  <li>No celular da loja, abra o WhatsApp.</li>
+                  <li>Toque em <b className="font-medium">Configurações</b> e depois em <b className="font-medium">Aparelhos conectados</b>.</li>
+                  <li>Toque em <b className="font-medium">Conectar aparelho</b> e aponte para o QR.</li>
+                </ol>
+                <p className="mt-2 text-muted">Esta tela muda sozinha quando conectar.</p>
+              </div>
             </div>
           </Aparece>
         </div>

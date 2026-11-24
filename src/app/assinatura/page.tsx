@@ -16,6 +16,7 @@ import { ArrowLeft, ArrowRight, Check, CreditCard, Lock, LogOut } from "lucide-r
 import { FormasDePagamento } from "./formas-de-pagamento";
 import { LiveNumber } from "@/components/live-number";
 import { CheckSucesso } from "@/components/check-sucesso";
+import { AlturaSuave } from "@/components/altura-suave";
 import { TextoQueTroca } from "@/components/texto-que-troca";
 
 export const metadata = { title: "Assinatura" };
@@ -141,6 +142,8 @@ export default async function Assinatura() {
               )}
             </div>
 
+            {/* Pix gerado, pago ou cartão ligado chegam do servidor: a caixa acompanha a altura em vez de pular */}
+            <AlturaSuave>
             <div className="border-t border-line p-6">
               {acabouDePagar && (
                 <div className="mb-6 flex items-center gap-3 rounded-lg border border-line bg-subtle px-4 py-3">
@@ -182,6 +185,7 @@ export default async function Assinatura() {
                 pagarPix
               )}
             </div>
+            </AlturaSuave>
 
             <p className="flex items-center gap-2 border-t border-line bg-subtle px-6 py-3 text-[12px] text-muted">
               <Lock size={13} strokeWidth={1.75} aria-hidden="true" />

@@ -186,7 +186,8 @@ export function Simulador({ clientes, loja }: { clientes: Cliente[]; loja: strin
       >
         <label htmlFor="robo-texto" className="sr-only">Mensagem do cliente</label>
         <input id="robo-texto" className="input min-w-0 flex-1" placeholder="Escreva como o cliente" maxLength={500} value={texto} onChange={(e) => setTexto(e.target.value)} autoComplete="off" />
-        <button className="btn btn-primary max-sm:min-w-11" disabled={pendente || !texto.trim()}>
+        {/* esperando o robô (ou o recomeçar): o botão gira, em vez de parecer que o Enter não fez nada */}
+        <button className="btn btn-primary max-sm:min-w-11" disabled={!texto.trim()} aria-disabled={pendente} data-state={pendente && texto.trim() ? "loading" : undefined}>
           <SendHorizontal size={16} aria-hidden="true" /> <span className="max-sm:sr-only">Enviar</span>
         </button>
       </form>

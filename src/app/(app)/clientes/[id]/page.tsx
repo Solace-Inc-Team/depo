@@ -229,7 +229,7 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                       {/* na ordem do cadastro: o endereço, depois a referência para achar */}
                       <div className="sm:col-span-2">
                         <label className="label" htmlFor="addr-label">Nome do endereço</label>
-                        <input id="addr-label" name="label" required minLength={2} maxLength={40} className="input" placeholder="Trabalho" />
+                        <input id="addr-label" name="label" required minLength={2} maxLength={40} className="input" placeholder="Ex.: trabalho, casa da mãe" />
                       </div>
                       <CamposEndereco nome="address" id="addr" obrigatorio className="sm:col-span-2" />
                       <div className="sm:col-span-2">

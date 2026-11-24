@@ -1819,7 +1819,7 @@ test("robô do WhatsApp: repete o último pedido uma vez só, cada empresa com o
   const [antigo] = await db.insert(customers).values({ tenantId: A.t.id, name: "Zé do Nove", phone: "(21) 8765-4321", address: "Rua Velha, 1" }).returning();
   const [fixo] = await db.insert(customers).values({ tenantId: A.t.id, name: "Padaria Fixa", phone: "+55 (21) 3222-1111", address: "Rua Fixa, 2" }).returning();
   assert.match((await m.robo.conversar(A.t.id, "5521987654321", { texto: "Oi" }, { base: "https://depo.test" }))[0].texto, /Zé!/);
-  assert.match((await m.robo.conversar(A.t.id, "552132221111", { texto: "Oi" }, { base: "https://depo.test" }))[0].texto, /Padaria!/);
+  assert.match((await m.robo.conversar(A.t.id, "552132221111", { texto: "Oi" }, { base: "https://depo.test" }))[0].texto, /Padaria Fixa!/);
   for (const tel of ["21987654321", "2132221111"]) await db.delete(conversasWhatsapp).where(and(eq(conversasWhatsapp.tenantId, A.t.id), eq(conversasWhatsapp.telefone, tel)));
   await db.delete(customers).where(and(eq(customers.tenantId, A.t.id), eq(customers.id, antigo.id)));
   await db.delete(customers).where(and(eq(customers.tenantId, A.t.id), eq(customers.id, fixo.id)));

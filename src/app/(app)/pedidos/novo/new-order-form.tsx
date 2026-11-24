@@ -369,7 +369,7 @@ export function NewOrderForm({
                       <p className="font-semibold">{p.name}</p>
                       <p className="text-sm text-muted">
                         {/* reservado além do que há (a carga ainda não chegou): "nenhum livre", nunca um número negativo */}
-                        <span className="num">{formatBRL(p.priceCents)}</span>, {p.available > 0 ? `${p.available} ${p.returnable ? "cheios livres" : "livres"}` : p.returnable ? "nenhum cheio livre" : "nenhum livre"}
+                        <span className="num">{formatBRL(p.priceCents)}</span>, {p.available > 0 ? `${p.available} ${p.returnable ? (p.available === 1 ? "cheio livre" : "cheios livres") : p.available === 1 ? "livre" : "livres"}` : p.returnable ? "nenhum cheio livre" : "nenhum livre"}
                         {p.reserved > 0 && ` (${p.reserved} ${p.reserved === 1 ? "reservado" : "reservados"})`}
                       </p>
                       {/* o pedido passa mesmo assim (a carga pode chegar antes da entrega), mas a pessoa fica sabendo */}

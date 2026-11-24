@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { db, tenantTransaction } from "@/db";
 import { users, tenants, sessions } from "@/db/schema";
 import { getUser, pendingTerms, requireUser, requireAdmin, createSession, destroySession, getPendingMfa, completeMfa } from "@/lib/auth";
-import { attempt, isBlocked, recordFailure, clearFailures, BLOCKED_MESSAGE, IP_MAX_FAILURES } from "@/lib/rate-limit";
+import { attempt, primeiraVez, isBlocked, recordFailure, clearFailures, BLOCKED_MESSAGE, IP_MAX_FAILURES } from "@/lib/rate-limit";
 import { newTotpSecret, verifyTotp } from "@/lib/totp";
 import { caminhoSeguro } from "@/lib/caminho";
 import { hashPassword, verifyPassword } from "@/lib/password";
@@ -947,8 +947,8 @@ export async function pularProgramadoAction(fd: FormData) {
   return r?.error ? r : { ok: `Pulado. O próximo fica para ${diaBR(proxima)}.` };
 }
 
-// Tela de teste do robô do WhatsApp: o dono conversa como se fosse o cliente daquele telefone. O pedido lançado
-// aqui é de verdade (cai em Entregas), marcado como teste.
+// Tela de teste do robô do WhatsApp: o dono conversa como se fosse o cliente daquele telefone. O pedido é conferido
+// de verdade (estoque, preço, total) num savepoint desfeito no fim: não cai em Entregas.
 const textoCurto = (v: unknown, n: number) => (typeof v === "string" ? v.slice(0, n) : undefined);
 
 export async function conversarTesteAction(telefone: unknown, entrada: unknown): Promise<{ saidas?: Saida[]; erro?: string }> {
@@ -991,7 +991,9 @@ async function comConexao(fn: () => Promise<ConexaoWhatsapp>): Promise<RespostaC
 
 export async function conexaoWhatsappAction(qr: boolean): Promise<RespostaConexao> {
   const user = await requireUser("dono");
-  return comConexao(() => conexaoWhatsapp(user, { qr }));
+  // QR novo no máximo a cada 20 s por empresa (a tela pede a cada 30 s): chamada repetida não martela a Evolution
+  const novo = qr && (await primeiraVez(`wa-qr:${user.tenantId}`, 20_000));
+  return comConexao(() => conexaoWhatsapp(user, { qr: novo }));
 }
 
 export async function conectarWhatsappAction(): Promise<RespostaConexao> {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { juntarEndereco, separarEndereco } from "@/lib/endereco";
 import { TextoQueTroca } from "@/components/texto-que-troca";
 import { useSaida } from "@/components/saida";
@@ -8,6 +8,8 @@ import { useSaida } from "@/components/saida";
 /**
  * O endereço em partes: CEP (que preenche rua e bairro sozinho), rua, número, complemento e bairro. O formulário
  * recebe uma linha só, no campo escondido `nome`, como sempre recebeu. `id`: prefixo dos ids, para dois na mesma tela.
+ * `proprio`: quem digita é o dono do endereço (portal). Nas telas da equipe o preenchimento automático do navegador
+ * ofereceria o endereço do próprio atendente.
  */
 export function CamposEndereco({
   nome,
@@ -15,15 +17,17 @@ export function CamposEndereco({
   inicial,
   obrigatorio = false,
   className = "",
+  proprio = false,
 }: {
   nome: string;
   id: string;
   inicial?: string | null;
   obrigatorio?: boolean;
   className?: string;
+  proprio?: boolean;
 }) {
   const [p, setP] = useState(() => separarEndereco(inicial));
-  const [aviso, setAviso] = useState<{ texto: string; erro?: boolean; buscando?: boolean } | null>(null);
+  const [aviso, setAviso] = useState<{ texto: string; erro?: boolean; buscando?: boolean; pulou?: boolean } | null>(null);
   // endereço antigo, digitado livre, que não deu para separar: ficou inteiro na rua, e exigir número e bairro
   // faria a pessoa repetir o que já está lá ("Rua das Flores 120 - Centro, 120 - Centro")
   const [antigo] = useState(() => {
@@ -82,8 +86,9 @@ export function CamposEndereco({
       doCep.current = { rua: d.rua ?? "", bairro: d.bairro ?? "" };
       avisarMudanca.current = rua !== agora.rua || bairro !== agora.bairro;
       setP((x) => ({ ...x, rua, bairro }));
-      setAviso(d.cidade ? { texto: `${d.cidade}/${d.uf}` } : null);
-      if (d.rua && !digitou && document.activeElement === cepRef.current) numero.current?.focus();
+      const pula = !!d.rua && !digitou && document.activeElement === cepRef.current;
+      setAviso(d.cidade ? { texto: `${d.cidade}/${d.uf}`, pulou: pula } : null);
+      if (pula) numero.current?.focus();
     } catch {
       if (!valeAinda()) return;
       buscado.current = "";
@@ -114,18 +119,20 @@ export function CamposEndereco({
   }, [inicial]);
 
   // ouvinte nativo: a máscara do CEP reescreve o campo antes do React, que então não vê a mudança no onChange
+  const aoDigitar = useEffectEvent(() => void buscarCep(cepRef.current?.value ?? ""));
   useEffect(() => {
     const el = cepRef.current;
     if (!el) return;
-    const aoDigitar = () => void buscarCep(el.value);
-    el.addEventListener("input", aoDigitar);
-    return () => el.removeEventListener("input", aoDigitar);
-  });
+    const ouvir = () => aoDigitar();
+    el.addEventListener("input", ouvir);
+    return () => el.removeEventListener("input", ouvir);
+  }, []);
+  const auto = (v: string) => (proprio ? v : "off");
 
   return (
     // @container: os campos se arrumam pela largura de onde estão (janela estreita ou seção larga), não pela tela
-    <div
-      className={`@container ${className}`}
+    <fieldset
+      className={`@container min-w-0 ${className}`}
       // Enter no meio do endereço não envia o formulário pela metade; no CEP, busca
       onKeyDown={(e) => {
         if (e.key !== "Enter" || e.ctrlKey || e.metaKey || !(e.target instanceof HTMLInputElement)) return;
@@ -133,6 +140,8 @@ export function CamposEndereco({
         if (e.target === cepRef.current) void buscarCep(e.target.value);
       }}
     >
+      {/* o grupo diz ao leitor de tela que estes campos são um endereço só, e se ele é opcional */}
+      <legend className="sr-only">{obrigatorio ? "Endereço" : "Endereço (opcional)"}</legend>
       <div className="grid grid-cols-12 gap-3">
       <input type="hidden" name={nome} value={juntarEndereco(p)} />
       {/* o CEP tem linha própria: estes campos vivem em janelas estreitas, onde lado a lado ele espremia */}
@@ -145,7 +154,7 @@ export function CamposEndereco({
           <input
             id={`${id}-cep`}
             inputMode="numeric"
-            autoComplete="postal-code"
+            autoComplete={auto("postal-code")}
             data-mascara="cep"
             maxLength={9}
             placeholder="00000-000"
@@ -154,17 +163,19 @@ export function CamposEndereco({
             aria-describedby={`${id}-cep-aviso`}
           />
           <p id={`${id}-cep-aviso`} aria-live="polite" className={`min-w-40 flex-1 text-[12.5px] transition-colors ${comAviso ? "" : "h-0 overflow-hidden"} ${aviso?.erro ? "text-danger" : "text-muted"}`}>
+            {/* quem não vê precisa saber o que mudou e por que o cursor foi para o número */}
+            {aviso?.pulou && <span className="sr-only">Rua e bairro preenchidos. Cursor no número. </span>}
             <TextoQueTroca texto={aviso?.texto ?? ""} brilho={!!aviso?.buscando} />
           </p>
         </div>
       </div>
       <div className="col-span-12 @lg:col-span-8">
         <label className="label" htmlFor={`${id}-rua`}>Rua</label>
-        <input ref={ruaRef} id={`${id}-rua`} value={p.rua} onChange={muda("rua")} required={obrigatorio || !!(p.numero || p.complemento || p.bairro).trim()} maxLength={100} autoComplete="address-line1" className="input" placeholder="Rua, avenida, travessa" />
+        <input ref={ruaRef} id={`${id}-rua`} value={p.rua} onChange={muda("rua")} required={obrigatorio || !!(p.numero || p.complemento || p.bairro).trim()} maxLength={100} autoComplete={auto("address-line1")} className="input" placeholder="Rua, avenida, travessa" />
       </div>
       <div className="col-span-4">
         <label className="label" htmlFor={`${id}-num`}>Número</label>
-        <input ref={numero} id={`${id}-num`} value={p.numero} onChange={muda("numero")} required={obrigatorio && !antigo} maxLength={12} className="input num" placeholder="120" />
+        <input ref={numero} id={`${id}-num`} value={p.numero} onChange={muda("numero")} required={obrigatorio && !antigo} maxLength={12} className="input num" />
       </div>
       {/* Bairro antes do Complemento: as duas linhas dividem igual (8 e 4), e o bairro é o que o CEP preenche */}
       <div className="col-span-8">
@@ -175,9 +186,9 @@ export function CamposEndereco({
         <label className="label" htmlFor={`${id}-comp`}>
           Complemento <span className="font-normal text-muted">(opcional)</span>
         </label>
-        <input id={`${id}-comp`} value={p.complemento} onChange={muda("complemento")} maxLength={40} autoComplete="address-line2" className="input" placeholder="Apto, bloco" />
+        <input id={`${id}-comp`} value={p.complemento} onChange={muda("complemento")} maxLength={40} autoComplete={auto("address-line2")} className="input" placeholder="Apto, bloco" />
       </div>
       </div>
-    </div>
+    </fieldset>
   );
 }

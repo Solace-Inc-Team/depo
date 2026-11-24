@@ -70,7 +70,8 @@ export default async function Produtos() {
       <section className="panel mb-6 divide-y divide-line">
         {products.map((p, i) => (
           // cada linha salva sozinha ao sair do campo que mudou, como a caixa "Clientes podem pedir pelo link"
-          <ActionForm key={p.id} action={saveProductAction} salvaAoMudar className={`${grade} p-4 ${p.active ? "" : "opacity-60"}`}>
+          <ActionForm key={p.id} action={saveProductAction} salvaAoMudar // fora de venda: só os valores esmaecem; a linha inteira a 60% deixava os rótulos sem contraste (3,3:1)
+          className={`${grade} p-4 ${p.active ? "" : "[&_input:not([type=checkbox])]:text-muted"}`}>
             <input type="hidden" name="id" value={p.id} />
             <Fields p={p} rotulos={i === 0} />
             <div className="flex flex-col lg:contents">

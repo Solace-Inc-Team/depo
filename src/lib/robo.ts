@@ -94,7 +94,12 @@ function resumo(ctx: Contexto, itens: Item[], pagamento?: Pagamento | "fiado", t
   return linhas.join("\n");
 }
 
-const nomeCurto = (nome: string) => nome.trim().split(/\s+/)[0];
+// "Boa noite, Bar!" não: nome de comércio vai inteiro (até 4 palavras); de pessoa, só o primeiro
+const COMERCIO = /^(bar|padaria|panificadora|restaurante|lanchonete|mercado|mercearia|minimercado|supermercado|distribuidora|loja|depósito|deposito|hotel|pousada|clínica|clinica|escola|igreja|academia|oficina|salão|salao|açougue|acougue|pizzaria|sorveteria|farmácia|farmacia|condomínio|condominio|empresa|escritório|escritorio|lava|auto|posto|churrascaria|pastelaria|hamburgueria|cantina|quiosque|barbearia)$/i;
+const nomeCurto = (nome: string) => {
+  const p = nome.trim().split(/\s+/);
+  return COMERCIO.test(p[0]) ? p.slice(0, 4).join(" ") : p[0];
+};
 const primeiroNome = (ctx: Contexto) => nomeCurto(ctx.cliente!.nome);
 const ola = (ctx: Contexto) => ctx.saudacao ?? "Olá";
 // sem botões, "loja" digitado em qualquer etapa chama uma pessoa
@@ -291,7 +296,7 @@ export function responder(estado: Estado | null, entrada: Entrada, ctx: Contexto
     const naFrase = estado.pedido || !/\d|\b(quero|queria|manda|mande|preciso|traz|traga|tem)\b/i.test(t) ? null : pedidoNaFrase(ctx.produtos, t);
     if (naFrase?.ids.length) return { saidas: [texto(`Já anotei. Antes, me diga o seu nome, por favor.`)], estado: { etapa: "nome", pedido: naFrase } };
     const resposta = intencao(t);
-    if (nome.length < 2 || nome.length > 60 || !/\p{L}{2}/u.test(nome) || /\d/.test(nome) || nome.split(" ").length > 6 || (resposta === "sim" || resposta === "nao" || resposta === "repetir") || pagamentoNaFrase(t))
+    if (nome.length < 2 || nome.length > 60 || !/\p{L}{2}/u.test(nome) || (nome.match(/\d/g)?.length ?? 0) > 3 || nome.split(" ").length > 6 || (resposta === "sim" || resposta === "nao" || resposta === "repetir") || pagamentoNaFrase(t))
       return { saidas: [texto(`Me diga só o seu nome, por favor.${DICA_LOJA}`)], estado };
     return { saidas: [texto(`Prazer, ${nomeCurto(nome)}! ${PEDE_ENDERECO}`)], estado: { etapa: "endereco", nome, ...(estado.pedido ? { pedido: estado.pedido } : {}) } };
   }

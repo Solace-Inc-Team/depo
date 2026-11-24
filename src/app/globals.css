@@ -4303,8 +4303,31 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
 }
 @media (prefers-reduced-motion: reduce) {
   .codigo-slot-digito,
-  .codigo-slot-cursor {
+  .codigo-slot-cursor,
+  .codigo-slots-campo.campo-treme ~ .codigo-slots-quadros {
     animation: none;
+  }
+  /* os quadros não se juntam nem a barra cresce: ela só aparece por cima */
+  .codigo-slots-quadros,
+  .codigo-slots-barra,
+  .codigo-slots[data-junto] .codigo-slots-barra {
+    transition-property: opacity;
+  }
+  .codigo-slots[data-junto] .codigo-slots-quadros {
+    gap: 0.5rem;
+  }
+  .codigo-slots-barra {
+    scale: 1;
+  }
+}
+/* alto contraste do Windows: a sombra some e a cor forçada mostraria os dígitos do campo por cima dos quadros */
+@media (forced-colors: active) {
+  .codigo-slots-campo {
+    forced-color-adjust: none;
+  }
+  .codigo-slots:has(.codigo-slots-campo:focus) .codigo-slot[data-ativo] {
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
   }
 }
 

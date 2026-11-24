@@ -1,4 +1,5 @@
 import { PLANO } from "@/lib/plano";
+import { formatBRL } from "@/lib/money";
 
 // Contato e preço da página inicial. Enquanto estiverem vazios, a página não mostra botão de WhatsApp
 // nem valor: fica o "Criar conta" e o preço sob consulta.
@@ -7,7 +8,8 @@ import { PLANO } from "@/lib/plano";
 export const WHATSAPP: string = "559184747881";
 
 /** Preço por mês como deve aparecer (ex.: "R$ 149"). Vazio mostra "sob consulta". */
-export const PRECO = `R$ ${PLANO.mensalCents / 100}`;
+// sem ",00" quando é redondo; com centavos, "R$ 129,90" (e não "R$ 129.9")
+export const PRECO = formatBRL(PLANO.mensalCents).replace(/,00$/, "");
 
 /** O que a mensalidade inclui. */
 export const INCLUSO = [

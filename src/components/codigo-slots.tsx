@@ -63,6 +63,7 @@ export function CodigoSlots({ id, name, tamanho = 6 }: { id: string; name: strin
           else e.currentTarget.form?.requestSubmit();
         }}
         // sem maxLength: colado com espaço ("123 456") seria cortado antes de o espaço sair
+        aria-describedby={`${id}-dica`}
         inputMode="numeric"
         autoComplete="one-time-code"
         pattern={`[0-9]{${tamanho}}`}
@@ -79,7 +80,9 @@ export function CodigoSlots({ id, name, tamanho = 6 }: { id: string; name: strin
           </div>
         ))}
       </div>
-      <button ref={barra} tabIndex={-1} aria-hidden="true" className="btn btn-primary codigo-slots-barra">
+      <p id={`${id}-dica`} className="sr-only">O código é enviado assim que você digitar o sexto dígito.</p>
+      {/* fora do Tab (Enter no campo envia), mas o leitor de tela acha o botão */}
+      <button ref={barra} tabIndex={-1} className="btn btn-primary codigo-slots-barra">
         Confirmar
       </button>
     </div>

@@ -291,4 +291,10 @@ test("robô entende: 'quero pelo link' manda o link, e um nome com palavra de pr
   const comTeste = ctx({ cliente: null, ultimo: null, produtos: [galao, { ...gas, id: "t", nome: "Teste Pix" }] });
   assert.equal(responder({ etapa: "nome" }, { texto: "Maria Teste" }, comTeste).estado?.etapa, "endereco");
   assert.equal(responder({ etapa: "nome" }, { texto: "quero 2 águas" }, comTeste).estado?.etapa, "nome", "com verbo e quantidade é pedido: guarda e pede o nome");
+  // nome de comércio com número é aceito e vai inteiro na resposta; de pessoa, só o primeiro
+  const padaria = responder({ etapa: "nome" }, { texto: "Padaria 2 Irmãos" }, comTeste);
+  assert.equal(padaria.estado?.etapa, "endereco");
+  assert.match(textos(padaria.saidas), /Prazer, Padaria 2 Irmãos!/);
+  assert.match(textos(responder({ etapa: "nome" }, { texto: "Maria Souza" }, comTeste).saidas), /Prazer, Maria!/);
+  assert.equal(responder({ etapa: "nome" }, { texto: "11999998888" }, comTeste).estado?.etapa, "nome", "telefone não é nome");
 });

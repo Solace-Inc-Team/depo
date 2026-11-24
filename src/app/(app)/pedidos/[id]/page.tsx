@@ -163,6 +163,9 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
                   <span>
                     {h.action === "pedido.criar" && o.origin === "portal" ? (
                       "Pedido feito pelo cliente no site"
+                    ) : h.action === "pedido.criar" && o.origin === "whatsapp" ? (
+                      // fica em nome do dono, mas quem anotou foi o robô: "por Marina" parecia que ela tinha lançado
+                      "Pedido anotado pelo robô do WhatsApp"
                     ) : h.action === "pedido.trocar_entregador" ? (
                       <>
                         Trocou de entregador: de {driverName((h.data as { from?: string })?.from)} para {driverName((h.data as { to?: string })?.to)}

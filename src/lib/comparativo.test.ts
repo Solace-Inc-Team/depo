@@ -13,7 +13,7 @@ test("diferença que arredonda para zero conta como igual", () => {
 
 test("sem venda no dia anterior não vira porcentagem infinita", () => {
   assert.deepEqual(comparar(5000, 0, "fechado"), { texto: "o dia anterior não teve venda", tom: "sobe" });
-  assert.deepEqual(comparar(5000, 0, "andamento"), { texto: "ontem não tinha venda a esta hora", tom: "sobe" });
+  assert.deepEqual(comparar(5000, 0, "andamento"), { texto: "sem venda ontem a esta hora", tom: "sobe" });
   assert.equal(comparar(0, 0, "fechado"), null);
 });
 

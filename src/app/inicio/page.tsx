@@ -82,7 +82,7 @@ export default function Inicio() {
           <Link href="/inicio" aria-label="depo, início" className="alvo">
             <Logo animar="entrada" />
           </Link>
-          <nav className="flex items-center gap-6 text-[13px] text-muted">
+          <nav aria-label="Principal" className="flex items-center gap-6 text-[13px] text-muted">
             <Link href="/login" className="btn px-3 text-[13px] fino:h-8">Entrar</Link>
           </nav>
         </div>
@@ -322,7 +322,7 @@ export default function Inicio() {
             <span>Um produto Solace.</span>
             <StatusSistema />
           </span>
-          <nav className="flex gap-5">
+          <nav aria-label="Rodapé" className="flex gap-5">
             <Link href="/termos" className="alvo hover:text-fg">Termos de uso</Link>
             <Link href="/privacidade" className="alvo hover:text-fg">Privacidade</Link>
           </nav>
