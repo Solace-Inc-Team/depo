@@ -30,6 +30,26 @@ export function SeletorFilial({ empresa, atual, filiais }: { empresa: string; at
   const nome = filiais.find((f) => f.id === mostrada)?.name ?? "";
   // o mesmo tempo da saída no CSS (200 ms): com o padrão de 140 ms o menu era cortado ainda quase todo visível
   const menu = useSaida(aberto, 200);
+  // reaberto no meio da saída: o conteúdo volta sem o atraso da abertura, que deixava o menu vazio um instante
+  const [voltou, setVoltou] = useState(false);
+  const abrir = () => {
+    setVoltou(menu.saindo);
+    setAberto(true);
+  };
+
+  // o nome pulsa enquanto troca e, no fim, volta devagar de onde o pulso estava: tirar a animação CSS fazia ele
+  // saltar para a opacidade cheia
+  const nomeRef = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    const el = nomeRef.current;
+    if (!el || !trocando || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const pulso = el.animate([{ opacity: 1 }, { opacity: 0.45 }], { duration: 1000, easing: "cubic-bezier(0.45, 0, 0.1, 1)", iterations: Infinity, direction: "alternate" });
+    return () => {
+      const onde = getComputedStyle(el).opacity;
+      pulso.cancel();
+      el.animate([{ opacity: onde }, { opacity: 1 }], { duration: 240, easing: "ease-out" });
+    };
+  }, [trocando]);
 
   // clique fora fecha, como qualquer menu
   useEffect(() => {
@@ -89,11 +109,11 @@ export function SeletorFilial({ empresa, atual, filiais }: { empresa: string; at
         aria-expanded={aberto}
         aria-controls={menuId}
         aria-busy={trocando}
-        onClick={() => setAberto((a) => !a)}
+        onClick={() => (aberto ? setAberto(false) : abrir())}
         onKeyDown={(e) => {
           if (e.key === "ArrowDown" && !aberto) {
             e.preventDefault();
-            setAberto(true);
+            abrir();
           }
         }}
         className="seletor-filial group flex min-h-11 w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left hover:bg-subtle aria-expanded:bg-subtle"
@@ -104,7 +124,7 @@ export function SeletorFilial({ empresa, atual, filiais }: { empresa: string; at
         </span>
         <span className="min-w-0 flex-1 leading-tight">
           <span className="block truncate text-[11.5px] text-muted">{empresa}</span>
-          <span className={`block truncate text-[13px] font-medium ${trocando ? "filial-trocando" : ""}`}>{nome}</span>
+          <span ref={nomeRef} className={`block truncate text-[13px] font-medium ${trocando ? "filial-trocando" : ""}`}>{nome}</span>
         </span>
         <ChevronsUpDown aria-hidden="true" size={14} strokeWidth={1.75} className="shrink-0 text-muted transition-colors group-hover:text-fg" />
       </button>
@@ -118,6 +138,7 @@ export function SeletorFilial({ empresa, atual, filiais }: { empresa: string; at
           id={menuId}
           role="menu"
           data-saindo={menu.saindo || undefined}
+          data-voltou={voltou || undefined}
           aria-label="Filiais"
           onKeyDown={navegar}
           className="popover popover-left absolute top-full right-0 left-0 z-30 mt-1.5 rounded-lg border border-line bg-surface p-1 shadow-[0_12px_32px_rgb(0_0_0/0.18)]"

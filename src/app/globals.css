@@ -612,14 +612,7 @@ details[open] > :not(summary) {
     scale: 0.6;
   }
 }
-.filial-trocando {
-  animation: filial-trocando 1s var(--ease-trajeto) infinite alternate;
-}
-@keyframes filial-trocando {
-  to {
-    opacity: 0.45;
-  }
-}
+/* o pulso do nome é feito no seletor-filial.tsx, para poder voltar devagar de onde estava */
 @media (prefers-reduced-motion: reduce) {
   .seletor-filial + .popover,
   .filial-inicial {
@@ -1481,6 +1474,12 @@ body[data-confirmando] .deliver-btn {
    nasce dentro do "o" (o depósito), afunda para pegar impulso, o "o" recua e o ponto sai em arco por trás do anel até o fim da
    palavra, esticando no voo e achatando ao pousar. O arco é amostrado de uma curva de verdade (gerado por script), com uma
    curva de velocidade só no trajeto inteiro, por isso não dá trancos. Com o mouse em cima, o ponto dá um pulo. */
+/* alto contraste do Windows: o SVG guardava a cor do tema escuro e o "depo" sumia no fundo claro */
+@media (forced-colors: active) {
+  .depo-logo {
+    color: CanvasText;
+  }
+}
 .depo-logo [data-letra],
 .depo-logo [data-ponto],
 .depo-logo [data-letra] > circle {
@@ -4161,6 +4160,10 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   @starting-style {
     opacity: 0;
   }
+}
+/* reaberto no meio da saída: a superfície já volta de onde estava; o conteúdo vem junto, sem esperar */
+.seletor-filial ~ .popover[data-voltou] > * {
+  transition-delay: 0s;
 }
 .seletor-filial ~ .popover[data-saindo] {
   scale: 1;
