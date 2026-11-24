@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { MarcaDaSessao } from "@/components/logo";
 import LightRays from "@/components/light-rays";
+import { AlturaSuave } from "@/components/altura-suave";
 
 /**
  * Login e cadastro: o formulário no centro, sob a mesma luz da marca que abre a página inicial, aqui com
@@ -17,12 +18,15 @@ export function TelaEntrada({ children }: { children: ReactNode }) {
         <LightRays raysColor="#cfdcff" intensity={0.85} opacity={0.8} followMouse={false} cursorShadow={false} clickPulse={false} />
       </div>
       <div className="flex w-full flex-1 items-center justify-center py-8">
-        <div className="stagger w-full max-w-[22rem]">
-          <Link href="/inicio" aria-label="depo, início" className="alvo mx-auto block w-fit">
-            <MarcaDaSessao size={28} animar="entrada" />
-          </Link>
-          {children}
-        </div>
+        {/* o erro que entra cresce o bloco aos poucos: centralizado, ele pulava 30 px num quadro */}
+        <AlturaSuave className="w-full max-w-[22rem]">
+          <div className="stagger">
+            <Link href="/inicio" aria-label="depo, início" className="alvo mx-auto block w-fit">
+              <MarcaDaSessao size={28} animar="entrada" />
+            </Link>
+            {children}
+          </div>
+        </AlturaSuave>
       </div>
       <footer className="flex items-center gap-4 pb-6 text-xs text-muted">
         <span>Solace</span>

@@ -25,11 +25,22 @@ export function useSaida(visivel: boolean, ms = 140) {
  * Bloco que aparece no lugar e some recolhendo (campo de troco, aviso de estoque, campos da entrega).
  * Abre crescendo a altura, fecha encolhendo e só então sai da página; fechado, o campo não vai no formulário.
  */
-export function Aparece({ quando, children, className = "" }: { quando: boolean; children: ReactNode; className?: string }) {
+export function Aparece({
+  quando,
+  children,
+  className = "",
+  fora = "",
+}: {
+  quando: boolean;
+  children: ReactNode;
+  className?: string;
+  /** classes do bloco que encolhe, quando ele é a célula de uma grade (col-span) */
+  fora?: string;
+}) {
   const { montado, saindo } = useSaida(quando, 200);
   if (!montado) return null;
   return (
-    <div className="recolhe" data-aberto={!saindo || undefined} inert={saindo || undefined}>
+    <div className={`recolhe ${fora}`} data-aberto={!saindo || undefined} inert={saindo || undefined}>
       {/* o espaçamento fica um nível abaixo do que encolhe: fechado, a altura chega a zero */}
       <div>
         <div className={className}>{children}</div>

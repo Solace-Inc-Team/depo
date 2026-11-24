@@ -64,3 +64,21 @@ test("entende: tira o jeito de falar do nome e do endereço", () => {
   assert.equal(semPrefixo("meu endereço é Av. Brasil 300"), "Av. Brasil 300");
   assert.equal(semPrefixo("Pedro"), "Pedro");
 });
+
+test("entende: concordâncias do dia a dia e o 'não' que não recusa", () => {
+  assert.equal(intencao("tá bom"), "sim");
+  assert.equal(intencao("pode sim, não tem problema"), "sim");
+  assert.equal(intencao("sem problema"), "sim");
+  assert.equal(intencao("joia"), "sim");
+  assert.equal(intencao("não, obrigado"), "nao");
+  assert.equal(intencao("ta faltando"), null);
+  assert.equal(intencao("boa"), null, "'boa' no meio da conversa não é um oi que recomeça");
+  assert.equal(intencao("boa tarde"), "saudacao");
+});
+
+test("entende: o suporte não disputa com o galão por 'água', e 100 vira quantidade (o robô avisa o limite)", () => {
+  const ps = [{ id: "g", nome: "Galão de água 20L", retornavel: true }, { id: "s", nome: "Suporte para galão", retornavel: false }];
+  assert.deepEqual(pedidoNaFrase(ps, "quero uma água"), { ids: ["g"], qtd: 1 });
+  assert.deepEqual(pedidoNaFrase(ps, "1 suporte"), { ids: ["s"], qtd: 1 });
+  assert.equal(pedidoNaFrase(loja, "100 galões").qtd, 100);
+});

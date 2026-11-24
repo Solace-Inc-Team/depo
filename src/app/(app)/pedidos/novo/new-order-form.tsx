@@ -180,7 +180,7 @@ export function NewOrderForm({
   const step = (id: string, d: number) => setQty((q) => ({ ...q, [id]: Math.max(0, Math.min(99, (q[id] ?? 0) + d)) }));
 
   return (
-    <ActionForm action={createOrderAction} className="grid gap-6 pb-24 lg:grid-cols-[minmax(0,1fr)_20rem] lg:pb-0">
+    <ActionForm action={createOrderAction} className="grid gap-6 pb-24 lg:grid-cols-[minmax(0,48rem)_20rem] lg:pb-0">
       <input type="hidden" name="mode" value={mode} ref={modeRef} />
       <input type="hidden" name="items" value={JSON.stringify(items)} />
       <input type="hidden" name="customerId" value={creating ? "" : (customer?.id ?? "")} />

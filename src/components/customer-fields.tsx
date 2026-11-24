@@ -13,7 +13,7 @@ export function CustomerFields({ c = {} }: { c?: C }) {
       </div>
       <div className="sm:col-span-2">
         <label className="label" htmlFor="c-phone">Telefone</label>
-        <TelefoneCliente id="c-phone" name="phone" defaultValue={c.phone} className="input sm:max-w-56" outroQue={c.id} />
+        <TelefoneCliente id="c-phone" name="phone" defaultValue={c.phone} className="input" outroQue={c.id} />
       </div>
       <CamposEndereco nome="address" id="c-end" inicial={c.address} className="sm:col-span-2" />
       <div className="sm:col-span-2">

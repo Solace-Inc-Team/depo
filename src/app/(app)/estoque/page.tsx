@@ -122,7 +122,7 @@ export default async function Estoque() {
           </ActionForm>
         </JanelaAcao>
       </PageHeader>
-      <section className="panel overflow-x-auto">
+      <section className="rola-x panel overflow-x-auto">
         <table className="table tabela-pilha rotulada sm:min-w-[46rem]">
           <thead>
             <tr>
@@ -199,7 +199,7 @@ export default async function Estoque() {
         </p>
       </section>
 
-      <section className="panel mt-6 overflow-x-auto">
+      <section className="rola-x panel mt-6 overflow-x-auto">
         <h2 className="h2 border-b border-line px-4 py-3">Últimas movimentações</h2>
         {/* no celular cada movimentação vira um bloco empilhado, em vez de seis colunas espremidas */}
         <table className="table tabela-pilha movimentos sm:min-w-[44rem]">

@@ -3,6 +3,7 @@ import Link from "next/link";
 import QRCode from "qrcode";
 import type { LucideIcon } from "lucide-react";
 import {
+  ArrowRight,
   BadgeCheck,
   Building2,
   CalendarClock,
@@ -284,8 +285,9 @@ export async function secoesConfig(tenantId: string, pagoAte: string | null) {
           <ConexaoWhatsappPainel />
           <Grupo>
             <Linha icone={MessageCircle} titulo="Testar a conversa" descricao="Converse com o robô como se fosse o cliente, sem lançar pedido.">
+              {/* o título já diz o quê: o botão só abre, sem repetir o balão do ícone */}
               <Link href="/whatsapp" className="btn btn-sm">
-                <MessageCircle size={14} aria-hidden="true" /> Testar conversa
+                Abrir <ArrowRight size={14} aria-hidden="true" />
               </Link>
             </Linha>
           </Grupo>

@@ -35,3 +35,8 @@ test("cep: formata enquanto digita", () => {
   assert.equal(formatarCep("668"), "668");
   assert.equal(formatarCep("66810-1009"), "66810-100");
 });
+
+test("endereço: com a rua de até 100 letras, a linha juntada cabe nos 240 do servidor", () => {
+  const linha = juntarEndereco({ rua: "r".repeat(100), numero: "1".repeat(12), complemento: "c".repeat(40), bairro: "b".repeat(60) });
+  assert.ok(linha.length <= 240, String(linha.length));
+});

@@ -66,7 +66,8 @@ export default async function Assinatura() {
     <ActionForm action={pixAssinaturaAction}>
       <button className="btn btn-primary h-11 w-full">Pagar {valor} com Pix</button>
       {/* pagar antes do vencimento não perde dias: o mês novo começa onde o atual termina */}
-      <p className="mt-2 text-center text-[13px] text-muted">O código aparece aqui. Cada pagamento soma um mês ao seu acesso.</p>
+      {/* no teste, a situação logo acima já diz que os dias não se perdem */}
+      <p className="mt-2 text-center text-[13px] text-muted">O código aparece aqui.{emTeste ? "" : " Cada pagamento soma um mês ao seu acesso."}</p>
     </ActionForm>
   );
   const pagarCartao = (
@@ -100,12 +101,12 @@ export default async function Assinatura() {
           <MarcaDaSessao size={28} />
           {!sit.bloqueado ? (
             // sem pré-carregar: o menu buscado ao abrir esta tela ainda diria "Teste" depois de pagar
-            <Link href={casa} prefetch={false} className="btn h-9">
+            <Link href={casa} prefetch={false} className="btn h-11 fino:h-9">
               <ArrowLeft size={15} strokeWidth={1.75} aria-hidden="true" /> Voltar ao sistema
             </Link>
           ) : (
             <form action={logout}>
-              <button className="btn h-9">
+              <button className="btn h-11 fino:h-9">
                 <LogOut size={15} strokeWidth={1.75} aria-hidden="true" /> Sair
               </button>
             </form>
@@ -184,7 +185,8 @@ export default async function Assinatura() {
 
             <p className="flex items-center gap-2 border-t border-line bg-subtle px-6 py-3 text-[12px] text-muted">
               <Lock size={13} strokeWidth={1.75} aria-hidden="true" />
-              Pagamento seguro. O acesso libera assim que o pagamento cai.
+              {/* "o acesso libera" só faz sentido para quem está sem acesso */}
+              Pagamento seguro pelo Mercado Pago.{venceu || sit.bloqueado ? " O acesso libera assim que o pagamento cai." : ""}
             </p>
             </div>
           </section>

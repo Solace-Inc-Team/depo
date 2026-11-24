@@ -243,16 +243,21 @@ export function ActionForm({
                 throw e;
               }
               progress(false);
-              soltar(button);
+              soltar(button, true);
               setAcao(undefined);
+              // o campo que esperava a resposta (o código de verificação, só leitura enquanto envia) volta a aceitar
+              // digitação; `rede`: o código não estava errado, fica onde está
+              const falhou = () => form.dispatchEvent(new CustomEvent("acao-erro", { detail: { rede: true } }));
               // sem sinal o fetch da ação falha: mantém a tela e o que foi digitado em vez de cair na página de erro
               // o depo foi atualizado com esta tela aberta: avisa e recarrega em vez de cair na página de erro
               if (recarregarSeVersaoNova(e, 1500)) {
                 setError("O depo acabou de ser atualizado. Recarregando a tela, envie de novo em seguida.");
+                falhou();
                 return;
               }
               if (e instanceof TypeError || !navigator.onLine) {
                 setError("Sem internet. Tente de novo quando o sinal voltar.");
+                falhou();
                 return;
               }
               throw e;
@@ -262,7 +267,7 @@ export function ActionForm({
             setAcao(r?.error ? r.acao : undefined);
             setError(r?.error);
             if (r?.error) {
-              soltar(button);
+              soltar(button, true);
               // campo que reage ao erro do servidor (o código de verificação limpa e treme)
               form.dispatchEvent(new Event("acao-erro"));
               return;
@@ -306,7 +311,7 @@ export function ActionForm({
             id={erroId}
             role="alert"
             data-saindo={aviso.saindo || undefined}
-            className="erro-form col-span-full mt-2 basis-full rounded-lg border border-line bg-subtle p-3 text-[13px] font-medium"
+            className="erro-form erro-form-acao col-span-full mt-2 basis-full rounded-lg border border-line bg-subtle p-3 text-[13px] font-medium"
           >
             <p className="flex items-start gap-2">
               <Info size={16} strokeWidth={2} className="mt-px shrink-0 text-muted" aria-hidden="true" />
@@ -334,11 +339,15 @@ export function ActionForm({
   );
 }
 
-/** Devolve o botão ao normal sem cortar: o ícone sai, o texto volta, e só então o estado some. */
-function soltar(button: Element | null | undefined) {
+/**
+ * Devolve o botão ao normal sem cortar: o ícone sai, o texto volta, e só então o estado some. `erro`: sai o giro,
+ * não o ✓ (o envio não deu certo).
+ */
+function soltar(button: Element | null | undefined, erro = false) {
   if (!button?.hasAttribute("data-state")) return;
-  button.setAttribute("data-state", "saindo");
-  setTimeout(() => button.getAttribute("data-state") === "saindo" && button.removeAttribute("data-state"), 260);
+  const estado = erro ? "solta" : "saindo";
+  button.setAttribute("data-state", estado);
+  setTimeout(() => button.getAttribute("data-state") === estado && button.removeAttribute("data-state"), 260);
 }
 
 /** Mostra os avisos de sucesso das ações. Fica no layout raiz. */

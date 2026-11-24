@@ -248,7 +248,8 @@ export default function Inicio() {
 
         <section className="mx-auto grid max-w-6xl gap-16 px-4 pt-32 sm:px-6 sm:pt-36 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-20">
           {/* o preço no mesmo cartão com luz da vitrine logo acima */}
-          <div id="preco" className="scroll-mt-24">
+          {/* sozinho na linha (abaixo de 1024), o cartão não estica: o botão chegava a 804 px */}
+          <div id="preco" className="w-full max-w-md scroll-mt-24 lg:max-w-none">
             <Peca className="bento">
               <p className="text-[13px] font-medium text-accent">Preço</p>
               <h2 className="reveal mt-3 text-[2rem] leading-[1.08] font-semibold tracking-[-0.04em] sm:text-[2.25rem]">
@@ -304,7 +305,8 @@ export default function Inicio() {
             Feche o dia sabendo de tudo.
           </h2>
           <p className="mx-auto mt-5 max-w-[32rem] text-[16px] text-muted sm:text-[17px]">
-            {temZap ? "Teste grátis ou chame no WhatsApp para ver o depo com a rotina da sua revenda." : "Do primeiro pedido da manhã ao acerto da noite."}
+            {/* uma consequência, não a narração dos dois botões logo abaixo */}
+            Do primeiro pedido da manhã ao acerto da noite.
           </p>
           <div className="mx-auto mt-8 grid max-w-xs gap-3 sm:flex sm:max-w-none sm:justify-center">
             <BotaoContato className="justify-center" />

@@ -28,7 +28,8 @@ export function SeletorFilial({ empresa, atual, filiais }: { empresa: string; at
   const itens = useRef<(HTMLElement | null)[]>([]);
   const menuId = useId();
   const nome = filiais.find((f) => f.id === mostrada)?.name ?? "";
-  const menu = useSaida(aberto);
+  // o mesmo tempo da saída no CSS (200 ms): com o padrão de 140 ms o menu era cortado ainda quase todo visível
+  const menu = useSaida(aberto, 200);
 
   // clique fora fecha, como qualquer menu
   useEffect(() => {

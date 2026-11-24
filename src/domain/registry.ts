@@ -14,7 +14,7 @@ import { randomUUID } from "node:crypto";
 export const customerSchema = z.object({
   name: z.string().trim().min(2, "Nome muito curto.").max(120, "O nome pode ter até 120 letras."),
   phone: telefoneSchema,
-  address: z.string().trim().max(200, "O endereço pode ter até 200 letras."),
+  address: z.string().trim().max(240, "O endereço pode ter até 240 letras."),
   reference: z.string().trim().max(200, "A referência pode ter até 200 letras."),
   notes: z.string().trim().max(500, "A observação pode ter até 500 letras."),
 });
@@ -79,7 +79,7 @@ export async function anonymizeCustomer(ctx: Ctx, customerId: string) {
 export const addressSchema = z.object({
   customerId: z.uuid(),
   label: z.string().trim().min(2, "Dê um nome ao endereço (ex.: Trabalho).").max(40, "O nome do endereço pode ter até 40 letras."),
-  address: z.string().trim().min(5, "Informe o endereço.").max(200, "O endereço pode ter até 200 letras."),
+  address: z.string().trim().min(5, "Informe o endereço.").max(240, "O endereço pode ter até 240 letras."),
   reference: z.string().trim().max(200, "A referência pode ter até 200 letras."),
 });
 

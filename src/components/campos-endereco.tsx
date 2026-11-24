@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { juntarEndereco, separarEndereco } from "@/lib/endereco";
+import { TextoQueTroca } from "@/components/texto-que-troca";
+import { useSaida } from "@/components/saida";
 
 /**
  * O endereço em partes: CEP (que preenche rua e bairro sozinho), rua, número, complemento e bairro. O formulário
@@ -21,7 +23,13 @@ export function CamposEndereco({
   className?: string;
 }) {
   const [p, setP] = useState(() => separarEndereco(inicial));
-  const [aviso, setAviso] = useState<{ texto: string; erro?: boolean } | null>(null);
+  const [aviso, setAviso] = useState<{ texto: string; erro?: boolean; buscando?: boolean } | null>(null);
+  // endereço antigo, digitado livre, que não deu para separar: ficou inteiro na rua, e exigir número e bairro
+  // faria a pessoa repetir o que já está lá ("Rua das Flores 120 - Centro, 120 - Centro")
+  const [antigo] = useState(() => {
+    const x = separarEndereco(inicial);
+    return !!x.rua && !x.numero && !x.bairro;
+  });
   const numero = useRef<HTMLInputElement>(null);
   const ruaRef = useRef<HTMLInputElement>(null);
   const cepRef = useRef<HTMLInputElement>(null);
@@ -35,6 +43,9 @@ export function CamposEndereco({
   const doCep = useRef({ rua: "", bairro: "" });
   // o CEP preencheu: o formulário que salva sozinho (Configurações) precisa saber que mudou
   const avisarMudanca = useRef(false);
+  // sem aviso, a linha dele fica sem altura (no 320 ela desce para baixo do CEP e deixava um vão), mas continua na
+  // página para o leitor de tela ouvir a região viva; a altura fica o tempo de o texto sair
+  const comAviso = useSaida(!!aviso?.texto, 300).montado;
   const muda = (k: keyof typeof p) => (e: React.ChangeEvent<HTMLInputElement>) => setP((x) => ({ ...x, [k]: e.target.value }));
 
   async function buscarCep(valor: string) {
@@ -48,7 +59,7 @@ export function CamposEndereco({
     if (cep === buscado.current) return;
     buscado.current = cep;
     const antes = atual.current;
-    setAviso({ texto: "Buscando o CEP…" });
+    setAviso({ texto: "Buscando o CEP…", buscando: true });
     // a resposta só vale se o CEP no campo ainda for este (corrigido no meio, a resposta velha é descartada)
     const valeAinda = () => buscado.current === cep;
     try {
@@ -129,7 +140,8 @@ export function CamposEndereco({
         <label className="label" htmlFor={`${id}-cep`}>
           CEP <span className="font-normal text-muted">(preenche a rua e o bairro)</span>
         </label>
-        <div className="flex items-center gap-3">
+        {/* o aviso desce para baixo do CEP quando não cabe ao lado (320 px), em vez de virar uma coluna estreita */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <input
             id={`${id}-cep`}
             inputMode="numeric"
@@ -137,32 +149,33 @@ export function CamposEndereco({
             data-mascara="cep"
             maxLength={9}
             placeholder="00000-000"
-            className="input num w-36 shrink-0"
+            className="input num w-32 shrink-0"
             ref={cepRef}
             aria-describedby={`${id}-cep-aviso`}
           />
-          <p id={`${id}-cep-aviso`} aria-live="polite" className={`min-w-0 text-[12.5px] ${aviso?.erro ? "text-danger" : "text-muted"}`}>
-            {aviso?.texto}
+          <p id={`${id}-cep-aviso`} aria-live="polite" className={`min-w-40 flex-1 text-[12.5px] transition-colors ${comAviso ? "" : "h-0 overflow-hidden"} ${aviso?.erro ? "text-danger" : "text-muted"}`}>
+            <TextoQueTroca texto={aviso?.texto ?? ""} brilho={!!aviso?.buscando} />
           </p>
         </div>
       </div>
       <div className="col-span-12 @lg:col-span-8">
         <label className="label" htmlFor={`${id}-rua`}>Rua</label>
-        <input ref={ruaRef} id={`${id}-rua`} value={p.rua} onChange={muda("rua")} required={obrigatorio} maxLength={120} autoComplete="address-line1" className="input" placeholder="Rua, avenida, travessa" />
+        <input ref={ruaRef} id={`${id}-rua`} value={p.rua} onChange={muda("rua")} required={obrigatorio || !!(p.numero || p.complemento || p.bairro).trim()} maxLength={100} autoComplete="address-line1" className="input" placeholder="Rua, avenida, travessa" />
       </div>
       <div className="col-span-4">
         <label className="label" htmlFor={`${id}-num`}>Número</label>
-        <input ref={numero} id={`${id}-num`} value={p.numero} onChange={muda("numero")} required={obrigatorio} maxLength={12} className="input num" placeholder="120" />
+        <input ref={numero} id={`${id}-num`} value={p.numero} onChange={muda("numero")} required={obrigatorio && !antigo} maxLength={12} className="input num" placeholder="120" />
       </div>
-      <div className="col-span-8 @lg:col-span-6">
+      {/* Bairro antes do Complemento: as duas linhas dividem igual (8 e 4), e o bairro é o que o CEP preenche */}
+      <div className="col-span-8">
+        <label className="label" htmlFor={`${id}-bairro`}>Bairro</label>
+        <input id={`${id}-bairro`} value={p.bairro} onChange={muda("bairro")} required={obrigatorio && !antigo} maxLength={60} className="input" />
+      </div>
+      <div className="col-span-12 @lg:col-span-4">
         <label className="label" htmlFor={`${id}-comp`}>
           Complemento <span className="font-normal text-muted">(opcional)</span>
         </label>
-        <input id={`${id}-comp`} value={p.complemento} onChange={muda("complemento")} maxLength={40} autoComplete="address-line2" className="input" placeholder="Apto, bloco, casa 2" />
-      </div>
-      <div className="col-span-12 @lg:col-span-6">
-        <label className="label" htmlFor={`${id}-bairro`}>Bairro</label>
-        <input id={`${id}-bairro`} value={p.bairro} onChange={muda("bairro")} required={obrigatorio} maxLength={60} className="input" />
+        <input id={`${id}-comp`} value={p.complemento} onChange={muda("complemento")} maxLength={40} autoComplete="address-line2" className="input" placeholder="Apto, bloco" />
       </div>
       </div>
     </div>

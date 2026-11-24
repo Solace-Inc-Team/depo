@@ -75,14 +75,16 @@ export function ConexaoWhatsappPainel() {
     // eslint-disable-next-line react-hooks/exhaustive-deps -- atualizar só chama a ação e o setState
   }, [conectando, visivel]);
 
+  // aria-disabled e não disabled: o botão desabilitado perde o foco, que caía no <body> da janela (teclado e leitor de tela)
   const conectar = () =>
+    !pendente &&
     iniciar(async () => {
       ultimoQr.current = Date.now();
       await atualizar(conectarWhatsappAction);
     });
   // a pergunta vem antes da transição: dentro dela o React seguraria a janela de confirmação até a transição acabar
   const desconectar = async (pergunta: string, rotulo: string) => {
-    if (!(await confirmar(pergunta, { rotulo, perigo: true }))) return;
+    if (pendente || !(await confirmar(pergunta, { rotulo, perigo: true }))) return;
     iniciar(() => atualizar(desconectarWhatsappAction));
   };
 
@@ -98,14 +100,14 @@ export function ConexaoWhatsappPainel() {
   } else if (conexao?.estado === "sem") {
     descricao = "Ainda não conectado.";
     controle = (
-      <button type="button" onClick={conectar} disabled={pendente} data-state={pendente ? "loading" : undefined} className="btn btn-primary btn-sm">
+      <button type="button" onClick={conectar} aria-disabled={pendente} data-state={pendente ? "loading" : undefined} className="btn btn-primary btn-sm">
         <Link2 size={14} aria-hidden="true" /> Conectar
       </button>
     );
   } else if (conexao?.estado === "conectando") {
     descricao = "Esperando você ler o QR code com o celular da loja.";
     controle = (
-      <button type="button" onClick={() => desconectar("Cancelar a conexão do WhatsApp?", "Cancelar conexão")} disabled={pendente} className="btn btn-sm tap">
+      <button type="button" onClick={() => desconectar("Cancelar a conexão do WhatsApp?", "Cancelar conexão")} aria-disabled={pendente} data-state={pendente ? "loading" : undefined} className="btn btn-sm tap">
         Cancelar
       </button>
     );
@@ -120,7 +122,8 @@ export function ConexaoWhatsappPainel() {
       <button
         type="button"
         onClick={() => desconectar("Desconectar o WhatsApp? O robô para de responder e o celular sai dos aparelhos conectados.", "Desconectar")}
-        disabled={pendente}
+        aria-disabled={pendente}
+        data-state={pendente ? "loading" : undefined}
         className="btn btn-sm tap hover:text-danger"
       >
         Desconectar
@@ -163,7 +166,8 @@ export function ConexaoWhatsappPainel() {
           </Aparece>
         </div>
       </section>
-      <Aparece quando={conexao?.estado === "sem" || conexao?.estado === "conectando"}>
+            {/* já na conferência: o aviso entrando depois empurrava o "Testar a conversa" uns 70 px */}
+      <Aparece quando={!conexao || conexao.estado === "sem" || conexao.estado === "conectando"}>
         <p className="mt-3 flex items-start gap-2 text-[12.5px] text-muted">
           <Info size={14} strokeWidth={1.75} aria-hidden="true" className="mt-0.5 shrink-0" />
           A conexão é pelo WhatsApp Web, que não é um serviço oficial do WhatsApp para robôs. Para evitar bloqueio, o robô só responde quem

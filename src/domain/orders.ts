@@ -22,7 +22,7 @@ export const newOrderSchema = z
     origin: z.enum(["whatsapp", "telefone", "balcao", "portal", "programado"]).default("telefone"),
     addressId: z.uuid().nullable().default(null),
     // endereço digitado na hora (portal); vale só para este pedido
-    address: z.string().trim().max(200).optional(),
+    address: z.string().trim().max(240).optional(),
     reference: z.string().trim().max(200).default(""),
     discountCents: z.int().min(0, "Desconto inválido.").max(100_000_00, "Desconto muito alto.").default(0),
     discountReason: z.string().trim().max(160, "O motivo do desconto pode ter até 160 letras.").default(""),

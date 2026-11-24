@@ -31,7 +31,7 @@ const FAMILIAS: Record<string, string[]> = {
 };
 const familiaDe = (w: string) => Object.keys(FAMILIAS).find((f) => FAMILIAS[f].includes(w));
 
-type Prod = { id: string; nome: string };
+type Prod = { id: string; nome: string; retornavel?: boolean };
 
 /** As marcas de um produto: família, palavras do nome e números que o distinguem (13 do P13, 20 do 20L). */
 function marcas(p: Prod) {
@@ -71,7 +71,8 @@ export function pedidoNaFrase(produtos: Prod[], texto: string): PedidoNaFrase {
     // "p 13", "20 litros", "13 kg" falam do produto; "2 gás", "duas águas" são quantidade
     if (ant === "p" || UNIDADE.test(prox)) return void pistas.add(n);
     if (/^\d+$/.test(w) && n >= 10 && distintos.has(n) && !familiaDe(prox)) return void pistas.add(n);
-    if (qtd === undefined && n >= 1 && n <= 99 && w !== "um" && w !== "uma") qtd = n;
+    // 100 ou mais só junto do produto ("100 galões", e o robô avisa o limite): sozinho é número de casa
+    if (qtd === undefined && n >= 1 && (n <= 99 || (n <= 999 && familiaDe(prox))) && w !== "um" && w !== "uma") qtd = n;
     else if (qtd === undefined && (w === "um" || w === "uma") && (familiaDe(prox) || prox === "de")) qtd = 1;
   });
   const familias = new Set(ws.map(familiaDe).filter(Boolean) as string[]);
@@ -85,6 +86,8 @@ export function pedidoNaFrase(produtos: Prod[], texto: string): PedidoNaFrase {
     const casaNumero = [...pistas].some((n) => m.numeros.has(n));
     if (pistas.size && casaNumero) pontos += 2;
     if (pistas.size && !casaNumero && m.numeros.size && pontos) pontos -= 0.5; // falou "13" e este é o 45
+    // "uma água": o galão, não o "Suporte para galão", que só entra na família pela palavra
+    if (p.retornavel === false && pontos > 0 && pontos === m.familias.size) pontos -= 0.5;
     if (pontos > melhor) [melhor, ids] = [pontos, [p.id]];
     else if (pontos > 0 && pontos === melhor) ids.push(p.id);
   }
@@ -123,17 +126,19 @@ export function intencao(texto: string): Intencao | null {
   if (algum(t, / (atendente|humano|pessoa|alguem|loja|falar com|ligar|ligacao|reclamacao|reclamar) /)) return "loja";
   if (algum(t, / (cancela|cancelar|cancelo|desisto|desistir|deixa pra la|esquece|nao quero mais) /)) return "cancelar";
   if (algum(t, / (repete|repetir|o mesmo|a mesma|mesma coisa|de sempre|igual|o de sempre|ultimo pedido|mesmo pedido) /)) return "repetir";
-  if (algum(t, / (nao|n|nop|nope|negativo|nunca|nem) /)) return "nao";
+  // "pode sim, não tem problema" concorda: o "não" dessas expressões não é recusa
+  const semProblema = t.replace(/\b(nao tem problema|nao ha problema|sem problema|nao tem erro)\b/g, "tranquilo");
+  if (algum(semProblema, / (nao|n|nop|nope|negativo|nunca|nem) /)) return "nao";
   // "sim" só quando a frase é uma concordância: pergunta, pedido de mudança ou frase comprida não confirmam nada
   // ("quero pagar no cartão", "pode me ajudar?", "ok, mas muda o endereço")
   const curta = t.trim().split(" ").length;
-  if (!texto.includes("?") && !algum(t, / (mudar|muda|mude|trocar|troca|troque|alterar|altera|corrigir|corrige|errado|errada|duvida|ajuda|ajudar|mas|porem) /)) {
-    if (curta <= 5 && algum(t, / (sim|s|ss|isso|isso mesmo|confirmo|confirma|confirmar|ok|okay|blz|beleza|pode ser|pode mandar|fechado|fechou|certo|correto|claro|positivo|exato|perfeito|show|top|uhum|aham|yes|ta bom|tá bom|ta certo|esta certo|tudo certo) /))
+  if (!texto.includes("?") && !algum(semProblema, / (mudar|muda|mude|trocar|troca|troque|alterar|altera|corrigir|corrige|errado|errada|duvida|ajuda|ajudar|mas|porem) /)) {
+    if (curta <= 5 && algum(semProblema, / (sim|s|ss|tranquilo|bele|joia|ta ok|isso|isso mesmo|confirmo|confirma|confirmar|ok|okay|blz|beleza|pode ser|pode mandar|fechado|fechou|certo|correto|claro|positivo|exato|perfeito|show|top|uhum|aham|yes|ta bom|tá bom|ta certo|esta certo|tudo certo) /))
       return "sim";
     // "quero", "pode", "manda", "tenho" sozinhos (ou quase) também concordam; numa frase, são o começo de outra coisa
     if (curta <= 2 && algum(t, / (pode|manda|mande|quero|tenho|bora|vamos) /)) return "sim";
   }
-  if (algum(t, /^ ?(oi+|ola|opa|eae|eai|e ai|bom dia|boa tarde|boa noite|boa|ei|hey|alo|salve|menu|inicio|comecar)( |$)/) && t.split(" ").length <= 4) return "saudacao";
+  if (algum(t, /^ ?(oi+|ola|opa|eae|eai|e ai|bom dia|boa tarde|boa noite|ei|hey|alo|salve|menu|inicio|comecar)( |$)/) && t.split(" ").length <= 4) return "saudacao";
   return null;
 }
 

@@ -46,6 +46,8 @@ export function Simulador({ clientes, loja }: { clientes: Cliente[]; loja: strin
   }, [msgs.length, pendente]);
 
   function enviar(entrada: { texto?: string; id?: string }, mostrado: string) {
+    // as opções ficam aria-disabled (não disabled) durante a resposta: desabilitadas, tiravam o foco para o <body>
+    if (pendente) return;
     setErro("");
     setMsgs((m) => [...m, { de: "cliente", texto: mostrado, chave: chave.current++ }]);
     start(async () => {
@@ -104,28 +106,40 @@ export function Simulador({ clientes, loja }: { clientes: Cliente[]; loja: strin
         </button>
       </div>
 
-      <div ref={area} className="robo-conversa" data-limpando={limpando || undefined} aria-live="polite">
+      <div ref={area} className="robo-conversa" data-limpando={limpando || undefined} role="log" aria-live="polite">
         {!msgs.length && !limpando && (
           <div className="m-auto">
-            <button type="button" className="btn" onClick={() => enviar({ texto: "Oi" }, "Oi")} disabled={pendente}>
+            <button type="button" className="btn" onClick={() => {
+                // o botão some com a conversa: o foco iria para o <body>. Vai para o campo (no celular não, que
+                // abriria o teclado por cima da resposta)
+                if (matchMedia("(pointer: fine)").matches) document.getElementById("robo-texto")?.focus();
+                enviar({ texto: "Oi" }, "Oi");
+              }}
+              aria-disabled={pendente}
+            >
               <SendHorizontal size={16} aria-hidden="true" /> Mandar &ldquo;Oi&rdquo;
             </button>
           </div>
         )}
         {msgs.map((m) =>
           m.de === "cliente" ? (
-            <p key={m.chave} className="robo-balao robo-balao-cliente">{m.texto}</p>
+            <p key={m.chave} className="robo-balao robo-balao-cliente">
+              {/* só a cor e o lado diziam quem falou */}
+              <span className="sr-only">Você: </span>
+              {m.texto}
+            </p>
           ) : m.de === "aviso" ? (
             <p key={m.chave} className="robo-aviso">{m.texto}</p>
           ) : (
             <div key={m.chave} className="robo-mensagem">
               <p className="robo-balao">
+                <span className="sr-only">{loja}: </span>
                 <ComLinks texto={m.saida.texto} />
               </p>
               {m.saida.tipo === "botoes" && (
                 <div className="robo-opcoes">
                   {m.saida.botoes.map((b) => (
-                    <button key={b.id} type="button" className="btn" disabled={pendente} onClick={() => enviar({ id: b.id }, b.titulo)}>
+                    <button key={b.id} type="button" className="btn" aria-disabled={pendente} onClick={() => enviar({ id: b.id }, b.titulo)}>
                       {b.id === "loja" && <Store size={16} aria-hidden="true" />}
                       {b.titulo}
                     </button>
@@ -145,7 +159,7 @@ export function Simulador({ clientes, loja }: { clientes: Cliente[]; loja: strin
                   </summary>
                   <div className="robo-opcoes">
                     {m.saida.itens.map((i) => (
-                      <button key={i.id} type="button" className="btn robo-item" disabled={pendente} onClick={() => enviar({ id: i.id }, i.titulo)}>
+                      <button key={i.id} type="button" className="btn robo-item" aria-disabled={pendente} onClick={() => enviar({ id: i.id }, i.titulo)}>
                         <span>{i.titulo}</span>
                         {i.descricao && <span className="num text-muted">{i.descricao}</span>}
                       </button>
@@ -156,7 +170,7 @@ export function Simulador({ clientes, loja }: { clientes: Cliente[]; loja: strin
             </div>
           ),
         )}
-        {pendente && !limpando && msgs.length > 0 && <p className="robo-aviso robo-digitando">{loja} está digitando…</p>}
+        {pendente && !limpando && msgs.length > 0 && <p aria-hidden="true" className="robo-aviso robo-digitando">{loja} está digitando…</p>}
       </div>
 
       {erro && <p className="border-t border-line px-4 py-2 text-sm text-danger" role="alert">{erro}</p>}

@@ -28,7 +28,7 @@ export default async function Inventario() {
         </p>
       )}
       <ActionForm action={inventoryAction} className="space-y-4" confirm="Registrar o inventário? As diferenças serão ajustadas no estoque.">
-        <section className="panel overflow-x-auto">
+        <section className="rola-x panel overflow-x-auto">
           <table className="table tabela-pilha rotulada sm:min-w-[36rem]">
             <thead>
               <tr>

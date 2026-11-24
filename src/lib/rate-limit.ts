@@ -1,5 +1,5 @@
 import "server-only";
-import { and, count, eq, gte, lt } from "drizzle-orm";
+import { and, count, eq, gte, lt, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { loginAttempts } from "@/db/schema";
 
@@ -26,6 +26,23 @@ export async function attempt(key: string, max = MAX_FAILURES) {
     .from(loginAttempts)
     .where(and(eq(loginAttempts.key, key), gte(loginAttempts.createdAt, new Date(Date.now() - WINDOW_MS))));
   return n > max;
+}
+
+/**
+ * true na primeira vez que a chave aparece na janela (o mesmo aviso do WhatsApp chegando duas vezes). Com a trava,
+ * dois iguais ao mesmo tempo não se anulam: com `attempt(key, 1)` os dois gravavam, contavam 2 e desistiam juntos.
+ */
+export async function primeiraVez(key: string) {
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${"uma-vez:" + key}))`);
+    const [{ n }] = await tx
+      .select({ n: count() })
+      .from(loginAttempts)
+      .where(and(eq(loginAttempts.key, key), gte(loginAttempts.createdAt, new Date(Date.now() - WINDOW_MS))));
+    if (n) return false;
+    await tx.insert(loginAttempts).values({ key });
+    return true;
+  });
 }
 
 /** Limite geral por IP, somando todos os e-mails tentados dali. */

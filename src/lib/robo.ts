@@ -275,7 +275,8 @@ export function responder(estado: Estado | null, entrada: Entrada, ctx: Contexto
   if (!estado || id === "inicio" || quer === "saudacao") return inicio(ctx, pedido ?? undefined);
 
   if (estado.etapa === "canal") {
-    if (id === "c:link" && ctx.link) return { saidas: [texto(`É só tocar no link e escolher o que quer:\n${ctx.link}\n\nSe preferir pedir por aqui, é só mandar uma mensagem.`)], estado: null };
+    // "quero pelo link", "pelo site" escritos também são o link, mesmo com "quero"
+    if ((id === "c:link" || (!id && /\b(link|site)\b/i.test(t))) && ctx.link) return { saidas: [texto(`É só tocar no link e escolher o que quer:\n${ctx.link}\n\nSe preferir pedir por aqui, é só mandar uma mensagem.`)], estado: null };
     if (id === "c:zap" || quer === "sim") return { saidas: [texto(`Combinado! Qual é o seu nome?${DICA_LOJA}`)], estado: { etapa: "nome" } };
     if (pedido?.ids.length) return inicio({ ...ctx, link: null }, pedido);
     return vaiPara(estado, ctx, [texto("Não entendi. Responda com uma das opções.")]);
@@ -286,7 +287,8 @@ export function responder(estado: Estado | null, entrada: Entrada, ctx: Contexto
     if (ctx.cliente) return inicio(ctx, estado.pedido);
     const nome = semPrefixo(t).replace(/\s+/g, " ");
     // o que ele quer, dito antes do nome, fica guardado; uma vez só, para um nome como "Gaspar" não prender aqui
-    const naFrase = estado.pedido ? null : pedidoNaFrase(ctx.produtos, t);
+    // e só é pedido com quantidade ou verbo de pedido: "Maria Teste" é nome, mesmo com um produto "Teste" na loja
+    const naFrase = estado.pedido || !/\d|\b(quero|queria|manda|mande|preciso|traz|traga|tem)\b/i.test(t) ? null : pedidoNaFrase(ctx.produtos, t);
     if (naFrase?.ids.length) return { saidas: [texto(`Já anotei. Antes, me diga o seu nome, por favor.`)], estado: { etapa: "nome", pedido: naFrase } };
     const resposta = intencao(t);
     if (nome.length < 2 || nome.length > 60 || !/\p{L}{2}/u.test(nome) || /\d/.test(nome) || nome.split(" ").length > 6 || (resposta === "sim" || resposta === "nao" || resposta === "repetir") || pagamentoNaFrase(t))

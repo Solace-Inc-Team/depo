@@ -48,7 +48,7 @@ export const portalOrderSchema = z.object({
   name: z.string().trim().min(2, "Informe seu nome.").max(120, "O nome pode ter até 120 letras."),
   // no portal o telefone é obrigatório; a regra e o formato são os mesmos do cadastro
   phone: telefoneSchema.refine((p) => p !== "", "Informe o telefone com DDD."),
-  address: z.string().trim().min(5, "Informe o endereço de entrega.").max(200, "O endereço pode ter até 200 letras."),
+  address: z.string().trim().min(5, "Informe o endereço de entrega.").max(240, "O endereço pode ter até 240 letras."),
   reference: z.string().trim().max(200, "A referência pode ter até 200 letras."),
   items: z
     .array(z.object({ productId: z.uuid(), quantity: z.int().min(1).max(20, "No máximo 20 unidades por item."), returnsEmpty: z.boolean() }))

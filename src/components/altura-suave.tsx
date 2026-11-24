@@ -6,7 +6,7 @@ import { useEffect, useRef, type ReactNode } from "react";
  * "Card resize" do transitions.dev: quando o conteúdo cresce ou encolhe (um aviso de erro, um campo que aparece),
  * a caixa acompanha em 300ms em vez de pular. A primeira medida (ao abrir) entra direto, sem animar a partir do zero.
  */
-export function AlturaSuave({ children }: { children: ReactNode }) {
+export function AlturaSuave({ children, className = "" }: { children: ReactNode; className?: string }) {
   const fora = useRef<HTMLDivElement>(null);
   const dentro = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -25,7 +25,7 @@ export function AlturaSuave({ children }: { children: ReactNode }) {
     return () => ro.disconnect();
   }, []);
   return (
-    <div ref={fora} className="altura-suave">
+    <div ref={fora} className={`altura-suave ${className}`}>
       <div ref={dentro}>{children}</div>
     </div>
   );

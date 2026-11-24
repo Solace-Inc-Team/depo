@@ -56,7 +56,7 @@ export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
         </Link>
       </PageHeader>
 
-      <nav aria-label="Filtrar por situação" className="mb-5 flex gap-6 overflow-x-auto overflow-y-hidden border-b border-line">
+      <nav aria-label="Filtrar por situação" className="rola-x mb-5 flex gap-6 overflow-x-auto lg:gap-5 xl:gap-6 overflow-y-hidden border-b border-line">
         {tabs.map(([v, l]) => {
           const on = current === v;
           const n = v ? (counts[v] ?? 0) : counts.total;
@@ -92,7 +92,7 @@ export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
         </p>
       </form>
 
-      <div className="panel overflow-x-auto">
+      <div className="rola-x panel overflow-x-auto">
         {orders.length ? (
           <>
           {/* no celular, cartão por pedido: o que importa na primeira linha, o resto embaixo */}

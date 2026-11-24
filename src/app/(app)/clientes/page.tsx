@@ -42,7 +42,7 @@ export default async function Clientes({ searchParams }: PageProps<"/clientes">)
         {/* a mesma busca de Pedidos: Enter procura */}
         <form className="border-b border-line p-3" role="search">
           <div className="sm:max-w-sm">
-            <CampoBusca name="q" defaultValue={term} placeholder="Nome, telefone ou endereço" rotulo="Buscar cliente" />
+            <CampoBusca name="q" defaultValue={term} placeholder="Nome, telefone, rua" rotulo="Buscar cliente" />
           </div>
         </form>
         {customers.length ? (

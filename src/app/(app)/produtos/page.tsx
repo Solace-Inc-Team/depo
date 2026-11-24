@@ -5,7 +5,8 @@ import { saveProductAction } from "@/app/actions";
 import { PageHeader } from "@/components/ui";
 import { centsToInput } from "@/lib/money";
 import { Alternar } from "@/components/controles";
-import { Info } from "lucide-react";
+import { Check, Info } from "lucide-react";
+import { Aparece } from "@/components/saida";
 
 export const metadata = { title: "Produtos e preços" };
 
@@ -55,7 +56,8 @@ export default async function Produtos() {
     <>
       <PageHeader title="Produtos e preços" description="Preço novo vale só para os próximos pedidos. Salva sozinho ao sair do campo." />
       {/* conta nova: os produtos vieram prontos, e quem não vende um deles não sabe que é só desligar */}
-      {products.some((p) => p.precoSugerido && p.active) && (
+      {/* sai recolhendo quando o último preço é confirmado: sumindo seco, a lista subia 61 px debaixo do mouse */}
+      <Aparece quando={products.some((p) => p.precoSugerido && p.active)}>
         <p className="mb-4 flex items-start gap-2 rounded-lg border border-line bg-subtle p-3 text-[13px]">
           <Info size={16} strokeWidth={2} className="mt-px shrink-0 text-muted" aria-hidden="true" />
           <span>
@@ -63,7 +65,7 @@ export default async function Produtos() {
             <span className="font-medium whitespace-nowrap">À venda</span> e ele sai dos pedidos.
           </span>
         </p>
-      )}
+      </Aparece>
       {/* a divisória vai na seção: cada linha é um formulário, e a borda no fieldset de dentro nunca aparecia */}
       <section className="panel mb-6 divide-y divide-line">
         {products.map((p, i) => (
@@ -79,12 +81,12 @@ export default async function Produtos() {
             </div>
             {/* preço que veio com o cadastro: se já está certo, um clique confirma (salvar tira a marca) */}
             {/* o aviso fica junto do botão: embaixo do preço ele empurrava só aquela coluna e desalinhava a linha */}
-            {p.precoSugerido && (
-              <span className="col-span-2 flex min-h-11 items-center gap-2 lg:col-span-full lg:min-h-9 lg:justify-end">
-                <span className="text-[12px] whitespace-nowrap text-warn-fg">Preço sugerido</span>
-                <button className="btn btn-sm tap">Preço certo</button>
-              </span>
-            )}
+            <Aparece quando={!!p.precoSugerido} fora="col-span-2 lg:col-span-full" className="flex min-h-11 items-center gap-2 lg:min-h-9 lg:justify-end">
+              <span className="text-[12px] whitespace-nowrap text-warn-fg">Preço sugerido</span>
+              <button className="btn btn-sm tap">
+                <Check size={14} aria-hidden="true" /> Confirmar preço
+              </button>
+            </Aparece>
           </ActionForm>
         ))}
       </section>

@@ -40,9 +40,14 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
         <summary className="alvo cursor-pointer text-muted hover:text-fg">Esqueci a senha</summary>
         <p className="mt-2 text-muted">Peça ao dono da empresa para redefinir. Se você é o dono, fale com o suporte do depo.</p>
       </details>
-      <p className="mt-6 text-center text-[13px] text-muted">
-        Ainda não usa? <Link href="/cadastro" className="alvo font-medium text-fg hover:underline">Criar conta</Link>
-      </p>
+      {/* com o aviso "Criar conta com este e-mail" na tela, esta linha seria o mesmo botão duas vezes */}
+      <div className="entrada-ainda">
+        <p className="min-h-0 overflow-hidden text-center text-[13px] text-muted">
+          <span className="block pt-6">
+            Ainda não usa? <Link href="/cadastro" className="alvo font-medium text-fg hover:underline">Criar conta</Link>
+          </span>
+        </p>
+      </div>
       {process.env.SEED_DEMO === "true" && (
         <details className="pergunta mt-8 rounded-xl border border-line bg-surface/60 text-[13px] text-muted">
           <summary className="flex cursor-pointer items-center justify-between gap-4 px-4 py-3 font-medium text-fg">

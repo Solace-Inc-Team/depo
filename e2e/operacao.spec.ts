@@ -204,7 +204,7 @@ test("cadastro: o dono cria a conta pela página inicial e cai no painel com os 
   await page.goto("/produtos");
   await expect(page.getByLabel("Nome", { exact: true }).first()).toHaveValue("Gás P13");
   await expect(page.getByText("Preço sugerido")).toHaveCount(2);
-  await page.getByRole("button", { name: "Preço certo" }).first().click();
+  await page.getByRole("button", { name: "Confirmar preço" }).first().click();
   await expect(page.getByText("Preço sugerido")).toHaveCount(1);
 });
 

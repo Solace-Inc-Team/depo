@@ -65,7 +65,7 @@ export function ProgramadosCliente({
                 {p.pausado ? <span className="font-medium text-warn-fg">Pausada</span> : <>Próxima: <span className="text-fg">{quando(p.proxima, hoje)}</span></>}
               </p>
               <div className="mt-2.5 flex flex-wrap gap-2">
-                <JanelaAcao label="Alterar" titulo="Alterar entrega programada" icone={<Pencil size={14} strokeWidth={1.75} aria-hidden="true" />}>
+                <JanelaAcao label="Editar" titulo="Editar entrega programada" icone={<Pencil size={14} strokeWidth={1.75} aria-hidden="true" />}>
                   <ActionForm action={alterarProgramadoAction} className="space-y-4">
                     <input type="hidden" name="id" value={p.id} />
                     <p className="text-sm text-muted">{p.resumo}</p>

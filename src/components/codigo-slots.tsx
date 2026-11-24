@@ -18,8 +18,10 @@ export function CodigoSlots({ id, name, tamanho = 6 }: { id: string; name: strin
   useEffect(() => {
     const form = campo.current?.form;
     if (!form) return;
-    const erro = () => {
+    const erro = (e: Event) => {
       setJunto(false);
+      // sem internet o código não estava errado: fica, para mandar de novo
+      if ((e as CustomEvent<{ rede?: boolean }>).detail?.rede) return;
       setValor("");
       // espera a barra começar a se desfazer, para o tremor ser dos quadros e não dela
       setTimeout(() => campo.current && tremerCampo(campo.current), 160);

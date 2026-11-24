@@ -282,3 +282,13 @@ test("robô entende: quantidade que é número de produto, quantidade antes do '
   assert.match(textos(dois.saidas), /um produto por pedido/);
   assert.equal((dois.estado as { qtd?: number }).qtd, undefined);
 });
+
+test("robô entende: 'quero pelo link' manda o link, e um nome com palavra de produto é nome", () => {
+  const novo = ctx({ cliente: null, ultimo: null, link: "https://depo.test/pedir/fonte" });
+  const r = responder({ etapa: "canal" }, { texto: "quero pelo link" }, novo);
+  assert.equal(r.estado, null);
+  assert.match(textos(r.saidas), /depo\.test\/pedir\/fonte/);
+  const comTeste = ctx({ cliente: null, ultimo: null, produtos: [galao, { ...gas, id: "t", nome: "Teste Pix" }] });
+  assert.equal(responder({ etapa: "nome" }, { texto: "Maria Teste" }, comTeste).estado?.etapa, "endereco");
+  assert.equal(responder({ etapa: "nome" }, { texto: "quero 2 águas" }, comTeste).estado?.etapa, "nome", "com verbo e quantidade é pedido: guarda e pede o nome");
+});

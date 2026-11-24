@@ -45,7 +45,7 @@
   --surface: #111111;
   --subtle: #1b1b1c;
   --line: #262628;
-  --linha-campo: #5a5a5f;
+  --linha-campo: #636368; /* 3,2:1 sobre o campo (#111): o contorno precisa de 3:1 */
   --fg: #ededed;
   --muted: #a1a1a1;
   --accent: var(--marca);
@@ -363,7 +363,8 @@ body {
   transition-property: background-color, border-color, box-shadow, opacity, transform, color;
   transition-duration: var(--dur-fast), var(--dur-fast), var(--dur), var(--dur-fast), var(--dur-fast), 150ms;
 }
-.btn[data-state="saindo"] {
+.btn[data-state="saindo"],
+.btn[data-state="solta"] {
   transition-property: color;
   transition-duration: 150ms;
   transition-delay: 100ms;
@@ -398,6 +399,13 @@ body {
     btn-check-desenha 350ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .btn[data-state="saindo"]::after {
+  animation: btn-icone-sai 150ms ease-in-out both;
+}
+/* no erro sai o giro que estava na tela, não um ✓ */
+.btn[data-state="solta"]::after {
+  border: 2px solid var(--btn-cor);
+  border-right-color: transparent;
+  border-radius: 50%;
   animation: btn-icone-sai 150ms ease-in-out both;
 }
 @keyframes btn-icone-entra {
@@ -3499,6 +3507,23 @@ html:has(.pagina-escura) body {
 
 /* caixa que acompanha a altura do conteúdo ("Card resize" do transitions.dev, 300ms); o recorte deixa folga
    para o anel de foco dos campos não ser cortado */
+.entrada-ainda {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition:
+    grid-template-rows 250ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 150ms ease-out;
+}
+main:has(.erro-form-acao:not([data-saindo])) .entrada-ainda {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  /* fora do Tab, mas só depois de recolher */
+  visibility: hidden;
+  transition:
+    grid-template-rows 250ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 150ms ease-in,
+    visibility 0s 250ms;
+}
 .altura-suave {
   overflow: clip;
   overflow-clip-margin: 6px;
@@ -3775,8 +3800,12 @@ button.gaveta-mais-linha:active {
 /* janela no celular mais alta que a tela: rola por dentro (o botão de enviar ficava fora da tela, sem como chegar).
    Vale também para tela baixa, como o celular deitado ou uma janela pequena no computador */
 @media (max-width: 639px), (max-height: 640px) {
+  /* o <dialog> do navegador tem um teto próprio (100% - 34 px), que cortava o pé do cartão */
+  .janela {
+    max-height: 100dvh;
+  }
   .janela-cartao {
-    max-height: calc(100dvh - 1rem);
+    max-height: calc(100dvh - 1rem - env(safe-area-inset-bottom));
     overflow-y: auto;
     overscroll-behavior: contain;
   }
@@ -4204,6 +4233,13 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
     opacity 160ms ease-in,
     scale 200ms ease-in;
 }
+/* a barra também é .btn: a regra do botão saindo trocava a transição só para a cor, e ela sumia num quadro */
+.codigo-slots:not([data-junto]) .codigo-slots-barra[data-state] {
+  transition:
+    opacity 160ms ease-in,
+    scale 200ms ease-in,
+    color 150ms 100ms;
+}
 .codigo-slots[data-junto] .codigo-slots-barra {
   opacity: 1;
   scale: 1;
@@ -4269,5 +4305,40 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   .codigo-slot-digito,
   .codigo-slot-cursor {
     animation: none;
+  }
+}
+
+/* rolagem lateral (tabela larga, abas de Pedidos em 1024): a borda que tem mais conteúdo esmaece, para dizer que
+   continua. Pela rolagem do próprio elemento: sem nada para rolar, a linha do tempo fica inativa e não há máscara */
+@property --rola-ini {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --rola-fim {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@supports (animation-timeline: scroll()) {
+  .rola-x {
+    mask-image: linear-gradient(to right, transparent, #000 var(--rola-ini), #000 calc(100% - var(--rola-fim)), transparent);
+    animation: rola-x linear both;
+    animation-timeline: scroll(self inline);
+  }
+}
+@keyframes rola-x {
+  0% {
+    --rola-ini: 0px;
+    --rola-fim: 32px;
+  }
+  8%,
+  92% {
+    --rola-ini: 32px;
+    --rola-fim: 32px;
+  }
+  100% {
+    --rola-ini: 32px;
+    --rola-fim: 0px;
   }
 }

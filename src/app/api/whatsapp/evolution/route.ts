@@ -2,7 +2,7 @@ import { after } from "next/server";
 import { conversar } from "@/domain/robo";
 import { empresaDoNumeroWhats } from "@/domain/platform";
 import { DomainError } from "@/lib/ctx";
-import { attempt } from "@/lib/rate-limit";
+import { primeiraVez } from "@/lib/rate-limit";
 import { siteUrl } from "@/lib/request";
 import { telefoneDoWhats } from "@/lib/whatsapp-api";
 import { chaveDaInstancia, chaveOk, mensagemDoAviso, textoParaWhats } from "@/lib/whatsapp-evolution";
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
   after(async () => {
     try {
       // o mesmo aviso pode chegar duas vezes: cada mensagem é respondida uma vez só
-      if (await attempt(`wa-msg:${m.id}`, 1)) return;
+      if (!(await primeiraVez(`wa-msg:${m.id}`))) return;
       const tenantId = await empresaDoNumeroWhats(m.instancia);
       if (!tenantId) return console.warn(`[whatsapp-evo] instância sem empresa ligada ou com o acesso pausado (${m.instancia})`);
       // áudio ou foto: o robô só lê texto; responde pedindo texto, sem mexer na conversa

@@ -1,7 +1,7 @@
 import { Revelar } from "@/components/revelar";
 import { JanelaAcao } from "@/components/janela-acao";
 import Link from "next/link";
-import { MessageCircle, Phone, Plus } from "lucide-react";
+import { MessageCircle, Phone, Plus, Pencil } from "lucide-react";
 import { notFound } from "next/navigation";
 import { isUuid } from "@/lib/ctx";
 import { requireUser } from "@/lib/auth";
@@ -196,7 +196,7 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
               <section className="panel p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
                   <h2 className="h2">Dados</h2>
-                  <JanelaAcao label="Editar" titulo={`Editar ${c.name}`}>
+                  <JanelaAcao label="Editar" titulo={`Editar ${c.name}`} icone={<Pencil size={14} strokeWidth={1.75} aria-hidden="true" />}>
                     <ActionForm action={saveCustomerAction} className="grid gap-3 sm:grid-cols-2">
                       <input type="hidden" name="id" value={c.id} />
                       <CustomerFields c={c} />
@@ -226,15 +226,16 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                   <JanelaAcao label="Adicionar" titulo="Adicionar endereço">
                     <ActionForm action={addAddressAction} className="grid gap-3 sm:grid-cols-2" reset>
                       <input type="hidden" name="customerId" value={c.id} />
-                      <div>
+                      {/* na ordem do cadastro: o endereço, depois a referência para achar */}
+                      <div className="sm:col-span-2">
                         <label className="label" htmlFor="addr-label">Nome do endereço</label>
                         <input id="addr-label" name="label" required minLength={2} maxLength={40} className="input" placeholder="Trabalho" />
                       </div>
-                      <div>
+                      <CamposEndereco nome="address" id="addr" obrigatorio className="sm:col-span-2" />
+                      <div className="sm:col-span-2">
                         <label className="label" htmlFor="addr-ref">Referência</label>
                         <input id="addr-ref" name="reference" maxLength={200} className="input" />
                       </div>
-                      <CamposEndereco nome="address" id="addr" obrigatorio className="sm:col-span-2" />
                       <button className="btn btn-primary mt-1 sm:col-span-2">Adicionar endereço</button>
                     </ActionForm>
                   </JanelaAcao>

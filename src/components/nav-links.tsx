@@ -47,7 +47,7 @@ function ItemMenu({ href, label, on, selo }: { href: string; label: string; on: 
     <Link
       href={href}
       aria-current={on ? "page" : undefined}
-      className={`flex h-11 shrink-0 items-center gap-2.5 lg:h-8 rounded-md px-2 text-[13px] font-medium transition-colors ${
+      className={`flex h-11 shrink-0 items-center gap-2.5 lg:h-8 lg:[@media(max-height:640px)]:h-7 rounded-md px-2 text-[13px] font-medium transition-colors ${
         on ? "bg-subtle text-fg" : "text-muted hover:bg-subtle/70 hover:text-fg"
       }`}
     >
@@ -92,7 +92,7 @@ export function NavLinks({ groups }: { groups: NavGroup[] }) {
   }, [path]);
 
   return (
-    <nav ref={nav} aria-label="Principal" className="nav-rola relative flex gap-1 overflow-x-auto px-3 pb-3 lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-5 lg:[@media(max-height:780px)]:gap-3 lg:overflow-x-visible lg:overflow-y-auto lg:pb-4 lg:[scrollbar-width:none] lg:hover:[scrollbar-width:thin] lg:focus-within:[scrollbar-width:thin]">
+    <nav ref={nav} aria-label="Principal" className="nav-rola relative flex gap-1 overflow-x-auto px-3 pb-3 lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-5 lg:[@media(max-height:780px)]:gap-3 lg:[@media(max-height:640px)]:gap-2 lg:overflow-x-visible lg:overflow-y-auto lg:pb-4 lg:[scrollbar-width:none] lg:hover:[scrollbar-width:thin] lg:focus-within:[scrollbar-width:thin]">
       {groups.map((g, i) => (
         <div key={i} className={`flex shrink-0 gap-1 lg:flex-col lg:gap-0.5 ${g.soCelular ? "lg:hidden" : ""}`}>
           {g.title && <p className="hidden px-2 pb-1 text-xs font-medium text-muted lg:block">{g.title}</p>}

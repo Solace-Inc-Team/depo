@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, type MouseEvent, type ReactNode } from "react";
+import { useFilaViva } from "./selo-menu";
 import {
   ChartColumnIncreasing,
   CircleHelp,
@@ -51,7 +52,10 @@ const curto: Record<string, string> = { "/caixa": "Caixa", "/produtos": "Produto
 const ativo = (path: string, href: string) =>
   href === "/" ? path === "/" : href === "/pedidos" ? /^\/pedidos(\/(?!novo).*)?$/.test(path) : path === href || path.startsWith(href + "/");
 
-function Aba({ href, label, icone: Icone, on, selo }: { href: string; label: string; icone: LucideIcon; on: boolean; selo?: number }) {
+function Aba({ href, label, icone: Icone, on, selo: doServidor }: { href: string; label: string; icone: LucideIcon; on: boolean; selo?: number }) {
+  // só a aba de Entregas tem selo, e ele acompanha a conferida do menu lateral
+  const vivo = useFilaViva(doServidor ?? 0);
+  const selo = doServidor === undefined ? undefined : vivo;
   return (
     <Link href={href} aria-current={on ? "page" : undefined} className="nav-inferior-aba" data-on={on || undefined}>
       <span className="relative">
