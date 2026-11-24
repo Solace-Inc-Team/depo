@@ -21,7 +21,12 @@ export function ConexaoWhatsappPainel() {
   const ultimoQr = useRef(0);
   // o último QR fica para a saída animada do painel (o estado já mudou quando ele recolhe)
   const [qrNaTela, setQrNaTela] = useState<string | null>(null);
-  if (conexao?.estado === "conectando" && conexao.qr && conexao.qr !== qrNaTela) setQrNaTela(conexao.qr);
+  // o QR anterior fica embaixo enquanto o novo esmaece por cima: sem ele, a caixa ficava branca um quadro
+  const [qrAnterior, setQrAnterior] = useState<string | null>(null);
+  if (conexao?.estado === "conectando" && conexao.qr && conexao.qr !== qrNaTela) {
+    setQrAnterior(qrNaTela);
+    setQrNaTela(conexao.qr);
+  }
   const raiz = useRef<HTMLDivElement>(null);
   const [visivel, setVisivel] = useState(false);
 
@@ -154,9 +159,24 @@ export function ConexaoWhatsappPainel() {
             <div className="grid gap-5 border-t border-line p-4 sm:grid-cols-[auto_1fr] sm:items-center">
               {/* o QR é branco com borda própria: lê bem também no tema escuro */}
               <div className="mx-auto grid size-56 place-items-center rounded-lg bg-white p-2">
-                {/* o QR novo (a cada 30 s) entra esmaecendo: trocado seco, parecia piscar na frente da câmera */}
-                {/* eslint-disable-next-line @next/next/no-img-element -- QR em data URL, que muda a cada 30 s */}
-                {qrNaTela ? <img key={qrNaTela} src={qrNaTela} alt="QR code para conectar o WhatsApp" className="enter size-full" /> : <span className="text-[13px] text-neutral-500">Gerando o QR…</span>}
+                {/* o QR novo (a cada 30 s) esmaece por cima do anterior: trocado seco, parecia piscar na frente da câmera.
+                    Só opacidade: deslocado, os dois QR desencontrados confundiriam a câmera no meio da troca */}
+                {qrNaTela ? (
+                  <div className="grid size-full *:col-start-1 *:row-start-1">
+                    {/* eslint-disable-next-line @next/next/no-img-element -- QR em data URL, que muda a cada 30 s */}
+                    {qrAnterior && <img src={qrAnterior} alt="" aria-hidden="true" className="size-full" />}
+                    {/* eslint-disable-next-line @next/next/no-img-element -- QR em data URL, que muda a cada 30 s */}
+                    <img
+                      key={qrNaTela}
+                      src={qrNaTela}
+                      alt="QR code para conectar o WhatsApp"
+                      onAnimationEnd={() => setQrAnterior(null)}
+                      className="size-full animate-[fade-in_240ms_ease-out_both] motion-reduce:animate-none"
+                    />
+                  </div>
+                ) : (
+                  <span className="text-[13px] text-neutral-500">Gerando o QR…</span>
+                )}
               </div>
               <div className="text-[13.5px]">
                 <ol className="list-inside list-decimal space-y-2">
