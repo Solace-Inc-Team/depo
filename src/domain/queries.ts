@@ -951,3 +951,22 @@ export const vendidosPorProduto = scoped(async function vendidosPorProduto(tenan
     )
     .groupBy(orderItems.productId);
 });
+
+/** Quanto entrou e saiu de cheio na loja em cada um dos últimos dias (data de São Paulo), por produto: com o número de
+ * agora, dá para andar para trás e saber quantos cheios havia no fim de cada dia, sem guardar foto do estoque. */
+export const variacaoCheiosPorDia = scoped(async function variacaoCheiosPorDia(tenantId: string, branchId: string, dias: number) {
+  const dia = sql<string>`to_char(${stockMovements.createdAt} at time zone 'America/Sao_Paulo', 'YYYY-MM-DD')`;
+  return db
+    .select({ productId: stockMovements.productId, dia, n: sql<number>`sum(${stockMovements.quantity})::int` })
+    .from(stockMovements)
+    .where(
+      and(
+        eq(stockMovements.tenantId, tenantId),
+        eq(stockMovements.branchId, branchId),
+        eq(stockMovements.state, "cheio"),
+        isNull(stockMovements.driverId),
+        gte(stockMovements.createdAt, new Date(Date.now() - (dias + 1) * 86400e3)),
+      ),
+    )
+    .groupBy(stockMovements.productId, dia);
+});

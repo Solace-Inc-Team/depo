@@ -1,7 +1,9 @@
 import { requireUser } from "@/lib/auth";
 import { Package, Plus } from "lucide-react";
-import { listProducts, listSuppliers, recentMovements, stockOverview, vendidosPorProduto } from "@/domain/queries";
-import { previsao, vaziosFaltando } from "@/lib/relatorios";
+import { listProducts, listSuppliers, recentMovements, stockOverview, variacaoCheiosPorDia, vendidosPorProduto } from "@/domain/queries";
+import { previsao, serieCheios, vaziosFaltando } from "@/lib/relatorios";
+import { somaDias, todayISO } from "@/lib/period";
+import { TendenciaEstoque } from "@/components/tendencia-estoque";
 import { ActionForm } from "@/components/action-form";
 import { damagedAction, purchaseAction, transferirAction } from "@/app/actions";
 import { JanelaAcao } from "@/components/janela-acao";
@@ -16,14 +18,20 @@ export const metadata = { title: "Estoque" };
 
 export default async function Estoque() {
   const user = await requireUser("dono", "atendente", "caixa");
-  const [stock, moves, products, suppliers, filiais, vendidos] = await Promise.all([
+  const [stock, moves, products, suppliers, filiais, vendidos, variacao] = await Promise.all([
     stockOverview(user.tenantId, user.branchId),
     recentMovements(user.tenantId, user.branchId, 20),
     listProducts(user.tenantId, true),
     listSuppliers(user.tenantId, true),
     listFiliais(user.tenantId),
     vendidosPorProduto(user.tenantId, user.branchId, 28),
+    variacaoCheiosPorDia(user.tenantId, user.branchId, 7),
   ]);
+  // os últimos 7 dias, do mais velho a hoje, para a linha de tendência de cada produto
+  const hoje = todayISO();
+  const seteDias = Array.from({ length: 7 }, (_, i) => somaDias(hoje, i - 6));
+  const tendencia = (p: { id: string; fullStore: number }) =>
+    serieCheios(p.fullStore, new Map(variacao.filter((v) => v.productId === p.id).map((v) => [v.dia, v.n])), seteDias);
   // só existe transferência quando há outra filial ativa para receber
   const outras = filiais.filter((b) => b.active && b.id !== user.branchId);
   const stateLabel = { cheio: "cheio", vazio: "vazio", avariado: "avariado" } as const;
@@ -165,7 +173,10 @@ export default async function Estoque() {
                   </div>
                 </td>
                 <td data-rotulo="Cheios na loja" className={`num text-right text-xl font-semibold ${p.low ? "text-danger" : ""}`}>
-                  {p.fullStore}
+                  <span className="inline-flex items-center gap-3">
+                    <TendenciaEstoque valores={tendencia(p)} baixo={p.low} />
+                    {p.fullStore}
+                  </span>
                   {p.low && <span className="block text-sm font-medium whitespace-nowrap">abaixo do mínimo ({p.minStock})</span>}
                   {/* só quando acaba em até um mês: "dura 245 dias" em produto parado era só ruído */}
                   {pr && pr.dias <= 30 && (

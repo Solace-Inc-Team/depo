@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { pico, previsao, sumido, vaziosFaltando } from "./relatorios.ts";
+import { pico, previsao, serieCheios, sumido, vaziosFaltando } from "./relatorios.ts";
 
 const dia = (n: number) => new Date(Date.UTC(2026, 10, 1) + n * 86400e3);
 
@@ -38,4 +38,12 @@ test("pico: a hora mais forte e as vizinhas perto dela", () => {
   assert.deepEqual(pico([h(9, 3), h(10, 9), h(11, 10), h(12, 4)]), { de: 10, ate: 12 });
   assert.deepEqual(pico([h(18, 5)]), { de: 18, ate: 19 });
   assert.equal(pico([]), null);
+});
+
+test("serieCheios: anda para trás a partir de agora, dia a dia", () => {
+  // hoje terminou com 5 e saíram 3: ontem terminou com 8; ontem entraram 10: anteontem terminou com -2 (dado de teste)
+  const dias = ["2026-11-22", "2026-11-23", "2026-11-24"];
+  assert.deepEqual(serieCheios(5, new Map([["2026-11-24", -3], ["2026-11-23", 10]]), dias), [-2, 8, 5]);
+  // dia sem movimento repete o número do dia seguinte
+  assert.deepEqual(serieCheios(7, new Map(), dias), [7, 7, 7]);
 });

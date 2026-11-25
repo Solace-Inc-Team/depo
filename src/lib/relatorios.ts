@@ -44,3 +44,18 @@ export function pico(porHora: { hora: number; n: number }[]) {
   while (forte(ate + 1)) ate++;
   return { de, ate: ate + 1 };
 }
+
+/**
+ * Cheios no fim de cada um dos `dias` (do mais velho a hoje), andando para trás a partir do número de agora: o fim de
+ * ontem é o de hoje menos o que mudou hoje, e assim por diante. `variacao`: dia (YYYY-MM-DD) para o que entrou menos
+ * o que saiu naquele dia.
+ */
+export function serieCheios(agora: number, variacao: Map<string, number>, dias: string[]) {
+  const serie = new Array<number>(dias.length);
+  let fim = agora;
+  for (let i = dias.length - 1; i >= 0; i--) {
+    serie[i] = fim;
+    fim -= variacao.get(dias[i]) ?? 0;
+  }
+  return serie;
+}
