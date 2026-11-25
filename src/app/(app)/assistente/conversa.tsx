@@ -1,38 +1,84 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
-import { RotateCcw, SendHorizontal } from "lucide-react";
+import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
+import { ChartColumn, CornerDownRight, HandCoins, Package, Receipt, RotateCcw, SendHorizontal, Users, type LucideIcon } from "lucide-react";
 import { chamarAcao } from "@/components/action-form";
+import { useSaida } from "@/components/saida";
+import LightRays from "@/components/light-rays";
 import { perguntarAssistenteAction } from "@/app/actions";
 
-type Turno = { chave: number; pergunta: string; resposta?: string; analise?: boolean };
+type Turno = { chave: number; pergunta: string; resposta?: string; destaque?: string; fontes?: string[]; seguintes?: string[]; analise?: boolean };
 
-const SUGESTOES = [
-  "Quanto vendi hoje?",
-  "Quanto vendi essa semana comparado com a anterior?",
-  "Vou ficar sem gás essa semana?",
-  "Quem está me devendo fiado?",
-  "Quais clientes pararam de comprar?",
-  "Quanto tenho de contas a pagar?",
+const SUGESTOES: { icone: LucideIcon; texto: string }[] = [
+  { icone: ChartColumn, texto: "Quanto vendi essa semana?" },
+  { icone: Package, texto: "Vou ficar sem gás essa semana?" },
+  { icone: HandCoins, texto: "Quem está me devendo fiado?" },
+  { icone: Receipt, texto: "Quanto tenho de contas a pagar?" },
+  { icone: Users, texto: "Quais clientes pararam de comprar?" },
+  { icone: ChartColumn, texto: "Qual o horário de mais pedidos?" },
 ];
+
+// o que a espera diz, pelo assunto da pergunta: um palpite para a pessoa ver que algo acontece, não a consulta exata
+function etapa(p: string) {
+  if (/estoque|g[aá]s|botij|gal[aã]o|ficar sem|acabar/i.test(p)) return "Olhando o estoque";
+  if (/fiado|devendo|deve/i.test(p)) return "Conferindo o fiado";
+  if (/conta|pagar|boleto|venc/i.test(p)) return "Olhando as contas a pagar";
+  if (/sumi|parou|pararam|cliente/i.test(p)) return "Procurando os clientes";
+  if (/hor[aá]rio|pico|hora/i.test(p)) return "Vendo os horários";
+  if (/pedido|rota|atras|fila|agora/i.test(p)) return "Vendo os pedidos de agora";
+  return "Somando as vendas";
+}
+
+function Esperando({ pergunta }: { pergunta: string }) {
+  const [fase, setFase] = useState(0);
+  useEffect(() => {
+    const a = setTimeout(() => setFase(1), 2500);
+    const b = setTimeout(() => setFase(2), 7000);
+    return () => (clearTimeout(a), clearTimeout(b));
+  }, []);
+  const frase = [etapa(pergunta), "Juntando os números", "Quase lá"][fase];
+  return (
+    <div className="assistente-msg" aria-hidden="true">
+      <span className="assistente-ponto" data-estado="pensando" style={{ marginTop: 7 }} />
+      <span key={fase} className="texto-brilho text-[13px] animate-[fade-in_200ms_ease-out_both]">{frase}…</span>
+    </div>
+  );
+}
+
+// o tema mora no data-tema do <html> e pode trocar com a tela aberta
+const assinarTema = (avisar: () => void) => {
+  const o = new MutationObserver(avisar);
+  o.observe(document.documentElement, { attributes: true, attributeFilter: ["data-tema"] });
+  return () => o.disconnect();
+};
+
+/** A luz que segue o ponteiro no cartão de sugestão. */
+const luzNoPonteiro = (e: React.PointerEvent<HTMLElement>) => {
+  const r = e.currentTarget.getBoundingClientRect();
+  e.currentTarget.style.setProperty("--x", `${e.clientX - r.left}px`);
+  e.currentTarget.style.setProperty("--y", `${e.clientY - r.top}px`);
+};
 
 /**
  * Conversa do dono com o assistente. As respostas anteriores vão junto em cada pergunta (o servidor corta para as
  * últimas, e curtas), então "e ontem?" entende do que se fala sem o histórico crescer sem fim.
  */
-export function Conversa({ restamNoComeco }: { restamNoComeco: number }) {
+export function Conversa({ restamNoComeco, saudacao }: { restamNoComeco: number; saudacao: string }) {
   const [turnos, setTurnos] = useState<Turno[]>([]);
   const [texto, setTexto] = useState("");
   const [erro, setErro] = useState("");
   const [restam, setRestam] = useState(restamNoComeco);
   const [limpando, setLimpando] = useState(false);
   const [pendente, start] = useTransition();
+  // os feixes de luz só no tema escuro: no claro eles somem no fundo branco e fica a luz parada do topo
+  const escuro = useSyncExternalStore(assinarTema, () => document.documentElement.dataset.tema === "escuro", () => false);
   const area = useRef<HTMLDivElement>(null);
   const chave = useRef(0);
+  const entrada = useSaida(!turnos.length && !limpando, 180);
 
   useEffect(() => {
     area.current?.scrollTo({ top: area.current.scrollHeight, behavior: "smooth" });
-  }, [turnos.length, pendente]);
+  }, [turnos, pendente]);
 
   function perguntar(pergunta: string) {
     if (pendente || !restam) return;
@@ -51,7 +97,7 @@ export function Conversa({ restamNoComeco }: { restamNoComeco: number }) {
       }
       const r = c.r!;
       setRestam(r.restam ?? 0);
-      setTurnos((ts) => ts.map((t) => (t.chave === id ? { ...t, resposta: r.resposta, analise: r.analise } : t)));
+      setTurnos((ts) => ts.map((t) => (t.chave === id ? { ...t, ...r, chave: id, pergunta } : t)));
     });
   }
 
@@ -64,27 +110,50 @@ export function Conversa({ restamNoComeco }: { restamNoComeco: number }) {
     }, 180);
   }
 
+  const ultimo = turnos.at(-1);
   return (
     <section className="panel flex flex-col overflow-hidden">
-      <div ref={area} className="robo-conversa" data-limpando={limpando || undefined} role="log" aria-live="polite">
-        {!turnos.length && !limpando && (
-          <div className="m-auto flex w-full max-w-md flex-col gap-2">
-            <p className="mb-1 text-center text-[13px] text-muted">Experimente perguntar</p>
-            {SUGESTOES.map((s) => (
-              <button
-                key={s}
-                type="button"
-                className="btn justify-start text-left"
-                aria-disabled={pendente || !restam}
-                onClick={() => {
-                  // o botão some com a lista: o foco vai para o campo (no celular não, que abriria o teclado)
-                  if (matchMedia("(pointer: fine)").matches) document.getElementById("assistente-texto")?.focus();
-                  perguntar(s);
-                }}
-              >
-                {s}
-              </button>
-            ))}
+      <div ref={area} className="assistente-conversa" data-limpando={limpando || undefined} role="log" aria-live="polite">
+        {entrada.montado && (
+          <div className="assistente-entrada" data-saindo={entrada.saindo || undefined}>
+            <div aria-hidden="true" className="topo-luz absolute inset-0 -z-10" style={{ "--luz-forca": "26%" } as React.CSSProperties} />
+            {escuro && (
+              <div aria-hidden="true" className="absolute inset-0 -z-10">
+                <LightRays raysColor="#cfdcff" intensity={1.1} opacity={1} rayLength={1.6} followMouse={false} cursorShadow={false} clickPulse={false} />
+              </div>
+            )}
+            <span aria-hidden="true" className="assistente-ponto" />
+            <div className="text-center">
+              <h2 className="assistente-saudacao text-xl font-semibold tracking-tight">
+                {saudacao.split(" ").map((p, i) => (
+                  <span key={i} style={{ "--i": i } as React.CSSProperties}>
+                    {p}
+                    {" "}
+                  </span>
+                ))}
+              </h2>
+              <p className="mt-1 text-[13px] text-muted">Pergunte sobre vendas, estoque, contas e clientes. Os números vêm do próprio sistema.</p>
+            </div>
+            <div className="assistente-sugestoes">
+              {SUGESTOES.map(({ icone: Icone, texto: s }, i) => (
+                <button
+                  key={s}
+                  type="button"
+                  className="assistente-sugestao"
+                  style={{ "--i": i } as React.CSSProperties}
+                  aria-disabled={pendente || !restam}
+                  onPointerMove={luzNoPonteiro}
+                  onClick={() => {
+                    // o cartão some com a entrada: o foco vai para o campo (no celular não, que abriria o teclado)
+                    if (matchMedia("(pointer: fine)").matches) document.getElementById("assistente-texto")?.focus();
+                    perguntar(s);
+                  }}
+                >
+                  <Icone size={16} strokeWidth={1.75} aria-hidden="true" />
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
         )}
         {turnos.map((t) => (
@@ -94,17 +163,36 @@ export function Conversa({ restamNoComeco }: { restamNoComeco: number }) {
               {t.pergunta}
             </p>
             {t.resposta && (
-              <div className="robo-mensagem">
-                <p className="robo-balao whitespace-pre-line">
-                  <span className="sr-only">Assistente: </span>
-                  {t.resposta}
-                </p>
-                {t.analise && <p className="text-[12px] text-muted">Respondida com a análise detalhada</p>}
+              <div className="assistente-msg">
+                <span aria-hidden="true" className="assistente-ponto" />
+                <div className="min-w-0">
+                  <div className="robo-balao max-w-none">
+                    <span className="sr-only">Assistente: </span>
+                    {t.destaque && <span className="assistente-destaque">{t.destaque}</span>}
+                    {t.resposta}
+                  </div>
+                  {(t.fontes?.length || t.analise) && (
+                    <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-[12px] text-muted">
+                      {!!t.fontes?.length && <span>Dados de {t.fontes.join(", ")}</span>}
+                      {t.analise && <span className="font-medium text-accent">Análise detalhada</span>}
+                    </p>
+                  )}
+                  {/* próximas perguntas só na última resposta: nas antigas, a conversa já seguiu */}
+                  {t === ultimo && !pendente && !!t.seguintes?.length && (
+                    <div className="mt-2.5 flex flex-wrap gap-2">
+                      {t.seguintes.map((s) => (
+                        <button key={s} type="button" className="btn btn-sm" aria-disabled={!restam} onClick={() => perguntar(s)}>
+                          <CornerDownRight size={14} aria-hidden="true" /> {s}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
         ))}
-        {pendente && !limpando && <p aria-hidden="true" className="robo-aviso robo-digitando">Consultando os números…</p>}
+        {pendente && !limpando && ultimo && <Esperando pergunta={ultimo.pergunta} />}
       </div>
 
       {erro && (
@@ -138,9 +226,7 @@ export function Conversa({ restamNoComeco }: { restamNoComeco: number }) {
         </button>
       </form>
       <div className="flex items-center justify-between gap-3 border-t border-line px-4 py-2 text-[12px] text-muted">
-        <span className="num">
-          {restam === 1 ? "Resta 1 pergunta hoje" : `Restam ${restam} perguntas hoje`}
-        </span>
+        <span className="num">{restam === 1 ? "Resta 1 pergunta hoje" : `Restam ${restam} perguntas hoje`}</span>
         <button type="button" className="btn btn-sm" onClick={recomecar} disabled={!turnos.length || limpando || pendente}>
           <RotateCcw size={14} aria-hidden="true" /> Nova conversa
         </button>

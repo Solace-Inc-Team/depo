@@ -1013,7 +1013,7 @@ export async function desconectarWhatsappAction(): Promise<RespostaConexao> {
   });
 }
 
-export async function perguntarAssistenteAction(pergunta: unknown, historico: unknown): Promise<{ resposta?: string; analise?: boolean; restam?: number; erro?: string }> {
+export async function perguntarAssistenteAction(pergunta: unknown, historico: unknown): Promise<Partial<Awaited<ReturnType<typeof perguntar>>> & { erro?: string }> {
   const user = await requireUser("dono");
   try {
     return await perguntar(user, pergunta, historico);

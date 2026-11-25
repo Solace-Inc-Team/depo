@@ -80,3 +80,33 @@ export function resultadoCurto(dado: unknown) {
 const usd = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "USD" });
 /** Milionésimos de dólar em "US$ 1,23"; gasto que ainda não chega a um centavo não aparece como "US$ 0,00". */
 export const dolares = (micro: number) => (micro > 0 && micro < 5000 ? "menos de US$ 0,01" : usd.format(micro / 1e6));
+
+/** Nome de cada consulta na etiqueta "de onde veio" da resposta. */
+export const FONTES: Record<string, string> = {
+  resumo_vendas: "Vendas",
+  estoque: "Estoque",
+  situacao_agora: "Pedidos agora",
+  contas_a_pagar: "Contas a pagar",
+  fiado: "Fiado",
+  clientes_sumidos: "Clientes",
+  horarios: "Horários",
+};
+
+/**
+ * O modelo termina a resposta com `DESTAQUE: ...` (o número principal, quando há) e `SEGUIR: a | b` (próximas
+ * perguntas). Aqui essas linhas saem do texto e viram campos; sem elas, a resposta vem inteira e os campos vazios.
+ */
+export function separarResposta(bruta: string) {
+  let destaque: string | undefined;
+  let seguintes: string[] = [];
+  const linhas = bruta.split("\n").filter((l) => {
+    // o modelo às vezes põe negrito no rótulo: os asteriscos saem antes de procurar
+    const c = l.replace(/\*/g, "");
+    const d = /^\s*DESTAQUE\s*:\s*(.+)$/i.exec(c);
+    if (d) return void (destaque = d[1].trim().slice(0, 40));
+    const s = /^\s*SEGUIR\s*:\s*(.+)$/i.exec(c);
+    if (s) return void (seguintes = s[1].split("|").map((x) => x.trim()).filter(Boolean).map((x) => x.slice(0, 60)).slice(0, 3));
+    return true;
+  });
+  return { texto: linhas.join("\n").trim(), destaque, seguintes };
+}

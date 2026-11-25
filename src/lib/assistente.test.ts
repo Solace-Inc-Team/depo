@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { custoMicro, dolares, entradaTotal, historicoCurto, LIMITES, resultadoCurto, somarUso, usoZerado } from "./assistente.ts";
+import { custoMicro, dolares, entradaTotal, historicoCurto, LIMITES, resultadoCurto, separarResposta, somarUso, usoZerado } from "./assistente.ts";
 
 test("custo da pergunta: cada tipo de token no preço do modelo, em milionésimos de dólar", () => {
   const u = { entrada: 2000, cacheGravado: 0, cacheLido: 8000, saida: 300 };
@@ -38,4 +38,15 @@ test("gasto em dólar: centavos arredondados e gasto pequeno sem virar zero", ()
   assert.equal(dolares(0).replace(/\s/g, " "), "US$ 0,00");
   assert.equal(dolares(1200), "menos de US$ 0,01");
   assert.equal(dolares(1_234_567).replace(/\s/g, " "), "US$ 1,23");
+});
+
+test("resposta: as linhas de destaque e de próximas perguntas saem do texto e viram campos", () => {
+  const r = separarResposta("Hoje você vendeu R$ 2.340,00 em 18 pedidos.\nA maior parte no Pix.\n\nDESTAQUE: R$ 2.340,00\nSEGUIR: E ontem? | Quanto foi no fiado? | Qual entregador vendeu mais? | demais");
+  assert.equal(r.texto, "Hoje você vendeu R$ 2.340,00 em 18 pedidos.\nA maior parte no Pix.");
+  assert.equal(r.destaque, "R$ 2.340,00");
+  assert.deepEqual(r.seguintes, ["E ontem?", "Quanto foi no fiado?", "Qual entregador vendeu mais?"]);
+  // sem as linhas, nada some
+  assert.deepEqual(separarResposta("Você tem 9 cheios."), { texto: "Você tem 9 cheios.", destaque: undefined, seguintes: [] });
+  // o modelo às vezes põe negrito no rótulo
+  assert.equal(separarResposta("Texto\n**DESTAQUE:** 12 botijões").destaque, "12 botijões");
 });

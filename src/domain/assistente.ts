@@ -8,7 +8,7 @@ import { assertRole, DomainError } from "@/lib/ctx";
 import { formatBRL } from "@/lib/money";
 import { dataISO, parsePeriod, todayISO } from "@/lib/period";
 import { pico, previsao, sumido } from "@/lib/relatorios";
-import { custoMicro, entradaTotal, historicoCurto, LIMITES, MODELOS, resultadoCurto, somarUso, usoZerado, type Nivel, type Uso } from "@/lib/assistente";
+import { custoMicro, entradaTotal, FONTES, separarResposta, historicoCurto, LIMITES, MODELOS, resultadoCurto, somarUso, usoZerado, type Nivel, type Uso } from "@/lib/assistente";
 import { comprasPorCliente, exceptionsNow, pedidosPorHora, periodBreakdown, periodReport, startOfToday, stockOverview, vendidosPorProduto } from "./queries";
 import { contasEmAberto } from "./contas";
 import { listDebtors, paymentsByDay } from "./receivables";
@@ -32,6 +32,8 @@ Como responder:
 - Português do Brasil, frases curtas e simples, para quem lê no celular com pressa.
 - Duas a quatro frases. Quando forem vários itens, uma lista curta com "- " no começo de cada linha. Sem tabelas, sem títulos, sem negrito.
 - Comece pela resposta: o número ou o nome que a pessoa pediu. Depois, se ajudar, uma frase de contexto.
+- Quando a resposta tem um número principal (um valor em reais ou uma quantidade), acrescente no fim uma linha só com "DESTAQUE: " e esse número com a unidade, por exemplo "DESTAQUE: R$ 2.340,00" ou "DESTAQUE: 12 botijões".
+- Por último, uma linha "SEGUIR: " com duas perguntas curtas, separadas por " | ", que o dono provavelmente faria em seguida e que as consultas conseguem responder. Exemplo: "SEGUIR: E ontem? | Quanto foi no fiado?"
 
 Dados:
 - Use só os números que as ferramentas devolvem. Nunca invente valores, nomes, datas ou porcentagens.
@@ -191,9 +193,10 @@ async function consultar(nome: string, input: Record<string, unknown>, user: Ses
 }
 
 type Resultado = { texto?: string; escalar?: boolean };
+type Fontes = Set<string>;
 
 /** Uma pergunta num modelo: chama as consultas que ele pedir até ele responder, dentro das rodadas e do teto de tokens. */
-async function rodar(nivel: Nivel, mensagens: B.BetaMessageParam[], user: SessionUser, uso: Uso, podeAnalisar: boolean): Promise<Resultado> {
+async function rodar(nivel: Nivel, mensagens: B.BetaMessageParam[], user: SessionUser, uso: Uso, podeAnalisar: boolean, fontes: Fontes): Promise<Resultado> {
   const m = MODELOS[nivel];
   const ferramentas = nivel === "rapido" && podeAnalisar ? [...FERRAMENTAS, PEDIR_ANALISE] : FERRAMENTAS;
   const msgs = [...mensagens];
@@ -225,7 +228,9 @@ async function rodar(nivel: Nivel, mensagens: B.BetaMessageParam[], user: Sessio
     const resultados = await Promise.all(
       chamadas.map(async (c): Promise<B.BetaToolResultBlockParam> => {
         try {
-          return { type: "tool_result", tool_use_id: c.id, content: resultadoCurto(await consultar(c.name, c.input as Record<string, unknown>, user)) };
+          const dado = await consultar(c.name, c.input as Record<string, unknown>, user);
+          fontes.add(c.name);
+          return { type: "tool_result", tool_use_id: c.id, content: resultadoCurto(dado) };
         } catch (e) {
           if (!(e instanceof DomainError)) throw e;
           return { type: "tool_result", tool_use_id: c.id, content: e.message, is_error: true };
@@ -275,11 +280,13 @@ export async function perguntar(user: SessionUser, perguntaCrua: unknown, histor
   const usoAnalise = usoZerado();
   let nivel: Nivel = "rapido";
   let r: Resultado;
+  // as consultas que deram certo viram as etiquetas "de onde veio" (as da análise somam às do modelo barato)
+  const fontes: Fontes = new Set();
   try {
-    r = await rodar("rapido", mensagens, user, usoRapido, podeAnalisar);
+    r = await rodar("rapido", mensagens, user, usoRapido, podeAnalisar, fontes);
     if (r.escalar) {
       nivel = "analise";
-      r = await rodar("analise", mensagens, user, usoAnalise, false);
+      r = await rodar("analise", mensagens, user, usoAnalise, false, fontes);
     }
   } catch (e) {
     if (e instanceof Anthropic.APIError) {
@@ -303,5 +310,13 @@ export async function perguntar(user: SessionUser, perguntaCrua: unknown, histor
         }),
       );
   }
-  return { resposta: r.texto!, analise: nivel === "analise", restam: Math.max(0, LIMITES.perguntasDia - hoje.perguntas - 1) };
+  const { texto, destaque, seguintes } = separarResposta(r.texto!);
+  return {
+    resposta: texto,
+    destaque,
+    seguintes,
+    fontes: [...fontes].map((f) => FONTES[f] ?? f),
+    analise: nivel === "analise",
+    restam: Math.max(0, LIMITES.perguntasDia - hoje.perguntas - 1),
+  };
 }

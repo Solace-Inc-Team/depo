@@ -4441,3 +4441,194 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
 .table tbody tr.pedidos-dia:hover {
   background: none;
 }
+
+/* assistente ------------------------------------------------------------------------------------------
+   A cara do assistente é o ponto do "depo.": acende na entrada, respira enquanto consulta e se estica como um
+   cursor quando a resposta chega. Nada de brilhinhos nem degradê roxo: a luz é a mesma azul da marca. */
+.assistente-conversa {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: min(64vh, 600px);
+  min-height: 360px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px;
+  transition: opacity var(--dur-fast) ease-in;
+}
+.assistente-conversa[data-limpando] {
+  opacity: 0;
+}
+.assistente-ponto {
+  display: block;
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 999px;
+  background: var(--marca);
+}
+/* chegou a resposta: o ponto vira um traço de cursor e volta a ser ponto */
+.assistente-msg > .assistente-ponto {
+  margin-top: 13px;
+  animation: ponto-escreve 640ms var(--ease-out) both;
+}
+.assistente-ponto[data-estado="pensando"] {
+  animation: ponto-respira 1.4s ease-in-out infinite;
+}
+@keyframes ponto-escreve {
+  40% {
+    width: 22px;
+  }
+}
+@keyframes ponto-respira {
+  50% {
+    scale: 1.5;
+    opacity: 0.55;
+  }
+}
+
+/* entrada: a luz da marca de cima, o ponto aceso e a saudação; some esmaecendo na primeira pergunta */
+/* no fluxo (rola em tela baixa, em vez de cortar os cartões); saindo, fica por cima da primeira pergunta */
+.assistente-entrada {
+  position: relative;
+  flex: 1 0 auto;
+  /* encosta nas bordas da conversa: a luz vem do alto do quadro, não de dentro do recuo */
+  margin: -16px;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  overflow: hidden;
+  padding: 24px 16px;
+  animation: var(--dur) var(--ease-out) both fade-in;
+}
+.assistente-entrada[data-saindo] {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  animation: 180ms ease-in both fade-out;
+}
+.assistente-entrada > .assistente-ponto {
+  width: 12px;
+  height: 12px;
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--marca) 16%, transparent), 0 0 32px 6px color-mix(in srgb, var(--marca) 45%, transparent);
+}
+/* a saudação entra palavra por palavra, saindo do desfoque (o Blur Text do React Bits, em CSS) */
+.assistente-saudacao > span {
+  display: inline-block;
+  animation: palavra-foco 560ms var(--ease-out) both;
+  animation-delay: calc(var(--i) * 70ms + 120ms);
+}
+@keyframes palavra-foco {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    translate: 0 var(--rise);
+  }
+}
+.assistente-sugestoes {
+  display: grid;
+  width: 100%;
+  max-width: 34rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+/* cartão de sugestão com a luz que segue o ponteiro (Spotlight Card do React Bits, em CSS) */
+.assistente-sugestao {
+  position: relative;
+  display: flex;
+  min-height: 64px;
+  align-items: flex-start;
+  gap: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  padding: 12px;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.35;
+  transition: border-color var(--dur) var(--ease-out), translate var(--dur) var(--ease-out);
+  animation: var(--dur) var(--ease-out) both fade-in, var(--dur) var(--ease-out) both rise;
+  animation-delay: calc(var(--i) * 45ms + 300ms);
+}
+.assistente-sugestao::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(220px circle at var(--x, 50%) var(--y, 50%), color-mix(in srgb, var(--marca) 22%, transparent), transparent 70%);
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease-out);
+}
+.assistente-sugestao:hover {
+  border-color: color-mix(in srgb, var(--marca) 45%, var(--line));
+}
+.assistente-sugestao:hover::before {
+  opacity: 1;
+}
+.assistente-sugestao:active {
+  translate: 0 1px;
+}
+.assistente-sugestao > svg {
+  margin-top: 1px;
+  flex: none;
+  color: var(--marca);
+}
+
+.assistente-msg {
+  display: flex;
+  max-width: min(92%, 30rem);
+  align-items: flex-start;
+  gap: 10px;
+  animation: var(--dur) var(--ease-out) both fade-in, var(--dur) var(--ease-out) both rise;
+}
+.assistente-destaque {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+/* esperando: a frase com um brilho que passa (o Shiny Text do React Bits, em CSS) */
+.texto-brilho {
+  background: linear-gradient(110deg, var(--muted) 40%, var(--fg) 50%, var(--muted) 60%) 0 0 / 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: brilho-passa 1.8s linear infinite;
+}
+@keyframes brilho-passa {
+  from {
+    background-position: 125% 0;
+  }
+  to {
+    background-position: -125% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .assistente-ponto[data-estado="pensando"],
+  .texto-brilho {
+    animation: none;
+  }
+  .texto-brilho {
+    color: var(--muted);
+    background: none;
+  }
+  .assistente-saudacao > span {
+    animation-name: fade-in;
+  }
+}
+@media (forced-colors: active) {
+  .assistente-ponto {
+    background: CanvasText;
+  }
+  .texto-brilho {
+    color: CanvasText;
+    background: none;
+  }
+}
