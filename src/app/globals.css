@@ -2303,9 +2303,17 @@ input[type="date"].input:hover::-webkit-calendar-picker-indicator {
     font-size: 12px;
     line-height: 1.3;
   }
+  .tabela-pilha.rotulada.estoque-grade td[data-rotulo]:nth-child(n + 3) {
+    flex-wrap: nowrap;
+  }
   .tabela-pilha.rotulada.estoque-grade td[data-rotulo]:nth-child(n + 3) > .block {
+    flex-basis: auto;
     text-align: left;
-    white-space: normal;
+  }
+  /* número com aviso embaixo ("faltam 8 vazios para a troca") ocupa a linha inteira: na coluna de um terço o
+     aviso espremido passava por cima do rótulo vizinho */
+  .tabela-pilha.rotulada.estoque-grade td[data-rotulo]:nth-child(n + 3):has(> .block) {
+    grid-column: 1 / -1;
   }
   /* despesas: o nome vem primeiro, a data desce para o pé */
   .tabela-pilha.despesas tr {
