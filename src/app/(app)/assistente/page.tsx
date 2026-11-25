@@ -12,7 +12,7 @@ const periodo = (h: number) => (h < 5 ? "Boa noite" : h < 12 ? "Bom dia" : h < 1
 export default async function Assistente() {
   const user = await requireUser("dono");
   return (
-    <div className="max-w-2xl">
+    <div>
       <PageHeader title="Assistente" />
       {assistenteLigado() ? (
         <Conversa dono={user.userId} restamNoComeco={await perguntasRestantes(user.tenantId)} saudacao={`${periodo(horaSP())}, ${user.name.split(" ")[0]}.`} />

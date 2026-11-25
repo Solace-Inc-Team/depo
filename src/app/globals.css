@@ -4454,8 +4454,23 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   min-height: 360px;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 16px;
+  /* a conversa numa coluna de leitura no meio do quadro: no computador o quadro ocupa a tela, o texto não */
+  padding: 16px var(--folga);
   transition: opacity var(--dur-fast) ease-in;
+}
+/* no computador, conversa ocupa a altura da tela, como nos apps de chat; a página não rola */
+@media (min-width: 1024px) {
+  .assistente-conversa {
+    height: max(420px, calc(100svh - 320px));
+  }
+}
+/* a folga de cada lado da coluna de 48rem, pela largura do quadro (o padding em % mediria outra caixa) */
+.assistente-painel {
+  container-type: inline-size;
+  --folga: max(16px, calc((100cqw - 48rem) / 2));
+}
+.assistente-faixa {
+  padding-inline: calc(var(--folga) - 4px);
 }
 .assistente-conversa[data-limpando] {
   opacity: 0;
@@ -4499,7 +4514,7 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   position: relative;
   flex: 1 0 auto;
   /* encosta nas bordas da conversa: a luz vem do alto do quadro, não de dentro do recuo */
-  margin: -16px;
+  margin: -16px calc(-1 * var(--folga));
   isolation: isolate;
   display: flex;
   flex-direction: column;

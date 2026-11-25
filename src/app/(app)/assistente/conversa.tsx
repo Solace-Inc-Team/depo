@@ -122,7 +122,7 @@ export function Conversa({ dono, restamNoComeco, saudacao }: { dono: string; res
 
   const ultimo = turnos.at(-1);
   return (
-    <section className="panel flex flex-col overflow-hidden">
+    <section className="assistente-painel panel flex flex-col overflow-hidden">
       <div ref={area} className="assistente-conversa" data-limpando={limpando || undefined} role="log" aria-live="polite">
         {entrada.montado && (
           <div className="assistente-entrada" data-saindo={entrada.saindo || undefined}>
@@ -211,7 +211,7 @@ export function Conversa({ dono, restamNoComeco, saudacao }: { dono: string; res
         </p>
       )}
       <form
-        className="flex gap-2 border-t border-line p-3"
+        className="assistente-faixa flex gap-2 border-t border-line py-3"
         onSubmit={(e) => {
           e.preventDefault();
           const t = texto.trim();
@@ -235,7 +235,7 @@ export function Conversa({ dono, restamNoComeco, saudacao }: { dono: string; res
           <SendHorizontal size={16} aria-hidden="true" /> <span className="max-sm:sr-only">Perguntar</span>
         </button>
       </form>
-      <div className="flex items-center justify-between gap-3 border-t border-line px-4 py-2 text-[12px] text-muted">
+      <div className="assistente-faixa flex items-center justify-between gap-3 border-t border-line py-2 text-[12px] text-muted">
         <span className="num">{restam === 1 ? "Resta 1 pergunta hoje" : `Restam ${restam} perguntas hoje`}</span>
         <button type="button" className="btn btn-sm" onClick={recomecar} disabled={!turnos.length || limpando || pendente}>
           <RotateCcw size={14} aria-hidden="true" /> Nova conversa
