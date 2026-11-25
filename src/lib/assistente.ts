@@ -81,15 +81,15 @@ const usd = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "USD" 
 /** Milionésimos de dólar em "US$ 1,23"; gasto que ainda não chega a um centavo não aparece como "US$ 0,00". */
 export const dolares = (micro: number) => (micro > 0 && micro < 5000 ? "menos de US$ 0,01" : usd.format(micro / 1e6));
 
-/** Nome de cada consulta na etiqueta "de onde veio" da resposta. */
+/** Cada consulta na linha "de onde veio" da resposta: "Dados do estoque e das vendas". */
 export const FONTES: Record<string, string> = {
-  resumo_vendas: "Vendas",
-  estoque: "Estoque",
-  situacao_agora: "Pedidos agora",
-  contas_a_pagar: "Contas a pagar",
-  fiado: "Fiado",
-  clientes_sumidos: "Clientes",
-  horarios: "Horários",
+  resumo_vendas: "das vendas",
+  estoque: "do estoque",
+  situacao_agora: "dos pedidos de agora",
+  contas_a_pagar: "das contas a pagar",
+  fiado: "do fiado",
+  clientes_sumidos: "dos clientes",
+  horarios: "dos horários",
 };
 
 /**
@@ -108,5 +108,8 @@ export function separarResposta(bruta: string) {
     if (s) return void (seguintes = s[1].split("|").map((x) => x.trim()).filter(Boolean).map((x) => x.slice(0, 60)).slice(0, 3));
     return true;
   });
-  return { texto: linhas.join("\n").trim(), destaque, seguintes };
+  const texto = linhas.join("\n").trim();
+  // dado cru (JSON) no lugar da frase: o modelo saiu do formato, e na tela pareceria erro do sistema
+  if (/^[[{]/.test(texto)) return { texto: "Não consegui montar a resposta. Tente perguntar de outro jeito.", destaque: undefined, seguintes: [] };
+  return { texto, destaque, seguintes };
 }

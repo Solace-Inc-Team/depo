@@ -50,3 +50,9 @@ test("resposta: as linhas de destaque e de próximas perguntas saem do texto e v
   // o modelo às vezes põe negrito no rótulo
   assert.equal(separarResposta("Texto\n**DESTAQUE:** 12 botijões").destaque, "12 botijões");
 });
+
+test("resposta em JSON cru não vai para a tela", () => {
+  const r = separarResposta('{"total":"R$ 51,00"}\nSEGUIR: E ontem?');
+  assert.equal(r.texto, "Não consegui montar a resposta. Tente perguntar de outro jeito.");
+  assert.deepEqual(r.seguintes, []);
+});

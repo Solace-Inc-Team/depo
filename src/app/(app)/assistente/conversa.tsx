@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ChartColumn, CornerDownRight, HandCoins, Package, Receipt, RotateCcw, SendHorizontal, Users, type LucideIcon } from "lucide-react";
 import { chamarAcao } from "@/components/action-form";
-import { useSaida } from "@/components/saida";
-import LightRays from "@/components/light-rays";
+import { Aparece, useSaida } from "@/components/saida";
 import { perguntarAssistenteAction } from "@/app/actions";
 
 type Turno = { chave: number; pergunta: string; resposta?: string; destaque?: string; fontes?: string[]; seguintes?: string[]; analise?: boolean };
@@ -27,6 +26,21 @@ function etapa(p: string) {
   if (/hor[aá]rio|pico|hora/i.test(p)) return "Vendo os horários";
   if (/pedido|rota|atras|fila|agora/i.test(p)) return "Vendo os pedidos de agora";
   return "Somando as vendas";
+}
+
+// De onde vem o que acabou de aparecer: a pergunta sai do campo (ou do cartão, ou do botão) e voa até o balão; na
+// primeira, o ponto aceso da entrada desce até o lugar do ponto da espera. Sem isso, a entrada sumia e a conversa
+// aparecia no lugar, num corte seco. Lido e apagado por quem chega (uma vez só), nada anima ao voltar para a tela.
+const semMovimento = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+const CURVA_VOO = "cubic-bezier(0.45, 0, 0.1, 1)";
+
+/** Leva o elemento do retângulo de origem até onde ele está, centro com centro. */
+function voar(el: HTMLElement | null, de: DOMRect | undefined, quadros: (dx: number, dy: number) => Keyframe[], ms: number) {
+  if (!el || !de || semMovimento()) return;
+  const r = el.getBoundingClientRect();
+  const dx = de.left + de.width / 2 - (r.left + r.width / 2);
+  const dy = de.top + de.height / 2 - (r.top + r.height / 2);
+  el.animate(quadros(dx, dy), { duration: ms, easing: CURVA_VOO, fill: "backwards" });
 }
 
 function Esperando({ pergunta }: { pergunta: string }) {
@@ -60,13 +74,6 @@ function mudar(dono: string, f: (e: Estado) => Partial<Estado>) {
   ouvintes.forEach((o) => o());
 }
 
-// o tema mora no data-tema do <html> e pode trocar com a tela aberta
-const assinarTema = (avisar: () => void) => {
-  const o = new MutationObserver(avisar);
-  o.observe(document.documentElement, { attributes: true, attributeFilter: ["data-tema"] });
-  return () => o.disconnect();
-};
-
 /** A luz que segue o ponteiro no cartão de sugestão. */
 const luzNoPonteiro = (e: React.PointerEvent<HTMLElement>) => {
   const r = e.currentTarget.getBoundingClientRect();
@@ -84,17 +91,60 @@ export function Conversa({ dono, restamNoComeco, saudacao }: { dono: string; res
   const [texto, setTexto] = useState("");
   const [restam, setRestam] = useState(restamNoComeco);
   const [limpando, setLimpando] = useState(false);
-  // os feixes de luz só no tema escuro: no claro eles somem no fundo branco e fica a luz parada do topo
-  const escuro = useSyncExternalStore(assinarTema, () => document.documentElement.dataset.tema === "escuro", () => false);
   const area = useRef<HTMLDivElement>(null);
-  const entrada = useSaida(!turnos.length && !limpando, 180);
+  const painel = useRef<HTMLElement>(null);
+  const voo = useRef<{ pergunta?: DOMRect; ponto?: DOMRect }>({});
+  const entrada = useSaida(!turnos.length && !limpando, 320);
+
+  // o quadro vai do lugar onde começa até o pé da tela (acima da barra de baixo, no celular): a caixa de pergunta
+  // fica sempre à vista e só a conversa rola. Remede quando a tela, o teclado ou o aviso do topo mudam a conta
+  useLayoutEffect(() => {
+    const el = painel.current;
+    if (!el) return;
+    const medir = () => {
+      const nav = document.querySelector<HTMLElement>(".nav-inferior");
+      const baixo = nav && getComputedStyle(nav).display !== "none" ? nav.offsetHeight : 0;
+      const tela = window.visualViewport?.height ?? window.innerHeight;
+      const topo = el.getBoundingClientRect().top + window.scrollY;
+      el.style.setProperty("--altura-painel", `${Math.max(320, Math.floor(tela - topo - baixo - 16))}px`);
+      el.dataset.medido = "";
+    };
+    medir();
+    const ro = new ResizeObserver(medir);
+    ro.observe(document.documentElement);
+    window.visualViewport?.addEventListener("resize", medir);
+    window.addEventListener("resize", medir);
+    return () => {
+      ro.disconnect();
+      window.visualViewport?.removeEventListener("resize", medir);
+      window.removeEventListener("resize", medir);
+    };
+  }, []);
+
+  // a pergunta nova voa de onde saiu até o balão; na primeira, o ponto aceso da entrada desce até a espera
+  useLayoutEffect(() => {
+    const { pergunta: de, ponto: dePonto } = voo.current;
+    voo.current = {};
+    const caixa = area.current;
+    if (!caixa || (!de && !dePonto)) return;
+    const balao = [...caixa.querySelectorAll<HTMLElement>(".robo-balao-cliente")].at(-1);
+    if (de && balao) balao.dataset.voando = "";
+    voar(balao ?? null, de, (dx, dy) => [{ translate: `${dx}px ${dy}px`, opacity: 0.3, scale: 0.96 }, { translate: "0 0", opacity: 1, scale: 1 }], 460);
+    const ponto = caixa.querySelector<HTMLElement>("[data-esperando] > .assistente-ponto");
+    const frase = caixa.querySelector<HTMLElement>("[data-esperando] > .texto-brilho");
+    // a frase só aparece quando o ponto pousa (o brilho dela já ocupa a animação do CSS, por isso aqui)
+    if (dePonto && frase && !semMovimento()) frase.animate([{ opacity: 0 }, { opacity: 0, offset: 0.65 }, { opacity: 1 }], { duration: 640, easing: "ease-out" });
+    voar(ponto, dePonto, (dx, dy) => [{ translate: `${dx}px ${dy}px`, scale: 1.5 }, { translate: "0 0", scale: 1 }], 620);
+  }, [turnos.length]);
 
   useEffect(() => {
     area.current?.scrollTo({ top: area.current.scrollHeight, behavior: "smooth" });
   }, [turnos, pendente]);
 
-  function perguntar(pergunta: string) {
+  function perguntar(pergunta: string, de?: Element | null) {
     if (pendente || !restam) return;
+    voo.current.pergunta = de?.getBoundingClientRect();
+    voo.current.ponto = turnos.length ? undefined : document.querySelector(".assistente-fonte > .assistente-ponto")?.getBoundingClientRect();
     const historico = turnos.filter((t) => t.resposta).map((t) => ({ pergunta: t.pergunta, resposta: t.resposta }));
     const id = proximaChave++;
     mudar(dono, (e) => ({ turnos: [...e.turnos, { chave: id, pergunta }], pendente: true, erro: "" }));
@@ -122,17 +172,18 @@ export function Conversa({ dono, restamNoComeco, saudacao }: { dono: string; res
 
   const ultimo = turnos.at(-1);
   return (
-    <section className="assistente-painel panel flex flex-col overflow-hidden">
+    <section ref={painel} className="assistente-painel panel flex flex-col overflow-hidden">
       <div ref={area} className="assistente-conversa" data-limpando={limpando || undefined} role="log" aria-live="polite">
         {entrada.montado && (
           <div className="assistente-entrada" data-saindo={entrada.saindo || undefined}>
-            <div aria-hidden="true" className="topo-luz absolute inset-0 -z-10" style={{ "--luz-forca": "26%" } as React.CSSProperties} />
-            {escuro && (
-              <div aria-hidden="true" className="absolute inset-0 -z-10">
-                <LightRays raysColor="#cfdcff" intensity={1.1} opacity={1} rayLength={1.6} followMouse={false} cursorShadow={false} clickPulse={false} />
-              </div>
-            )}
-            <span aria-hidden="true" className="assistente-ponto" />
+            {/* a luz da tela nasce do ponto: um brilho em volta e anéis que se abrem devagar (o Magic Rings do React Bits,
+                em CSS); é a mesma língua do ponto que pulsa enquanto o assistente consulta */}
+            <span aria-hidden="true" className="assistente-fonte">
+              <span className="assistente-anel" />
+              <span className="assistente-anel" />
+              <span className="assistente-anel" />
+              <span className="assistente-ponto" />
+            </span>
             <div className="text-center">
               <h2 className="assistente-saudacao text-xl font-semibold tracking-tight">
                 {saudacao.split(" ").map((p, i) => (
@@ -153,10 +204,10 @@ export function Conversa({ dono, restamNoComeco, saudacao }: { dono: string; res
                   style={{ "--i": i } as React.CSSProperties}
                   aria-disabled={pendente || !restam}
                   onPointerMove={luzNoPonteiro}
-                  onClick={() => {
+                  onClick={(e) => {
                     // o cartão some com a entrada: o foco vai para o campo (no celular não, que abriria o teclado)
                     if (matchMedia("(pointer: fine)").matches) document.getElementById("assistente-texto")?.focus();
-                    perguntar(s);
+                    perguntar(s, e.currentTarget);
                   }}
                 >
                   <Icone size={16} strokeWidth={1.75} aria-hidden="true" />
@@ -183,7 +234,7 @@ export function Conversa({ dono, restamNoComeco, saudacao }: { dono: string; res
                   </div>
                   {(t.fontes?.length || t.analise) && (
                     <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-[12px] text-muted">
-                      {!!t.fontes?.length && <span>Dados de {t.fontes.join(", ")}</span>}
+                      {!!t.fontes?.length && <span>Dados {t.fontes.join(" e ")}</span>}
                       {t.analise && <span className="font-medium text-accent">Análise detalhada</span>}
                     </p>
                   )}
@@ -191,7 +242,7 @@ export function Conversa({ dono, restamNoComeco, saudacao }: { dono: string; res
                   {t === ultimo && !pendente && !!t.seguintes?.length && (
                     <div className="mt-2.5 flex flex-wrap gap-2">
                       {t.seguintes.map((s) => (
-                        <button key={s} type="button" className="btn btn-sm" aria-disabled={!restam} onClick={() => perguntar(s)}>
+                        <button key={s} type="button" className="btn btn-sm" aria-disabled={!restam} onClick={(e) => perguntar(s, e.currentTarget)}>
                           <CornerDownRight size={14} aria-hidden="true" /> {s}
                         </button>
                       ))}
@@ -217,7 +268,7 @@ export function Conversa({ dono, restamNoComeco, saudacao }: { dono: string; res
           const t = texto.trim();
           if (!t) return;
           setTexto("");
-          perguntar(t);
+          perguntar(t, document.getElementById("assistente-texto"));
         }}
       >
         <label htmlFor="assistente-texto" className="sr-only">Sua pergunta</label>
@@ -235,12 +286,15 @@ export function Conversa({ dono, restamNoComeco, saudacao }: { dono: string; res
           <SendHorizontal size={16} aria-hidden="true" /> <span className="max-sm:sr-only">Perguntar</span>
         </button>
       </form>
-      <div className="assistente-faixa flex items-center justify-between gap-3 border-t border-line py-2 text-[12px] text-muted">
-        <span className="num">{restam === 1 ? "Resta 1 pergunta hoje" : `Restam ${restam} perguntas hoje`}</span>
-        <button type="button" className="btn btn-sm" onClick={recomecar} disabled={!turnos.length || limpando || pendente}>
-          <RotateCcw size={14} aria-hidden="true" /> Nova conversa
-        </button>
-      </div>
+      {/* o rodapé só quando ajuda: o contador perto do fim do dia, e "Nova conversa" quando há conversa */}
+      <Aparece quando={restam <= 10 || turnos.length > 0}>
+        <div className="assistente-faixa flex min-h-12 items-center justify-between gap-3 border-t border-line py-2 text-[12px] text-muted">
+          <span className="num">{restam > 10 ? "" : restam === 1 ? "Resta 1 pergunta hoje" : `Restam ${restam} perguntas hoje`}</span>
+          <button type="button" className="btn btn-sm" onClick={recomecar} disabled={!turnos.length || limpando || pendente}>
+            <RotateCcw size={14} aria-hidden="true" /> Nova conversa
+          </button>
+        </div>
+      </Aparece>
     </section>
   );
 }
