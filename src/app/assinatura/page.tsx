@@ -7,9 +7,9 @@ import { AtualizaSozinho } from "@/components/atualiza-sozinho";
 import { MarcaDaSessao } from "@/components/logo";
 import { PixBox } from "@/components/pix-box";
 import { fmtDateTime, fmtTime } from "@/components/ui";
-import { cobrancaLigada, conferirAssinatura, conferirCartao, pagamentosFeitos, pixEmAberto } from "@/domain/assinatura";
+import { cobrancaLigada, conferirAssinatura, conferirCartao, pagamentosFeitos, pixEmAberto, precoDaEmpresa } from "@/domain/assinatura";
 import { formatBRL } from "@/lib/money";
-import { PLANO, dataBR, situacaoAssinatura } from "@/lib/plano";
+import { dataBR, situacaoAssinatura } from "@/lib/plano";
 import { todayISO } from "@/lib/period";
 import { INCLUSO } from "@/app/inicio/contato";
 import { ArrowLeft, ArrowRight, Check, CreditCard, Lock, LogOut } from "lucide-react";
@@ -48,7 +48,9 @@ export default async function Assinatura() {
   const [aberto, feitos] = dono ? await Promise.all([pixEmAberto(user.tenantId), pagamentosFeitos(user.tenantId)]) : [null, []];
   const emTeste = feitos.length === 0;
   const venceu = sit.dias < 0;
-  const valor = formatBRL(PLANO.mensalCents);
+  // quem já pagava antes do reajuste continua no preço antigo: cada empresa vê o seu
+  const preco = await precoDaEmpresa(user.tenantId);
+  const valor = formatBRL(preco);
   // o Pix (ou o cartão) caiu agora há pouco: a tela recarrega sozinha e mostra a confirmação no lugar do aviso de espera
   const acabouDePagar = !aberto && pagoHaPouco((feitos as Awaited<ReturnType<typeof pagamentosFeitos>>)[0]?.pagoEm);
 
@@ -126,7 +128,7 @@ export default async function Assinatura() {
               <p className="text-[13px] font-medium text-muted">Plano mensal</p>
               <p className="mt-1 flex items-baseline gap-1.5">
                 {/* NumberFlow (via LiveNumber): rola até o preço ao abrir, já no formato R$, e chega rápido no valor certo */}
-                <LiveNumber value={PLANO.mensalCents} cents fromZero className="text-[2.25rem] leading-none font-semibold tracking-[-0.03em]" />
+                <LiveNumber value={preco} cents fromZero className="text-[2.25rem] leading-none font-semibold tracking-[-0.03em]" />
                 <span className="text-muted">/mês</span>
               </p>
               {/* quem ainda não assinou vê o que está comprando */}

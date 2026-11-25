@@ -1,7 +1,10 @@
 // O plano do depo e a conta de quando o acesso vence. Pura, sem banco.
 
 export const PLANO = {
-  mensalCents: 12900,
+  /** o preço de quem assina agora */
+  mensalCents: 14900,
+  /** o preço de antes do reajuste de 24/11/2026: quem já tinha pago uma mensalidade nele continua nele */
+  precoMantidoCents: 12900,
   /** dias de uso grátis depois do cadastro */
   diasGratis: 14,
   /** depois de vencer, dias em que o sistema ainda abre (com aviso) antes de pausar */

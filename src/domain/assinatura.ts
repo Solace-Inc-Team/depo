@@ -15,8 +15,30 @@ export const cobrancaLigada = () => !!tokenSolace();
 
 const PRAZO_MS = 24 * 60 * 60 * 1000;
 
+/**
+ * O preço da mensalidade desta empresa: quem já pagou uma mensalidade no preço de antes do reajuste continua nele,
+ * no Pix e no cartão; quem chegou depois paga o atual.
+ */
+export async function precoDaEmpresa(tenantId: string) {
+  const [antigo] = await withTenant(tenantId, () =>
+    db
+      .select({ id: assinaturaPagamentos.id })
+      .from(assinaturaPagamentos)
+      .where(
+        and(
+          eq(assinaturaPagamentos.tenantId, tenantId),
+          isNotNull(assinaturaPagamentos.pagoEm),
+          eq(assinaturaPagamentos.valorCents, PLANO.precoMantidoCents),
+        ),
+      )
+      .limit(1),
+  );
+  return antigo ? PLANO.precoMantidoCents : PLANO.mensalCents;
+}
+
 /** Pix da mensalidade em aberto, se ainda dá tempo de pagar. */
-export function pixEmAberto(tenantId: string) {
+export async function pixEmAberto(tenantId: string) {
+  const preco = await precoDaEmpresa(tenantId);
   return withTenant(tenantId, async () => {
     const [c] = await db
       .select()
@@ -25,7 +47,7 @@ export function pixEmAberto(tenantId: string) {
         and(
           eq(assinaturaPagamentos.tenantId, tenantId),
           isNull(assinaturaPagamentos.pagoEm),
-          eq(assinaturaPagamentos.valorCents, PLANO.mensalCents),
+          eq(assinaturaPagamentos.valorCents, preco),
           gt(assinaturaPagamentos.expiraEm, new Date(Date.now() + 10 * 60_000)),
         ),
       )
@@ -90,10 +112,11 @@ async function gerarPix(ctx: Ctx) {
   // o id nasce aqui: vai como referência e como chave, então dois cliques não criam duas cobranças
   const id = randomUUID();
   const expiraEm = new Date(Date.now() + PRAZO_MS);
+  const preco = await precoDaEmpresa(ctx.tenantId);
   let novo: { id: string; codigo: string };
   try {
     novo = await criarPixMp(token, {
-      valorCents: PLANO.mensalCents,
+      valorCents: preco,
       referencia: `assinatura-${id}`,
       emailPagador: email,
       expiraEm,
@@ -106,7 +129,7 @@ async function gerarPix(ctx: Ctx) {
   return withTenant(ctx.tenantId, async () => {
     const [c] = await db
       .insert(assinaturaPagamentos)
-      .values({ id, tenantId: ctx.tenantId, mpPaymentId: novo.id, codigo: novo.codigo, valorCents: PLANO.mensalCents, expiraEm })
+      .values({ id, tenantId: ctx.tenantId, mpPaymentId: novo.id, codigo: novo.codigo, valorCents: preco, expiraEm })
       .returning();
     return c;
   });
@@ -187,8 +210,9 @@ export async function conferirCartao(tenantId: string) {
     console.error(`[assinatura] consulta do cartão de ${tenantId} falhou:`, (e as Error).message);
     return null;
   }
-  // só vale a assinatura criada para esta empresa, com o valor do plano
-  if (a.referencia !== referenciaCartao(tenantId) || a.valorCents !== PLANO.mensalCents) return null;
+  // só vale a assinatura criada para esta empresa, num valor do plano: a de antes do reajuste continua cobrando
+  // o preço antigo, e só o depo cria assinatura com esta referência
+  if (a.referencia !== referenciaCartao(tenantId) || (a.valorCents !== PLANO.mensalCents && a.valorCents !== PLANO.precoMantidoCents)) return null;
   const novas = a.cobradas - t.cobradas;
   let caiu = false;
   if (novas > 0) {
@@ -251,7 +275,7 @@ export async function assinarNoCartao(ctx: Ctx, email: string) {
   let nova: Awaited<ReturnType<typeof criarAssinaturaMp>>;
   try {
     nova = await criarAssinaturaMp(token, {
-      valorCents: PLANO.mensalCents,
+      valorCents: await precoDaEmpresa(ctx.tenantId),
       referencia: referenciaCartao(ctx.tenantId),
       emailPagador: email,
       motivo: `depo: mensalidade de ${t.nome}`.slice(0, 120),

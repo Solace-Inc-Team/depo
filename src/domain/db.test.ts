@@ -1937,3 +1937,50 @@ test("estoque baixo só abaixo do mínimo: igual ao mínimo não avisa", async (
   await m.registry.saveProduct(A.ctx, { name: "Galão Mínimo", priceCents: 1400, returnable: false, minStock: 11, active: true }, p.id);
   assert.equal((await linha()).low, true);
 });
+
+test("reajuste da mensalidade: quem já pagou no preço antigo continua nele, no Pix e no cartão; quem chega paga o novo", async () => {
+  const { db } = m.db;
+  const { tenants, branches, assinaturaPagamentos } = m.schema;
+  const { eq } = await import("drizzle-orm");
+  const mp = await import("@/lib/mercadopago");
+  const ass = await import("@/domain/assinatura");
+  const { PLANO } = await import("@/lib/plano");
+  const nova = async (nome: string) => {
+    const { tenant, ownerId } = await m.platform.cadastrarEmpresa(
+      m.platform.cadastroSchema.parse({ company: nome, ownerName: "Ana", email: `ana-${Date.now()}-${Math.random()}@cadastro.test`, password: "senha-boa-1", vende: "agua" }),
+      "v1",
+    );
+    const [filial] = await db.select().from(branches).where(eq(branches.tenantId, tenant.id));
+    return { tenant, dono: { tenantId: tenant.id, userId: ownerId, role: "dono" as const, branchId: filial.id } };
+  };
+  const antiga = await nova("Água de Antes");
+  const recente = await nova("Água de Agora");
+  // a antiga pagou uma mensalidade no preço de antes do reajuste
+  await db.insert(assinaturaPagamentos).values({ tenantId: antiga.tenant.id, mpPaymentId: "antiga-1", codigo: "x", valorCents: PLANO.precoMantidoCents, expiraEm: new Date(), pagoEm: new Date() });
+  assert.equal(await ass.precoDaEmpresa(antiga.tenant.id), PLANO.precoMantidoCents);
+  assert.equal(await ass.precoDaEmpresa(recente.tenant.id), PLANO.mensalCents);
+  assert.notEqual(PLANO.mensalCents, PLANO.precoMantidoCents);
+
+  process.env.MP_TOKEN_SOLACE = "APP_USR-solace";
+  let n = 0;
+  const assinaturas = new Map<string, { valor: number; cobradas: number }>([["2c93808400000000000000000000aaaa", { valor: PLANO.precoMantidoCents, cobradas: 1 }]]);
+  mp.usarRede(async (url, init) => {
+    const caminho = String(url).replace("https://api.mercadopago.com", "");
+    const json = (o: unknown) => new Response(JSON.stringify(o), { status: 200 });
+    if (caminho.startsWith("/v1/orders") && init?.method === "POST") {
+      const b = JSON.parse(String(init.body));
+      n++;
+      return json({ id: `ORD${n}`, status: "action_required", total_amount: b.total_amount, transactions: { payments: [{ id: `PAY${n}`, payment_method: { qr_code: `PIX${b.total_amount}` } }] } });
+    }
+    const a = assinaturas.get(caminho.split("/").pop()!);
+    if (a) return json({ id: caminho.split("/").pop(), status: "authorized", external_reference: `assinatura-cartao:${antiga.tenant.id}`, auto_recurring: { transaction_amount: a.valor / 100 }, summarized: { charged_quantity: a.cobradas } });
+    return new Response("{}", { status: 404 });
+  });
+  // o Pix de cada uma sai no preço dela
+  assert.equal((await ass.pixAssinatura(antiga.dono)).valorCents, PLANO.precoMantidoCents);
+  assert.equal((await ass.pixAssinatura(recente.dono)).valorCents, PLANO.mensalCents);
+  // o cartão ligado antes do reajuste continua cobrando o preço antigo e somando o mês
+  await db.update(tenants).set({ mpAssinaturaId: "2c93808400000000000000000000aaaa", mpAssinaturaCobradas: 0 }).where(eq(tenants.id, antiga.tenant.id));
+  assert.equal((await ass.conferirCartao(antiga.tenant.id))?.caiu, true);
+  delete process.env.MP_TOKEN_SOLACE;
+});

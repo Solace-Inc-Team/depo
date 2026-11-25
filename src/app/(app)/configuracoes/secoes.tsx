@@ -27,6 +27,7 @@ import { CaixaQueSalva } from "@/components/caixa-que-salva";
 import { CopyButton } from "@/components/copy-button";
 import { JanelaAcao } from "@/components/janela-acao";
 import { PLANO, dataBR, situacaoAssinatura } from "@/lib/plano";
+import { precoDaEmpresa } from "@/domain/assinatura";
 import { todayISO } from "@/lib/period";
 import { formatBRL } from "@/lib/money";
 import { appMp } from "@/lib/mercadopago";
@@ -121,6 +122,7 @@ export async function secoesConfig(tenantId: string, pagoAte: string | null) {
       )
     : [];
   const plano = situacaoAssinatura(pagoAte, todayISO());
+  const preco = plano ? await precoDaEmpresa(tenantId) : PLANO.mensalCents;
 
   return {
     empresa: (
@@ -342,7 +344,7 @@ export async function secoesConfig(tenantId: string, pagoAte: string | null) {
         <Cabecalho titulo="Assinatura" descricao="O plano da sua revenda no depo." />
         {plano ? (
           <Grupo>
-            <Linha icone={BadgeCheck} titulo="Plano mensal" descricao={`${formatBRL(PLANO.mensalCents)} por mês, pago com Pix.`}>
+            <Linha icone={BadgeCheck} titulo="Plano mensal" descricao={`${formatBRL(preco)} por mês.`}>
               <Link href="/assinatura" className="btn btn-primary btn-sm">Ver assinatura</Link>
             </Linha>
             <Linha
