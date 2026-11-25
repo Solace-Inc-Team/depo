@@ -5,13 +5,27 @@ import { requireUser } from "@/lib/auth";
 import { countOrdersByStatus, listOrders } from "@/domain/queries";
 import { after } from "next/server";
 import { cancelarPixVencidos } from "@/domain/pix";
-import { Money, PageHeader, SiteBadge, StatusBadge, fmtQuando, paymentLabel } from "@/components/ui";
+import { Money, PageHeader, SiteBadge, StatusBadge, fmtTime, paymentLabel } from "@/components/ui";
+import { agruparPorDia, rotuloDia, todayISO } from "@/lib/period";
+import { formatBRL } from "@/lib/money";
 import { LiveNumber } from "@/components/live-number";
 import { CampoBusca } from "@/components/campo-busca";
 
 export const metadata = { title: "Pedidos" };
 
 // pedido lançado há menos de um minuto acende na lista
+function CabecalhoDia({ g }: { g: { rotulo: string; itens: unknown[]; entregue: number } }) {
+  return (
+    <span className="flex items-baseline justify-between gap-3 border-b border-line bg-subtle/60 px-4 py-2 text-[13px]">
+      <span className="font-medium text-fg">{g.rotulo}</span>
+      <span className="text-muted">
+        {g.itens.length} {g.itens.length === 1 ? "pedido" : "pedidos"}
+        {g.entregue > 0 && <>, <span className="num whitespace-nowrap">{formatBRL(g.entregue)}</span> entregues</>}
+      </span>
+    </span>
+  );
+}
+
 const isNew = (d: Date) => Date.now() - d.getTime() < 60_000;
 
 const tabs = [
@@ -39,6 +53,13 @@ export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
     listOrders(user.tenantId, { status: current || undefined, q, branchId: user.branchId }),
     countOrdersByStatus(user.tenantId, user.branchId),
   ]);
+  // blocos por dia, cada um com quantos pedidos e quanto foi entregue: o dono acha o dia de que lembra
+  const hoje = todayISO();
+  const dias = agruparPorDia(orders, (o) => o.createdAt).map((g) => ({
+    ...g,
+    rotulo: rotuloDia(g.dia, hoje),
+    entregue: g.itens.filter((o) => o.status === "entregue").reduce((t, o) => t + o.totalCents, 0),
+  }));
   const href = (status: string) => {
     const p = new URLSearchParams();
     if (status) p.set("status", status);
@@ -100,25 +121,32 @@ export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
           <>
           {/* no celular, cartão por pedido: o que importa na primeira linha, o resto embaixo */}
           <ul className="sm:hidden">
-            {orders.map((o) => (
-              <li key={o.id} className={`border-b border-line last:border-0 ${isNew(o.createdAt) ? "row-new" : ""}`}>
-                <Link href={`/pedidos/${o.id}`} className="block px-4 py-3 active:bg-subtle">
-                  <span className="flex items-baseline justify-between gap-3">
-                    <span className="min-w-0 truncate font-medium">
-                      <span className="num font-normal text-muted">#{o.number}</span> {o.customerName ?? "Balcão"}
-                    </span>
-                    <Money cents={o.totalCents} className="shrink-0 font-medium" />
-                  </span>
-                  {o.customerAddress && <span className="mt-0.5 block truncate text-[13px] text-muted">{o.customerAddress}</span>}
-                  <span className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted">
-                    <StatusBadge status={o.status} />
-                    {o.origin === "portal" && <SiteBadge />}
-                    <span>
-                      {paymentLabel[o.paymentMethod]}
-                      {o.driverName ? `, ${o.driverName}` : ""}, {fmtQuando(o.createdAt)}
-                    </span>
-                  </span>
-                </Link>
+            {dias.map((g) => (
+              <li key={g.dia} className="pedidos-grupo">
+                <CabecalhoDia g={g} />
+                <ul>
+                  {g.itens.map((o) => (
+                    <li key={o.id} className={`border-b border-line last:border-0 ${isNew(o.createdAt) ? "row-new" : ""}`}>
+                      <Link href={`/pedidos/${o.id}`} className="block px-4 py-3 active:bg-subtle">
+                        <span className="flex items-baseline justify-between gap-3">
+                          <span className="min-w-0 truncate font-medium">
+                            <span className="num font-normal text-muted">#{o.number}</span> {o.customerName ?? "Balcão"}
+                          </span>
+                          <Money cents={o.totalCents} className="shrink-0 font-medium" />
+                        </span>
+                        {o.customerAddress && <span className="mt-0.5 block truncate text-[13px] text-muted">{o.customerAddress}</span>}
+                        <span className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted">
+                          <StatusBadge status={o.status} />
+                          {o.origin === "portal" && <SiteBadge />}
+                          <span>
+                            {paymentLabel[o.paymentMethod]}
+                            {o.driverName ? `, ${o.driverName}` : ""}, {fmtTime(o.createdAt)}
+                          </span>
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
               </li>
             ))}
           </ul>
@@ -135,26 +163,33 @@ export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
                 <th className="text-right">Total</th>
               </tr>
             </thead>
-            <tbody>
-              {orders.map((o) => (
-                <tr key={o.id} className={isNew(o.createdAt) ? "row-new" : undefined}>
-                  <td className="num text-muted">
-                    <Link href={`/pedidos/${o.id}`} className="hover:text-fg">#{o.number}</Link>
-                  </td>
-                  <td>
-                    <Link href={`/pedidos/${o.id}`} className="font-medium hover:underline">{o.customerName ?? "Balcão"}</Link>
-                    {o.customerAddress && <p className="text-[13px] text-muted">{o.customerAddress}</p>}
-                  </td>
-                  {/* entregue sem entregador é venda no balcão; sem entregador ainda é pedido esperando */}
-                  <td>{o.driverName ?? <span className="whitespace-nowrap text-muted">{semEntregador[o.status] ?? ""}</span>}</td>
-                  <td className="whitespace-nowrap text-muted">{fmtQuando(o.createdAt)}</td>
-                  {/* pagamento é informação de apoio: no peso do cliente, competia com o nome */}
-                  <td className="whitespace-nowrap text-muted">{paymentLabel[o.paymentMethod]}</td>
-                  <td className="whitespace-nowrap"><StatusBadge status={o.status} />{o.origin === "portal" && <SiteBadge />}</td>
-                  <td className="text-right font-medium"><Money cents={o.totalCents} /></td>
+            {dias.map((g) => (
+              <tbody key={g.dia} className="pedidos-grupo">
+                <tr className="pedidos-dia">
+                  <th colSpan={7} scope="colgroup" className="font-normal">
+                    <CabecalhoDia g={g} />
+                  </th>
                 </tr>
-              ))}
-            </tbody>
+                {g.itens.map((o) => (
+                  <tr key={o.id} className={isNew(o.createdAt) ? "row-new" : undefined}>
+                    <td className="num text-muted">
+                      <Link href={`/pedidos/${o.id}`} className="hover:text-fg">#{o.number}</Link>
+                    </td>
+                    <td>
+                      <Link href={`/pedidos/${o.id}`} className="font-medium hover:underline">{o.customerName ?? "Balcão"}</Link>
+                      {o.customerAddress && <p className="text-[13px] text-muted">{o.customerAddress}</p>}
+                    </td>
+                    {/* entregue sem entregador é venda no balcão; sem entregador ainda é pedido esperando */}
+                    <td>{o.driverName ?? <span className="whitespace-nowrap text-muted">{semEntregador[o.status] ?? ""}</span>}</td>
+                    <td className="whitespace-nowrap text-muted">{fmtTime(o.createdAt)}</td>
+                    {/* pagamento é informação de apoio: no peso do cliente, competia com o nome */}
+                    <td className="whitespace-nowrap text-muted">{paymentLabel[o.paymentMethod]}</td>
+                    <td className="whitespace-nowrap"><StatusBadge status={o.status} />{o.origin === "portal" && <SiteBadge />}</td>
+                    <td className="text-right font-medium"><Money cents={o.totalCents} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            ))}
           </table>
           </div>
           </>

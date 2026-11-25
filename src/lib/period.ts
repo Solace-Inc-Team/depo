@@ -34,3 +34,28 @@ export const duracao = (min: number) =>
       : min % 60
         ? `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, "0")}`
         : `${min / 60} h`;
+
+const diaLocal = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo" });
+const diaSemana = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "2-digit", month: "2-digit", timeZone: "UTC" });
+const diaComAno = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" });
+
+/** Agrupa pela data em São Paulo, na ordem em que os itens vêm (a lista já chega do mais novo para o mais velho). */
+export function agruparPorDia<T>(itens: T[], data: (x: T) => Date) {
+  const grupos: { dia: string; itens: T[] }[] = [];
+  for (const x of itens) {
+    const dia = diaLocal.format(data(x));
+    const ultimo = grupos.at(-1);
+    if (ultimo?.dia === dia) ultimo.itens.push(x);
+    else grupos.push({ dia, itens: [x] });
+  }
+  return grupos;
+}
+
+/** "Hoje", "Ontem", "Sexta-feira, 21/11"; de outro ano, com o ano. `hoje` em YYYY-MM-DD. */
+export function rotuloDia(dia: string, hoje: string) {
+  if (dia === hoje) return "Hoje";
+  if (dia === somaDias(hoje, -1)) return "Ontem";
+  const d = new Date(dia + "T12:00:00Z");
+  const t = (dia.slice(0, 4) === hoje.slice(0, 4) ? diaSemana : diaComAno).format(d);
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}

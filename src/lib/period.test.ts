@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { dataISO, duracao, parsePeriod, somaDias } from "./period.ts";
+import { agruparPorDia, dataISO, duracao, parsePeriod, rotuloDia, somaDias } from "./period.ts";
 
 test("período com o De depois do Até é trocado, em vez de sair vazio", () => {
   const p = parsePeriod({ de: "2026-11-16", ate: "2026-11-01" });
@@ -29,4 +29,18 @@ test("duracao: minutos, horas e, passado de um dia, dias", () => {
   assert.equal(duracao(180), "3 h");
   assert.equal(duracao(1500), "1 dia");
   assert.equal(duracao(8165), "5 dias");
+});
+
+test("agruparPorDia: separa pela data de São Paulo, não pela UTC", () => {
+  // 23:30 de 23/11 em São Paulo já é 24/11 em UTC
+  const itens = [new Date("2026-11-24T15:00:00Z"), new Date("2026-11-24T02:30:00Z"), new Date("2026-11-23T20:00:00Z")];
+  const g = agruparPorDia(itens, (d) => d);
+  assert.deepEqual(g.map((x) => [x.dia, x.itens.length]), [["2026-11-24", 1], ["2026-11-23", 2]]);
+});
+
+test("rotuloDia: hoje, ontem, dia da semana e, de outro ano, com o ano", () => {
+  assert.equal(rotuloDia("2026-11-24", "2026-11-24"), "Hoje");
+  assert.equal(rotuloDia("2026-11-23", "2026-11-24"), "Ontem");
+  assert.equal(rotuloDia("2026-11-20", "2026-11-24"), "Sexta-feira, 20/11");
+  assert.equal(rotuloDia("2025-12-31", "2026-01-02"), "Quarta-feira, 31/12/2025");
 });

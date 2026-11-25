@@ -4411,3 +4411,18 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
     --rola-fim: 0px;
   }
 }
+
+/* pedidos agrupados por dia: o cabeçalho de cada dia é uma faixa própria; entre um dia e outro, uma linha (o último
+   pedido do dia não tem borda) sem dobrar a borda do painel no primeiro */
+.table .pedidos-dia th {
+  padding: 0;
+  border-bottom: 0;
+  text-align: left;
+}
+.pedidos-grupo + .pedidos-grupo .pedidos-dia th,
+.pedidos-grupo + .pedidos-grupo > :first-child {
+  border-top: 1px solid var(--line);
+}
+.table tbody tr.pedidos-dia:hover {
+  background: none;
+}
