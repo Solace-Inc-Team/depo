@@ -162,7 +162,7 @@ test("cada perfil só entra no que é seu", async ({ page }) => {
 test("na raiz, visitante vê a apresentação e quem está logado cai no painel", async ({ page }) => {
   await page.context().clearCookies();
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Onde está cada casco");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Onde está cada vasilhame");
 
   await entrar(page, "dono@demo.com");
   await page.goto("/");

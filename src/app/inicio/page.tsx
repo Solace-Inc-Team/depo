@@ -19,12 +19,12 @@ import { Peca } from "./peca";
 // fechamento curto. A luz esquenta conforme a página desce, do azul da manhã ao âmbar do fim do dia.
 export const metadata = {
   title: { absolute: "depo: gestão para revendas de água e gás" },
-  description: "Pedido, entrega, cascos e acerto de caixa num lugar só, para revendas de água e gás.",
+  description: "Pedido, entrega, vasilhames e acerto de caixa num lugar só, para revendas de água e gás.",
   // a vitrine abre em "/" para quem não está logado e em /inicio para quem está: os buscadores contam uma só
   alternates: { canonical: "/" },
 };
 
-const titulo = ["Onde está cada casco.", "Quanto cada entregador te deve."].map((l) => l.split(" "));
+const titulo = ["Onde está cada vasilhame.", "Quanto cada entregador te deve."].map((l) => l.split(" "));
 const atraso = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
 const temZap = WHATSAPP !== "";
 const zap = linkWhatsApp("Olá! Quero conhecer o depo para a minha revenda.");
@@ -101,9 +101,9 @@ export default function Inicio() {
                     <Fragment key={i}>
                       <span style={atraso(60 + (l * titulo[0].length + i) * 35)} className="hero-word">
                         {/* o que a revenda guarda muda de nome conforme o produto: a palavra troca sozinha */}
-                        {w === "casco." ? (
+                        {w === "vasilhame." ? (
                           <>
-                            <PalavraQueGira palavras={["casco", "galão", "botijão"]} sufixo="." />
+                            <PalavraQueGira palavras={["vasilhame", "galão", "botijão"]} sufixo="." />
                           </>
                         ) : (
                           w
@@ -115,7 +115,7 @@ export default function Inicio() {
               ))}
             </h1>
             <p style={atraso(320)} className="hero-in mx-auto mt-5 text-[16px] text-muted sm:text-[18px]">
-              Pedido, entrega, cascos e acerto de caixa num lugar só.
+              Pedido, entrega, vasilhames e acerto de caixa num lugar só.
             </p>
             <div style={atraso(400)} className="hero-in mt-8 flex flex-wrap justify-center gap-3">
               <BotaoContato />
@@ -205,7 +205,7 @@ export default function Inicio() {
 
             <Peca className="bento lg:col-span-2">
               <h3 className="text-[17px] font-semibold tracking-tight">Estoque que fecha sozinho</h3>
-              <p className="mt-1.5 text-muted">Saiu cheio, voltou vazio. Cliente sem casco paga o vasilhame; o amassado sai como avariado.</p>
+              <p className="mt-1.5 text-muted">Saiu cheio, voltou vazio. Cliente sem vazio para trocar paga o vasilhame; o amassado sai como avariado.</p>
               <div className="estoque-mosaico mt-8 flex flex-wrap items-end gap-x-12 gap-y-6">
                 {[
                   { nome: "Galão de água 20L", cheios: 40, vazios: 19, baixo: false },

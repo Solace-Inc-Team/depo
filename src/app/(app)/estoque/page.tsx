@@ -212,7 +212,7 @@ export default async function Estoque() {
           </tbody>
         </table>
         <p className="border-t border-line px-4 py-3 text-sm text-muted">
-          O total de vasilhames não deve cair. Se cair, há casco que saiu sem voltar.
+          O total de vasilhames não deve cair. Se cair, há vasilhame que saiu sem voltar.
         </p>
       </section>
 

@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { TextoQueTroca } from "@/components/texto-que-troca";
 
 /**
- * Uma palavra do título que troca sozinha ("casco", "galão", "botijão"), como o Rotating Text do React Bits, mas
+ * Uma palavra do título que troca sozinha ("vasilhame", "galão", "botijão"), como o Rotating Text do React Bits, mas
  * com a troca do próprio sistema (sobe desfocando, a nova vem de baixo). A largura acompanha a palavra devagar,
  * para o resto da linha não pular. O leitor de tela ouve só a primeira; com movimento reduzido, nada troca.
  * `sufixo` (o ponto final) troca junto com a palavra. No celular a largura fica a da maior palavra: a quebra da

@@ -4177,10 +4177,15 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   left: 0;
 }
 @media (max-width: 639px) {
-  /* a sobra fica depois do ponto, no fim da linha: no meio ("cada  casco.") parecia espaço dobrado */
+  /* no celular a palavra que gira fica numa linha só dela, centralizada: com "vasilhame." bem mais larga que
+     "galão.", a largura reservada deixava um buraco do lado da palavra curta e a linha parecia torta. Sozinha
+     na linha, cada palavra se centraliza e a quebra do título não muda a cada troca */
+  .hero-word:has(> .palavra-gira) {
+    display: block;
+  }
   .palavra-gira {
-    width: var(--maior) !important;
-    text-align: left;
+    width: auto !important;
+    text-align: center;
   }
 }
 @media (prefers-reduced-motion: reduce) {
