@@ -19,6 +19,7 @@ import {
   Tag,
   UserCog,
   History,
+  MessageSquareText,
   type LucideIcon,
 } from "lucide-react";
 
@@ -38,6 +39,7 @@ const icons: Record<string, LucideIcon> = {
   "/produtos": Tag,
   "/equipe": UserCog,
   "/auditoria": History,
+  "/assistente": MessageSquareText,
   "/ajuda": CircleHelp,
 };
 

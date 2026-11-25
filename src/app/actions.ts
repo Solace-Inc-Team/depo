@@ -37,6 +37,7 @@ import { apontarWebhook, conectarWhatsapp, conexaoWhatsapp, desconectarWhatsapp,
 import type { Saida } from "@/lib/robo";
 import { FILIAL_COOKIE } from "@/lib/auth";
 import { todayISO } from "@/lib/period";
+import { perguntar } from "@/domain/assistente";
 
 // o Postgres recusa o byte nulo em texto: virava erro 500 em vez de campo vazio
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").replaceAll("\0", "").trim();
@@ -1010,4 +1011,14 @@ export async function desconectarWhatsappAction(): Promise<RespostaConexao> {
     await desconectarWhatsapp(user);
     return { estado: "sem" };
   });
+}
+
+export async function perguntarAssistenteAction(pergunta: unknown, historico: unknown): Promise<{ resposta?: string; analise?: boolean; restam?: number; erro?: string }> {
+  const user = await requireUser("dono");
+  try {
+    return await perguntar(user, pergunta, historico);
+  } catch (err) {
+    if (err instanceof DomainError) return { erro: err.message };
+    throw err;
+  }
 }

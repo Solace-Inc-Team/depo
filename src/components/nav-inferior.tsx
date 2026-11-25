@@ -10,6 +10,7 @@ import {
   Ellipsis,
   HandCoins,
   History,
+  MessageSquareText,
   KeyRound,
   LayoutGrid,
   Package,
@@ -42,6 +43,7 @@ const icones: Record<string, LucideIcon> = {
   "/produtos": Tag,
   "/equipe": UserRoundCog,
   "/auditoria": History,
+  "/assistente": MessageSquareText,
 };
 
 export type ItemMais = { href: string; label: string };

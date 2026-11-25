@@ -1306,6 +1306,13 @@ body[data-confirmando] .deliver-btn {
 }
 :is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-receipt-text > path:nth-child(2) { animation-delay: 80ms; }
 :is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-receipt-text > path:nth-child(3) { animation-delay: 160ms; }
+/* assistente: as linhas da resposta se escrevem dentro do balão */
+:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-message-square-text > path:nth-child(n + 2) {
+  stroke-dasharray: 12;
+  animation: icone-escreve 500ms var(--ease-out) both;
+}
+:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-message-square-text > path:nth-child(3) { animation-delay: 80ms; }
+:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-message-square-text > path:nth-child(4) { animation-delay: 160ms; }
 /* entregas: o caminhão sacoleja e avança */
 :is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-truck {
   animation: icone-dirige 600ms ease-in-out;

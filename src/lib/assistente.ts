@@ -1,0 +1,78 @@
+// Contas do assistente sem banco nem rede, para serem testadas: modelos, preço, limites e o histórico enviado.
+
+/**
+ * Toda pergunta começa no modelo barato. Ele mesmo chama `pedir_analise` quando a pergunta pede para cruzar
+ * dados ou explicar uma causa, e aí ela roda de novo no modelo maior. Preços em dólar por milhão de tokens.
+ */
+export const MODELOS = {
+  rapido: {
+    id: "claude-haiku-5-5",
+    preco: { entrada: 0.1, cacheGravado: 0.125, cacheLido: 0.01, saida: 0.5 },
+    effort: "low",
+    // o pensamento entra no max_tokens: folga para ele e para uma resposta curta
+    maxTokens: 2000,
+    rodadas: 4,
+    tetoEntrada: 40_000,
+  },
+  analise: {
+    id: "claude-sonnet-5-5",
+    preco: { entrada: 2, cacheGravado: 2.5, cacheLido: 0.1, saida: 10 },
+    effort: "medium",
+    maxTokens: 4000,
+    rodadas: 6,
+    tetoEntrada: 80_000,
+  },
+} as const;
+
+export type Nivel = keyof typeof MODELOS;
+
+export const LIMITES = {
+  perguntasDia: 40,
+  analisesDia: 8,
+  /** caracteres da pergunta */
+  pergunta: 400,
+  /** conversas anteriores mandadas junto, e o tamanho de cada resposta delas */
+  historico: 3,
+  respostaNoHistorico: 600,
+  /** caracteres do resultado de cada consulta */
+  resultado: 4000,
+  /** linhas de cada lista nos resultados */
+  linhas: 15,
+};
+
+export type Uso = { entrada: number; cacheGravado: number; cacheLido: number; saida: number };
+export const usoZerado = (): Uso => ({ entrada: 0, cacheGravado: 0, cacheLido: 0, saida: 0 });
+
+/** Soma o `usage` de uma resposta da API no total da pergunta. */
+export function somarUso(total: Uso, u: { input_tokens: number; output_tokens: number; cache_creation_input_tokens?: number | null; cache_read_input_tokens?: number | null }) {
+  total.entrada += u.input_tokens;
+  total.cacheGravado += u.cache_creation_input_tokens ?? 0;
+  total.cacheLido += u.cache_read_input_tokens ?? 0;
+  total.saida += u.output_tokens;
+}
+
+/** Tokens de entrada que contam para o teto da pergunta: tudo o que o modelo leu, do cache ou não. */
+export const entradaTotal = (u: Uso) => u.entrada + u.cacheGravado + u.cacheLido;
+
+/** Custo em milionésimos de dólar: preço por milhão de tokens vezes os tokens. */
+export function custoMicro(nivel: Nivel, u: Uso) {
+  const p = MODELOS[nivel].preco;
+  return Math.round(u.entrada * p.entrada + u.cacheGravado * p.cacheGravado + u.cacheLido * p.cacheLido + u.saida * p.saida);
+}
+
+export type Turno = { pergunta: string; resposta: string };
+
+/** O que veio da tela vira no máximo as últimas conversas, cada uma cortada: o histórico não cresce sem fim. */
+export function historicoCurto(v: unknown): Turno[] {
+  if (!Array.isArray(v)) return [];
+  return v
+    .filter((t): t is Turno => !!t && typeof t.pergunta === "string" && typeof t.resposta === "string" && !!t.pergunta.trim() && !!t.resposta.trim())
+    .slice(-LIMITES.historico)
+    .map((t) => ({ pergunta: t.pergunta.slice(0, LIMITES.pergunta), resposta: t.resposta.slice(0, LIMITES.respostaNoHistorico) }));
+}
+
+/** Resultado de consulta em JSON, com teto de tamanho: lista grande demais não estoura a conta da pergunta. */
+export function resultadoCurto(dado: unknown) {
+  const s = JSON.stringify(dado);
+  return s.length <= LIMITES.resultado ? s : `${s.slice(0, LIMITES.resultado)}… (resultado cortado: peça um período menor)`;
+}

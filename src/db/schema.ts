@@ -336,6 +336,27 @@ export const conversasWhatsapp = pgTable(
   (t) => [uniqueIndex("conversas_whatsapp_tel_uq").on(t.tenantId, t.telefone)],
 );
 
+// Uma linha por pergunta ao assistente: conta o limite do dia e mostra quanto custou. O texto da pergunta não fica.
+export const assistenteUso = pgTable(
+  "assistente_uso",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    // "rapido" (o modelo barato) ou "analise" (a pergunta subiu para o modelo maior)
+    nivel: text("nivel").notNull(),
+    tokensEntrada: integer("tokens_entrada").notNull(),
+    tokensCache: integer("tokens_cache").notNull(),
+    tokensSaida: integer("tokens_saida").notNull(),
+    // em milionésimos de dólar (o preço por milhão de tokens vezes os tokens): a conta fica como era na hora
+    custoMicro: integer("custo_micro").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("assistente_uso_dia_idx").on(t.tenantId, t.createdAt)],
+);
+
 export const pedidosProgramados = pgTable(
   "pedidos_programados",
   {

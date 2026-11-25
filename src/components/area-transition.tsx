@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { useWebKit } from "@/lib/webkit";
 
 // telas do sistema interno: entre elas quem anima é o PageTransition do layout, com a barra lateral parada
-const APP = /^\/(pedidos|entregas|caixa|estoque|clientes|fiado|relatorios|despesas|produtos|equipe|configuracoes|fornecedores|auditoria)(\/|$)/;
+const APP = /^\/(pedidos|entregas|caixa|estoque|clientes|fiado|relatorios|despesas|produtos|equipe|configuracoes|fornecedores|auditoria|assistente)(\/|$)/;
 
 const area = (path: string) => (path === "/" || APP.test(path) ? "app" : path.startsWith("/admin") ? "admin" : path);
 

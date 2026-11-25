@@ -1984,3 +1984,84 @@ test("reajuste da mensalidade: quem já pagou no preço antigo continua nele, no
   assert.equal((await ass.conferirCartao(antiga.tenant.id))?.caiu, true);
   delete process.env.MP_TOKEN_SOLACE;
 });
+
+test("assistente: consulta só a empresa de quem pergunta, sobe para a análise quando o modelo pede, conta o uso e para no limite do dia", async () => {
+  const { db } = m.db;
+  const { assistenteUso } = m.schema;
+  const { eq } = await import("drizzle-orm");
+  const ass = await import("@/domain/assistente");
+  const { LIMITES, MODELOS } = await import("@/lib/assistente");
+  const dono = { ...A.ctx, name: "Dono A", email: "", tenantName: "A", platformAdmin: false, totpEnabled: false, termsVersion: null, pagoAte: null, branchName: "Principal", branches: [] };
+  process.env.ANTHROPIC_API_KEY = "teste";
+
+  // a API simulada: cada pedido recebe a próxima resposta da fila; o corpo de cada um fica guardado para conferir
+  const pedidos: { corpo: Record<string, unknown>; beta: string | null }[] = [];
+  let fila: unknown[][] = [];
+  ass.usarRedeAssistente(async (_url, init) => {
+    const corpo = JSON.parse(String(init!.body));
+    pedidos.push({ corpo, beta: new Headers(init!.headers).get("anthropic-beta") });
+    const [content, stop_reason] = fila.shift()!;
+    return new Response(
+      JSON.stringify({ id: `msg_${pedidos.length}`, type: "message", role: "assistant", model: corpo.model, content, stop_reason, stop_sequence: null, usage: { input_tokens: 1000, output_tokens: 100, cache_read_input_tokens: 3000, cache_creation_input_tokens: 0 } }),
+      { status: 200, headers: { "content-type": "application/json" } },
+    );
+  });
+  const ultimoUso = async () => (await db.select().from(assistenteUso).where(eq(assistenteUso.tenantId, A.t.id))).at(-1)!;
+
+  // pergunta direta: o modelo barato consulta o estoque e responde
+  fila = [
+    [[{ type: "tool_use", id: "tu_1", name: "estoque", input: {} }], "tool_use"],
+    [[{ type: "text", text: "Você tem 9 cheios." }], "end_turn"],
+  ];
+  const r1 = await ass.perguntar(dono, "Quanto gás eu tenho?", [{ pergunta: "Oi", resposta: "Olá!" }]);
+  assert.equal(r1.resposta, "Você tem 9 cheios.");
+  assert.equal(r1.analise, false);
+  assert.equal(r1.restam, LIMITES.perguntasDia - 1);
+  const [p1, p2] = pedidos;
+  assert.equal(p1.corpo.model, MODELOS.rapido.id);
+  assert.ok((p1.corpo.tools as { name: string }[]).some((t) => t.name === "pedir_analise"));
+  const msgs1 = p1.corpo.messages as { role: string; content: unknown }[];
+  assert.equal(msgs1.length, 3, "a conversa anterior vai junto");
+  assert.match(String(msgs1[2].content), /Hoje é [\s\S]*Quanto gás eu tenho\?/);
+  // o resultado da consulta tem o produto desta empresa e nunca o da outra
+  const resultado = JSON.stringify((p2.corpo.messages as { content: unknown }[]).at(-1));
+  assert.match(resultado, /Gás A/);
+  assert.doesNotMatch(resultado, /Gás B/);
+  const u1 = await ultimoUso();
+  assert.equal(u1.nivel, "rapido");
+  assert.equal(u1.tokensSaida, 200);
+  assert.equal(u1.custoMicro, 2 * (1000 * 0.1 + 3000 * 0.01 + 100 * 0.5));
+
+  // pergunta elaborada: o modelo barato pede a análise e o maior responde, com o reserva ligado e sem pedir_analise
+  pedidos.length = 0;
+  fila = [
+    [[{ type: "tool_use", id: "tu_2", name: "pedir_analise", input: { motivo: "comparar períodos" } }], "tool_use"],
+    [[{ type: "text", text: "A venda caiu porque..." }], "end_turn"],
+  ];
+  const r2 = await ass.perguntar(dono, "Por que vendi menos esse mês?", []);
+  assert.equal(r2.analise, true);
+  assert.equal(pedidos[1].corpo.model, MODELOS.analise.id);
+  assert.equal(pedidos[1].corpo.fallbacks, "default");
+  assert.match(pedidos[1].beta ?? "", /server-side-fallback/);
+  assert.ok(!(pedidos[1].corpo.tools as { name: string }[]).some((t) => t.name === "pedir_analise"));
+  assert.equal((await ultimoUso()).nivel, "analise");
+
+  // consulta com data errada volta como erro para o modelo, sem derrubar a pergunta
+  pedidos.length = 0;
+  fila = [
+    [[{ type: "tool_use", id: "tu_3", name: "resumo_vendas", input: { de: "2026-13-01", ate: "2026-13-31" } }], "tool_use"],
+    [[{ type: "text", text: "Não entendi o período." }], "end_turn"],
+  ];
+  assert.equal((await ass.perguntar(dono, "Vendas de ontem", [])).resposta, "Não entendi o período.");
+  assert.match(JSON.stringify(pedidos[1].corpo.messages), /"is_error":true/);
+
+  // só o dono pergunta; no limite do dia, a pergunta nem chega à API
+  await assert.rejects(ass.perguntar({ ...dono, role: "atendente" }, "Quanto vendi?", []), /permissão/);
+  await db.insert(assistenteUso).values(Array.from({ length: LIMITES.perguntasDia }, () => ({ tenantId: A.t.id, userId: A.owner.id, nivel: "rapido", tokensEntrada: 0, tokensCache: 0, tokensSaida: 0, custoMicro: 0 })));
+  pedidos.length = 0;
+  await assert.rejects(ass.perguntar(dono, "Quanto vendi?", []), /limite/);
+  assert.equal(pedidos.length, 0);
+  assert.equal(await ass.perguntasRestantes(B.t.id), LIMITES.perguntasDia, "o limite é de cada empresa");
+  await db.delete(assistenteUso).where(eq(assistenteUso.tenantId, A.t.id));
+  delete process.env.ANTHROPIC_API_KEY;
+});
