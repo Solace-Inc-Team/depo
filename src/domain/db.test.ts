@@ -2065,3 +2065,25 @@ test("assistente: consulta só a empresa de quem pergunta, sobe para a análise 
   await db.delete(assistenteUso).where(eq(assistenteUso.tenantId, A.t.id));
   delete process.env.ANTHROPIC_API_KEY;
 });
+
+test("admin vê o gasto do assistente no mês, no total e por empresa; quem não é admin não vê", async () => {
+  const { db } = m.db;
+  const { assistenteUso } = m.schema;
+  const { eq } = await import("drizzle-orm");
+  const admin = { ...B.ctx, platformAdmin: true, name: "", email: "", tenantName: "", totpEnabled: false, termsVersion: null, pagoAte: null, branchName: "", branches: [] };
+  const linha = (tenantId: string, userId: string, nivel: string, custoMicro: number, createdAt = new Date()) => ({ tenantId, userId, nivel, tokensEntrada: 0, tokensCache: 0, tokensSaida: 0, custoMicro, createdAt });
+  await db.insert(assistenteUso).values([
+    linha(A.t.id, A.owner.id, "rapido", 1000),
+    linha(A.t.id, A.owner.id, "analise", 20_000),
+    linha(B.t.id, B.owner.id, "rapido", 3000),
+    // do mês passado: não entra na conta deste mês
+    linha(A.t.id, A.owner.id, "analise", 999_999, new Date(Date.now() - 40 * 86400e3)),
+  ]);
+  const mes = await m.platform.assistenteNoMes(admin);
+  assert.deepEqual(mes, { perguntas: 3, analises: 1, empresas: 2, micro: 24_000, microAnalise: 20_000 });
+  const a = (await m.platform.listTenants(admin)).find((t) => t.id === A.t.id)!;
+  assert.equal(a.iaPerguntas, 2);
+  assert.equal(a.iaMicro, 21_000);
+  await assert.rejects(m.platform.assistenteNoMes({ ...admin, platformAdmin: false }), /permissão/);
+  for (const t of [A.t.id, B.t.id]) await db.delete(assistenteUso).where(eq(assistenteUso.tenantId, t));
+});

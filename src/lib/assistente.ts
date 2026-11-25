@@ -76,3 +76,7 @@ export function resultadoCurto(dado: unknown) {
   const s = JSON.stringify(dado);
   return s.length <= LIMITES.resultado ? s : `${s.slice(0, LIMITES.resultado)}… (resultado cortado: peça um período menor)`;
 }
+
+const usd = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "USD" });
+/** Milionésimos de dólar em "US$ 1,23"; gasto que ainda não chega a um centavo não aparece como "US$ 0,00". */
+export const dolares = (micro: number) => (micro > 0 && micro < 5000 ? "menos de US$ 0,01" : usd.format(micro / 1e6));

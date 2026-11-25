@@ -1,11 +1,12 @@
 import { requireAdmin } from "@/lib/auth";
-import { DELETE_DEADLINE_DAYS, avisoAtual, listDeletions, listDiasDados, listTenants, recebidoNoMes } from "@/domain/platform";
+import { DELETE_DEADLINE_DAYS, assistenteNoMes, avisoAtual, listDeletions, listDiasDados, listTenants, recebidoNoMes } from "@/domain/platform";
 import { ActionForm } from "@/components/action-form";
 import { createTenantAction, darDiasAction, deleteTenantAction, ligarWhatsappAction, publicarAvisoAction, resetOwnerAccessAction, tirarAvisoAction, toggleTenantAction } from "@/app/actions";
 import { PopoverForm } from "@/components/popover-form";
 import { Empty, Money, PageHeader, fmtDateTime } from "@/components/ui";
 import { dataBR, situacaoAssinatura } from "@/lib/plano";
 import { todayISO } from "@/lib/period";
+import { dolares } from "@/lib/assistente";
 
 type Plano = { rotulo: string; linha: string; tom: "ok" | "teste" | "aviso" | "perigo" | "neutro" };
 // a situação da assinatura em uma palavra e uma linha: o que importa para cobrar e para atender
@@ -28,7 +29,14 @@ const daysAgo = (d: string | Date | null) => {
 
 export default async function Admin() {
   const admin = await requireAdmin();
-  const [list, deletions, recebido, dias, aviso] = await Promise.all([listTenants(admin), listDeletions(admin), recebidoNoMes(admin), listDiasDados(admin), avisoAtual()]);
+  const [list, deletions, recebido, dias, aviso, ia] = await Promise.all([
+    listTenants(admin),
+    listDeletions(admin),
+    recebidoNoMes(admin),
+    listDiasDados(admin),
+    avisoAtual(),
+    assistenteNoMes(admin),
+  ]);
   const active = list.filter((t) => t.active);
   const hoje = todayISO();
   const planos = new Map(list.map((t) => [t.id, planoDe(t, hoje)]));
@@ -94,6 +102,12 @@ export default async function Admin() {
                         )}
                         {/* quem é o dono, desde quando e quantas pessoas usam: a coluna de pessoas apertava a tabela ao lado dos quadros */}
                         <p className="text-sm text-muted">{t.owner ?? "sem dono"}, desde {fmtDateTime(t.createdAt).split(" ")[0].replace(",", "")}, {t.people} {t.people === 1 ? "pessoa" : "pessoas"}</p>
+                        {/* numa linha da empresa e não numa coluna: a tabela já não cabia mais larga ao lado dos quadros */}
+                        {t.iaPerguntas > 0 && (
+                          <p className="num text-sm text-muted">
+                            Assistente: {t.iaPerguntas} {t.iaPerguntas === 1 ? "pergunta" : "perguntas"}, {dolares(t.iaMicro)} no mês
+                          </p>
+                        )}
                         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
                           <a href={`/admin/exportar?empresa=${t.id}`} className="btn btn-sm">Exportar</a>
                           {t.pagoAte && (
@@ -207,6 +221,31 @@ export default async function Admin() {
         )}
 
         <div className="space-y-6 lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:self-start">
+        {/* o custo do assistente vem dos tokens que cada pergunta grava; a cobrança de verdade é a do Claude Console */}
+        <section className="panel p-4">
+          <h2 className="h2 mb-1">Assistente em {mes()}</h2>
+          <p className="text-2xl font-semibold num">{dolares(ia.micro)}</p>
+          <p className="mb-3 text-[13px] text-muted">Gasto estimado pelos tokens. O valor cobrado está no Claude Console.</p>
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
+            <div>
+              <dt className="text-muted">Perguntas</dt>
+              <dd className="num font-medium">{ia.perguntas}</dd>
+            </div>
+            <div>
+              <dt className="text-muted">Com análise</dt>
+              <dd className="num font-medium">{ia.analises}{ia.analises > 0 && <span className="font-normal text-muted">, {dolares(ia.microAnalise)}</span>}</dd>
+            </div>
+            <div>
+              <dt className="text-muted">Empresas usando</dt>
+              <dd className="num font-medium">{ia.empresas}</dd>
+            </div>
+            <div>
+              <dt className="text-muted">Média por empresa</dt>
+              <dd className="num font-medium">{ia.empresas ? dolares(Math.round(ia.micro / ia.empresas)) : "sem uso"}</dd>
+            </div>
+          </dl>
+        </section>
+
         <section className="panel p-4">
           <h2 className="h2 mb-1">Nova empresa</h2>
           <p className="mb-3 text-sm text-muted">

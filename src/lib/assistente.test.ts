@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { custoMicro, entradaTotal, historicoCurto, LIMITES, resultadoCurto, somarUso, usoZerado } from "./assistente.ts";
+import { custoMicro, dolares, entradaTotal, historicoCurto, LIMITES, resultadoCurto, somarUso, usoZerado } from "./assistente.ts";
 
 test("custo da pergunta: cada tipo de token no preço do modelo, em milionésimos de dólar", () => {
   const u = { entrada: 2000, cacheGravado: 0, cacheLido: 8000, saida: 300 };
@@ -32,4 +32,10 @@ test("resultado de consulta grande é cortado no teto", () => {
   const grande = resultadoCurto(Array.from({ length: 2000 }, (_, i) => ({ cliente: `Cliente ${i}` })));
   assert.ok(grande.length < LIMITES.resultado + 80);
   assert.match(grande, /cortado/);
+});
+
+test("gasto em dólar: centavos arredondados e gasto pequeno sem virar zero", () => {
+  assert.equal(dolares(0).replace(/\s/g, " "), "US$ 0,00");
+  assert.equal(dolares(1200), "menos de US$ 0,01");
+  assert.equal(dolares(1_234_567).replace(/\s/g, " "), "US$ 1,23");
 });

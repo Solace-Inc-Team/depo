@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { and, desc, eq, gt, gte, isNull, or, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { assinaturaPagamentos, auditLog, avisosPlataforma, branches, products, sessions, tenantDeletions, tenants, users } from "@/db/schema";
+import { assinaturaPagamentos, assistenteUso, auditLog, avisosPlataforma, branches, products, sessions, tenantDeletions, tenants, users } from "@/db/schema";
 import { DomainError } from "@/lib/ctx";
 import { hashPassword } from "@/lib/password";
 import type { SessionUser } from "@/lib/auth";
@@ -11,6 +11,8 @@ import { PLANO, situacaoAssinatura, somarDias } from "@/lib/plano";
 import { todayISO } from "@/lib/period";
 
 // Tudo aqui é da equipe da Solace e atravessa empresas, por isso não recebe Ctx de tenant.
+const inicioDoMes = () => new Date(`${todayISO().slice(0, 8)}01T00:00:00-03:00`);
+
 function assertAdmin(admin: SessionUser) {
   if (!admin.platformAdmin) throw new DomainError("Sem permissão.");
 }
@@ -185,6 +187,7 @@ export async function listDeletions(admin: SessionUser) {
 export async function listTenants(admin: SessionUser) {
   assertAdmin(admin);
   const since = new Date(Date.now() - 30 * 864e5);
+  const mes = inicioDoMes().toISOString();
   return db
     .select({
       id: tenants.id,
@@ -202,6 +205,8 @@ export async function listTenants(admin: SessionUser) {
       pagou: sql<boolean>`exists (select 1 from assinatura_pagamentos p where p.tenant_id = tenants.id and p.pago_em is not null)`,
       cartao: sql<boolean>`${tenants.mpAssinaturaId} is not null`,
       whatsappNumeroId: tenants.whatsappNumeroId,
+      iaPerguntas: sql<number>`(select count(*)::int from assistente_uso a where a.tenant_id = tenants.id and a.created_at >= ${mes})`,
+      iaMicro: sql<number>`(select coalesce(sum(a.custo_micro), 0)::int from assistente_uso a where a.tenant_id = tenants.id and a.created_at >= ${mes})`,
     })
     .from(tenants)
     .where(sql`${tenants.id} <> ${admin.tenantId}`)
@@ -232,11 +237,26 @@ export async function ensurePlatformAdmin(email: string, password: string) {
 /** Quanto entrou de mensalidade neste mês (Pix e cartão), de todas as empresas. */
 export async function recebidoNoMes(admin: SessionUser) {
   assertAdmin(admin);
-  const inicio = `${todayISO().slice(0, 8)}01`;
-  const [r] = await db
+    const [r] = await db
     .select({ cents: sql<number>`coalesce(sum(${assinaturaPagamentos.valorCents}), 0)::int`, n: sql<number>`count(*)::int` })
     .from(assinaturaPagamentos)
-    .where(gte(assinaturaPagamentos.pagoEm, new Date(`${inicio}T00:00:00-03:00`)));
+    .where(gte(assinaturaPagamentos.pagoEm, inicioDoMes()));
+  return r;
+}
+
+/** O assistente neste mês, de todas as empresas: o que foi perguntado e quanto custou pelos tokens gravados. */
+export async function assistenteNoMes(admin: SessionUser) {
+  assertAdmin(admin);
+  const [r] = await db
+    .select({
+      perguntas: sql<number>`count(*)::int`,
+      analises: sql<number>`(count(*) filter (where ${assistenteUso.nivel} = 'analise'))::int`,
+      empresas: sql<number>`count(distinct ${assistenteUso.tenantId})::int`,
+      micro: sql<number>`coalesce(sum(${assistenteUso.custoMicro}), 0)::bigint`.mapWith(Number),
+      microAnalise: sql<number>`coalesce(sum(${assistenteUso.custoMicro}) filter (where ${assistenteUso.nivel} = 'analise'), 0)::bigint`.mapWith(Number),
+    })
+    .from(assistenteUso)
+    .where(gte(assistenteUso.createdAt, inicioDoMes()));
   return r;
 }
 
