@@ -214,7 +214,7 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
                 {/* links de linha sem carregamento antecipado: o Painel disparava uns 45, cada um rodando o layout no servidor */}
                 {d.recent.map((o) => (
                   <tr key={o.id}>
-                    <td className="num w-12 text-muted">#{o.number}</td>
+                    <td className="num w-12 whitespace-nowrap text-muted">#{o.number}</td>
                     <td>
                       <Link href={`/pedidos/${o.id}`} prefetch={false} className="font-medium wrap-anywhere hover:text-accent">
                         {o.customerName ?? "Balcão"}
