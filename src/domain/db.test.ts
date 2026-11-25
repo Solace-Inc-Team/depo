@@ -1927,3 +1927,13 @@ test("admin dá dias de acesso com registro e publica o aviso para todas as empr
   await m.platform.tirarAviso(admin);
   assert.equal(await m.platform.avisoAtual(), null);
 });
+
+test("estoque baixo só abaixo do mínimo: igual ao mínimo não avisa", async () => {
+  const p = await m.registry.saveProduct(A.ctx, { name: "Galão Mínimo", priceCents: 1400, returnable: false, minStock: 10, active: true });
+  await m.stock.receivePurchase(A.ctx, { productId: p.id, full: 10, emptiesReturned: 0, note: "carga do teste" });
+  const linha = async () => (await m.q.stockOverview(A.t.id, A.branch.id)).find((x) => x.id === p.id)!;
+  assert.equal((await linha()).fullStore, 10);
+  assert.equal((await linha()).low, false);
+  await m.registry.saveProduct(A.ctx, { name: "Galão Mínimo", priceCents: 1400, returnable: false, minStock: 11, active: true }, p.id);
+  assert.equal((await linha()).low, true);
+});
