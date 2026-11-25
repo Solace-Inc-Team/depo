@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ChartColumn, CornerDownRight, HandCoins, Package, Receipt, RotateCcw, SendHorizontal, Users, type LucideIcon } from "lucide-react";
 import { chamarAcao } from "@/components/action-form";
 import { useSaida } from "@/components/saida";
@@ -38,11 +38,26 @@ function Esperando({ pergunta }: { pergunta: string }) {
   }, []);
   const frase = [etapa(pergunta), "Juntando os números", "Quase lá"][fase];
   return (
-    <div className="assistente-msg" aria-hidden="true">
-      <span className="assistente-ponto" data-estado="pensando" style={{ marginTop: 7 }} />
+    <div className="assistente-msg" data-esperando="" aria-hidden="true">
+      <span className="assistente-ponto" data-estado="pensando" />
       <span key={fase} className="texto-brilho text-[13px] animate-[fade-in_200ms_ease-out_both]">{frase}…</span>
     </div>
   );
+}
+
+// A conversa mora fora do componente: trocar de tela desmonta a tela, mas o módulo continua carregado. Assim ela volta
+// inteira ao abrir o Assistente de novo, e a resposta que chega com a pessoa em outra tela entra nela do mesmo jeito.
+// Recarregar a página ou sair começa do zero. O dono é a chave: outro usuário no mesmo navegador não vê a conversa.
+type Estado = { dono: string; turnos: Turno[]; pendente: boolean; erro: string };
+const VAZIO: Estado = { dono: "", turnos: [], pendente: false, erro: "" };
+let conversa = VAZIO;
+let proximaChave = 0;
+const ouvintes = new Set<() => void>();
+const assinarConversa = (f: () => void) => (ouvintes.add(f), () => void ouvintes.delete(f));
+function mudar(dono: string, f: (e: Estado) => Partial<Estado>) {
+  const atual = conversa.dono === dono ? conversa : { ...VAZIO, dono };
+  conversa = { ...atual, ...f(atual) };
+  ouvintes.forEach((o) => o());
 }
 
 // o tema mora no data-tema do <html> e pode trocar com a tela aberta
@@ -63,17 +78,15 @@ const luzNoPonteiro = (e: React.PointerEvent<HTMLElement>) => {
  * Conversa do dono com o assistente. As respostas anteriores vão junto em cada pergunta (o servidor corta para as
  * últimas, e curtas), então "e ontem?" entende do que se fala sem o histórico crescer sem fim.
  */
-export function Conversa({ restamNoComeco, saudacao }: { restamNoComeco: number; saudacao: string }) {
-  const [turnos, setTurnos] = useState<Turno[]>([]);
+export function Conversa({ dono, restamNoComeco, saudacao }: { dono: string; restamNoComeco: number; saudacao: string }) {
+  const estado = useSyncExternalStore(assinarConversa, () => conversa, () => VAZIO);
+  const { turnos, pendente, erro } = estado.dono === dono ? estado : VAZIO;
   const [texto, setTexto] = useState("");
-  const [erro, setErro] = useState("");
   const [restam, setRestam] = useState(restamNoComeco);
   const [limpando, setLimpando] = useState(false);
-  const [pendente, start] = useTransition();
   // os feixes de luz só no tema escuro: no claro eles somem no fundo branco e fica a luz parada do topo
   const escuro = useSyncExternalStore(assinarTema, () => document.documentElement.dataset.tema === "escuro", () => false);
   const area = useRef<HTMLDivElement>(null);
-  const chave = useRef(0);
   const entrada = useSaida(!turnos.length && !limpando, 180);
 
   useEffect(() => {
@@ -82,30 +95,27 @@ export function Conversa({ restamNoComeco, saudacao }: { restamNoComeco: number;
 
   function perguntar(pergunta: string) {
     if (pendente || !restam) return;
-    setErro("");
     const historico = turnos.filter((t) => t.resposta).map((t) => ({ pergunta: t.pergunta, resposta: t.resposta }));
-    const id = chave.current++;
-    setTurnos((ts) => [...ts, { chave: id, pergunta }]);
-    start(async () => {
-      const c = await chamarAcao(() => perguntarAssistenteAction(pergunta, historico));
+    const id = proximaChave++;
+    mudar(dono, (e) => ({ turnos: [...e.turnos, { chave: id, pergunta }], pendente: true, erro: "" }));
+    void chamarAcao(() => perguntarAssistenteAction(pergunta, historico)).then((c) => {
       const falha = c.erro ?? c.r?.erro;
       if (falha) {
         // a pergunta sem resposta sai da conversa e volta para o campo: dá para mandar de novo sem redigitar
-        setTurnos((ts) => ts.filter((t) => t.chave !== id));
-        setTexto(pergunta);
-        return setErro(falha);
+        mudar(dono, (e) => ({ turnos: e.turnos.filter((t) => t.chave !== id), pendente: false, erro: falha }));
+        return setTexto(pergunta);
       }
       const r = c.r!;
       setRestam(r.restam ?? 0);
-      setTurnos((ts) => ts.map((t) => (t.chave === id ? { ...t, ...r, chave: id, pergunta } : t)));
+      mudar(dono, (e) => ({ turnos: e.turnos.map((t) => (t.chave === id ? { ...t, ...r, chave: id, pergunta } : t)), pendente: false }));
     });
   }
 
   function recomecar() {
-    setErro("");
+    mudar(dono, () => ({ erro: "" }));
     setLimpando(true);
     setTimeout(() => {
-      setTurnos([]);
+      mudar(dono, () => ({ turnos: [] }));
       setLimpando(false);
     }, 180);
   }
@@ -163,7 +173,7 @@ export function Conversa({ restamNoComeco, saudacao }: { restamNoComeco: number;
               {t.pergunta}
             </p>
             {t.resposta && (
-              <div className="assistente-msg">
+              <div className="assistente-msg" data-destaque={t.destaque ? "" : undefined}>
                 <span aria-hidden="true" className="assistente-ponto" />
                 <div className="min-w-0">
                   <div className="robo-balao max-w-none">

@@ -15,7 +15,7 @@ export default async function Assistente() {
     <div className="max-w-2xl">
       <PageHeader title="Assistente" />
       {assistenteLigado() ? (
-        <Conversa restamNoComeco={await perguntasRestantes(user.tenantId)} saudacao={`${periodo(horaSP())}, ${user.name.split(" ")[0]}.`} />
+        <Conversa dono={user.userId} restamNoComeco={await perguntasRestantes(user.tenantId)} saudacao={`${periodo(horaSP())}, ${user.name.split(" ")[0]}.`} />
       ) : (
         <p className="panel p-4 text-muted">O assistente ainda não está ligado nesta instalação.</p>
       )}

@@ -4469,12 +4469,15 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   background: var(--marca);
 }
 /* chegou a resposta: o ponto vira um traço de cursor e volta a ser ponto */
+/* no meio da primeira linha do balão: 8 px de recuo + meia linha de texto (ou do número em destaque) - meio ponto */
 .assistente-msg > .assistente-ponto {
-  margin-top: 13px;
+  margin-top: calc(8px + 0.5lh - 4px);
   animation: ponto-escreve 640ms var(--ease-out) both;
 }
-.assistente-ponto[data-estado="pensando"] {
-  animation: ponto-respira 1.4s ease-in-out infinite;
+/* respira com um anel que se abre em volta, sem escala: um ponto de 8 px ampliado fica borrado e com franja */
+.assistente-msg > .assistente-ponto[data-estado="pensando"] {
+  margin-top: 0;
+  animation: ponto-respira 1.4s ease-out infinite;
 }
 @keyframes ponto-escreve {
   40% {
@@ -4482,9 +4485,11 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   }
 }
 @keyframes ponto-respira {
-  50% {
-    scale: 1.5;
-    opacity: 0.55;
+  from {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--marca) 55%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 7px transparent;
   }
 }
 
@@ -4586,8 +4591,16 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   gap: 10px;
   animation: var(--dur) var(--ease-out) both fade-in, var(--dur) var(--ease-out) both rise;
 }
+/* esperando: uma linha só, o ponto no meio dela */
+.assistente-msg[data-esperando] {
+  align-items: center;
+}
+.assistente-msg[data-destaque] > .assistente-ponto {
+  margin-top: calc(8px + 16.5px - 4px);
+}
 .assistente-destaque {
   display: block;
+  line-height: 33px;
   margin-bottom: 2px;
   font-size: 22px;
   font-weight: 600;
