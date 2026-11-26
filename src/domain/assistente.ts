@@ -88,7 +88,10 @@ function lerPeriodo(input: Record<string, unknown>) {
 
 const top = <T,>(xs: T[]) => xs.slice(0, LIMITES.linhas);
 
-async function consultar(nome: string, input: Record<string, unknown>, user: SessionUser): Promise<unknown> {
+/** O que vai para a tela além do texto: as vendas por dia viram as barras pequenas da resposta. */
+type Grafico = { dias?: { day: string; cents: number }[] };
+
+async function consultar(nome: string, input: Record<string, unknown>, user: SessionUser, grafico: Grafico): Promise<unknown> {
   const t = user.tenantId;
   const f = user.branchId;
   switch (nome) {
@@ -101,6 +104,8 @@ async function consultar(nome: string, input: Record<string, unknown>, user: Ses
         expensesTotal(t, fromStr, toStr, f, true),
       ]);
       const soma = (k: "count" | "total" | "cash" | "pix" | "card" | "credit") => days.reduce((s, d) => s + d[k], 0);
+      // de 2 a 14 dias cabe em barras; um dia só já é o número em destaque
+      if (days.length >= 2 && days.length <= 14) grafico.dias = days.map((d) => ({ day: d.day, cents: d.total }));
       return {
         periodo: `${fromStr} a ${toStr}`,
         pedidos_entregues: soma("count"),
@@ -196,7 +201,15 @@ type Resultado = { texto?: string; escalar?: boolean };
 type Fontes = Set<string>;
 
 /** Uma pergunta num modelo: chama as consultas que ele pedir até ele responder, dentro das rodadas e do teto de tokens. */
-async function rodar(nivel: Nivel, mensagens: B.BetaMessageParam[], user: SessionUser, uso: Uso, podeAnalisar: boolean, fontes: Fontes): Promise<Resultado> {
+async function rodar(
+  nivel: Nivel,
+  mensagens: B.BetaMessageParam[],
+  user: SessionUser,
+  uso: Uso,
+  podeAnalisar: boolean,
+  fontes: Fontes,
+  grafico: Grafico,
+): Promise<Resultado> {
   const m = MODELOS[nivel];
   const ferramentas = nivel === "rapido" && podeAnalisar ? [...FERRAMENTAS, PEDIR_ANALISE] : FERRAMENTAS;
   const msgs = [...mensagens];
@@ -228,7 +241,7 @@ async function rodar(nivel: Nivel, mensagens: B.BetaMessageParam[], user: Sessio
     const resultados = await Promise.all(
       chamadas.map(async (c): Promise<B.BetaToolResultBlockParam> => {
         try {
-          const dado = await consultar(c.name, c.input as Record<string, unknown>, user);
+          const dado = await consultar(c.name, c.input as Record<string, unknown>, user, grafico);
           fontes.add(c.name);
           return { type: "tool_result", tool_use_id: c.id, content: resultadoCurto(dado) };
         } catch (e) {
@@ -282,11 +295,12 @@ export async function perguntar(user: SessionUser, perguntaCrua: unknown, histor
   let r: Resultado;
   // as consultas que deram certo viram as etiquetas "de onde veio" (as da análise somam às do modelo barato)
   const fontes: Fontes = new Set();
+  const grafico: Grafico = {};
   try {
-    r = await rodar("rapido", mensagens, user, usoRapido, podeAnalisar, fontes);
+    r = await rodar("rapido", mensagens, user, usoRapido, podeAnalisar, fontes, grafico);
     if (r.escalar) {
       nivel = "analise";
-      r = await rodar("analise", mensagens, user, usoAnalise, false, fontes);
+      r = await rodar("analise", mensagens, user, usoAnalise, false, fontes, grafico);
     }
   } catch (e) {
     if (e instanceof Anthropic.APIError) {
@@ -316,6 +330,7 @@ export async function perguntar(user: SessionUser, perguntaCrua: unknown, histor
     destaque,
     seguintes,
     fontes: [...fontes].map((f) => FONTES[f] ?? f),
+    dias: grafico.dias,
     analise: nivel === "analise",
     restam: Math.max(0, LIMITES.perguntasDia - hoje.perguntas - 1),
   };

@@ -58,12 +58,20 @@ test("resposta em JSON cru não vai para a tela", () => {
 });
 
 test("sugestões do dia: o mais urgente primeiro, no máximo três, e as de sempre sem movimento", () => {
-  const calmo = { revenue: 0, previous: 0, late: 0, pending: 0, oldestWaitingMin: null, lowStock: [] };
+  const calmo = { revenue: 0, previous: 0, late: 0, pending: 0, oldestWaitingMin: null, lowStock: [], byMethod: { fiado: 0 } };
   assert.equal(sugestoesVivas(calmo).length, 3);
   assert.equal(sugestoesVivas(calmo)[0].pergunta, "Quanto vendi essa semana?");
-  const cheio = sugestoesVivas({ revenue: 211100, previous: 100000, late: 1, pending: 3, oldestWaitingMin: 12, lowStock: [{ name: "Galão de água 20L", fullStore: 5 }] });
+  const cheio = sugestoesVivas({ ...calmo, revenue: 211100, previous: 100000, late: 1, pending: 3, oldestWaitingMin: 12, lowStock: [{ name: "Galão de água 20L", fullStore: 5 }] });
   assert.deepEqual(cheio.map((s) => s.fato), ["1 pedido atrasado", "Galão de água 20L: 5 cheios", "3 pedidos esperam há 12 min"]);
   // fila recente e venda sem ontem para comparar não viram sugestão: ficam as de sempre
   assert.equal(sugestoesVivas({ ...calmo, revenue: 5000, pending: 2, oldestWaitingMin: 3 })[0].pergunta, "Quanto vendi essa semana?");
   assert.match(sugestoesVivas({ ...calmo, revenue: 5000, previous: 3000 })[0].fato, /Hoje: R\$\s50,00/);
+});
+
+test("sugestões do dia: conta vencida vem antes do estoque, e o fiado de hoje não repete a pergunta de sempre", () => {
+  const base = { revenue: 0, previous: 0, late: 0, pending: 0, oldestWaitingMin: null, lowStock: [{ name: "Gás P13", fullStore: 4 }], byMethod: { fiado: 2300 } };
+  const s = sugestoesVivas({ ...base, contas: { vencidas: 2, vencendo: 1 } });
+  assert.deepEqual(s.map((x) => x.fato.replace(/\s/g, " ")), ["2 contas vencidas", "Gás P13: 4 cheios", "Fiado hoje: R$ 23,00"]);
+  const semConta = sugestoesVivas(base);
+  assert.equal(semConta.filter((x) => x.pergunta === "Quem está me devendo fiado?").length, 1);
 });

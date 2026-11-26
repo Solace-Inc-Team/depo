@@ -472,7 +472,7 @@ details[open] > :not(summary) {
   details::details-content {
     opacity: 0;
     transition:
-      opacity var(--dur-fast) ease-in,
+      opacity var(--dur-fast) var(--ease-out),
       content-visibility var(--dur) allow-discrete;
   }
   details[open]::details-content {
@@ -486,7 +486,7 @@ details[open] > :not(summary) {
     overflow: clip;
     transition:
       height var(--dur) var(--ease-out),
-      opacity var(--dur-fast) ease-in,
+      opacity var(--dur-fast) var(--ease-out),
       content-visibility var(--dur) allow-discrete;
   }
   details:not([data-popover])[open]::details-content {
@@ -501,7 +501,7 @@ details[open] > :not(summary) {
   opacity: 0;
   transition:
     grid-template-rows var(--dur) var(--ease-out),
-    opacity var(--dur-fast) ease-in;
+    opacity var(--dur-fast) var(--ease-out);
 }
 .recolhe[data-aberto] {
   grid-template-rows: 1fr;
@@ -523,7 +523,7 @@ details[open] > :not(summary) {
 /* barra do pedido no celular: desce ao esvaziar o carrinho, como subiu */
 /* (a entrada é animação, então a saída também: transição não age sobre o que a animação segura) */
 .barra-pedido[data-saindo] {
-  animation: barra-desce var(--dur) ease-in both;
+  animation: barra-desce var(--dur) var(--ease-out) both;
 }
 @keyframes barra-desce {
   to {
@@ -538,9 +538,9 @@ details[open] > :not(summary) {
   opacity: 0;
   pointer-events: none;
   transition:
-    opacity var(--dur-fast) ease-in,
-    scale var(--dur-fast) ease-in,
-    translate var(--dur-fast) ease-in;
+    opacity var(--dur-fast) var(--ease-out),
+    scale var(--dur-fast) var(--ease-out),
+    translate var(--dur-fast) var(--ease-out);
 }
 .popover[data-saindo] {
   scale: 0.99;
@@ -766,7 +766,8 @@ details[open] > :not(summary) {
   inset: 0;
   border-radius: inherit;
   background: inherit;
-  animation: ping 1.8s var(--ease-out) infinite;
+  /* pulsa duas vezes ao aparecer e para: numa lista com vários pedidos abertos, pulsar sem fim virava ruído */
+  animation: ping 1.8s var(--ease-out) 2;
 }
 
 /* linha que acabou de chegar acende e apaga */
@@ -774,8 +775,7 @@ details[open] > :not(summary) {
   animation: flash 2.4s var(--ease-out);
 }
 
-/* carregando: o skeleton do transitions.dev ("Skeleton loader and reveal") pulsa entre 100% e 50% a cada segundo;
-   a tela chega com o mesmo desfoque de 2px saindo (keyframe entra, logo abaixo da cascata) */
+/* carregando: o skeleton do transitions.dev ("Skeleton loader and reveal") pulsa entre 100% e 50% a cada segundo */
 .skeleton {
   border-radius: 6px;
   background: color-mix(in srgb, var(--line) 80%, var(--subtle));
@@ -920,7 +920,7 @@ html[data-trocando-tema]::view-transition-new(root) {
 /* troca de área (assinatura, login, sistema): a tela nova espera a antiga sair. Juntas, no Safari as duas
    apareciam sobrepostas por um instante (a página velha por cima do esqueleto da nova) */
 ::view-transition-old(.page) {
-  animation: 100ms ease-in both fade-out;
+  animation: 100ms var(--ease-out) both fade-out;
 }
 ::view-transition-new(.page) {
   animation: 160ms var(--ease-out) 90ms both fade-in;
@@ -932,7 +932,7 @@ html[data-trocando-tema]::view-transition-new(root) {
     var(--dur-slow) var(--ease-out) both rise;
 }
 ::view-transition-old(.item-out) {
-  animation: var(--dur) ease-in both shrink-out;
+  animation: var(--dur) var(--ease-out) both shrink-out;
 }
 ::view-transition-group(.morph) {
   animation-duration: 360ms;
@@ -1280,14 +1280,14 @@ body[data-confirmando] .deliver-btn {
 
 /* ícones animados ---------------------------------------------------------------------------------
    Movimentos inspirados na lucide-animated, feitos em CSS sobre os mesmos ícones Lucide (sem a Motion):
-   animam com o mouse sobre o link ou botão inteiro, e uma vez quando o item do menu vira a tela atual. */
+   animam uma vez, quando o item do menu vira a tela atual. No hover não: passar o mouse acontece o dia todo */
 .lucide * {
   transform-box: fill-box;
   transform-origin: center;
 }
 
 /* painel: os quatro quadros entram um depois do outro */
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-layout-grid {
+[aria-current="page"] > .lucide-layout-grid {
   & > rect {
     animation: icone-pop 420ms var(--ease-spring) both;
   }
@@ -1296,78 +1296,69 @@ body[data-confirmando] .deliver-btn {
   & > rect:nth-child(4) { animation-delay: 180ms; }
 }
 /* novo pedido: o + gira um quarto de volta */
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-plus {
+[aria-current="page"] > .lucide-plus {
   animation: icone-gira-90 420ms var(--ease-spring);
 }
 /* pedidos: as linhas do recibo se escrevem */
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-receipt-text > path:nth-child(-n + 3) {
+[aria-current="page"] > .lucide-receipt-text > path:nth-child(-n + 3) {
   stroke-dasharray: 10;
   animation: icone-escreve 500ms var(--ease-out) both;
 }
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-receipt-text > path:nth-child(2) { animation-delay: 80ms; }
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-receipt-text > path:nth-child(3) { animation-delay: 160ms; }
+[aria-current="page"] > .lucide-receipt-text > path:nth-child(2) { animation-delay: 80ms; }
+[aria-current="page"] > .lucide-receipt-text > path:nth-child(3) { animation-delay: 160ms; }
 /* entregas: o caminhão sacoleja e avança */
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-truck {
+[aria-current="page"] > .lucide-truck {
   animation: icone-dirige 600ms ease-in-out;
 }
 /* caixa: a aba da carteira abre e fecha */
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-wallet > path:first-child {
+[aria-current="page"] > .lucide-wallet > path:first-child {
   animation: icone-aba 500ms var(--ease-spring);
 }
 /* estoque: a caixa pula */
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-package {
+[aria-current="page"] > .lucide-package {
   animation: icone-pula 520ms var(--ease-out);
 }
 /* clientes: a segunda pessoa chega pelo lado */
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-users > :is(path:nth-child(2), path:nth-child(3)) {
+[aria-current="page"] > .lucide-users > :is(path:nth-child(2), path:nth-child(3)) {
   animation: icone-chega 480ms var(--ease-out) both;
 }
 /* fiado: as moedas caem na mão */
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-hand-coins > circle {
+[aria-current="page"] > .lucide-hand-coins > circle {
   animation: icone-cai 520ms var(--ease-spring) both;
 }
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-hand-coins > circle:last-child { animation-delay: 90ms; }
+[aria-current="page"] > .lucide-hand-coins > circle:last-child { animation-delay: 90ms; }
 /* relatórios: as barras crescem de baixo para cima */
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-chart-column > path:not(:first-child) {
+[aria-current="page"] > .lucide-chart-column > path:not(:first-child) {
   transform-origin: bottom;
   animation: icone-cresce 520ms var(--ease-out) both;
 }
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-chart-column > path:nth-child(3) { animation-delay: 70ms; }
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-chart-column > path:nth-child(2) { animation-delay: 140ms; }
+[aria-current="page"] > .lucide-chart-column > path:nth-child(3) { animation-delay: 70ms; }
+[aria-current="page"] > .lucide-chart-column > path:nth-child(2) { animation-delay: 140ms; }
 /* despesas: o cifrão balança */
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-receipt > path:nth-child(-n + 2) {
+[aria-current="page"] > .lucide-receipt > path:nth-child(-n + 2) {
   animation: icone-balanca 520ms ease-in-out;
 }
 /* produtos e preços: a etiqueta balança presa no furo */
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-tag {
+[aria-current="page"] > .lucide-tag {
   transform-origin: 30% 30%;
   animation: icone-balanca 600ms ease-in-out;
 }
 /* equipe e configurações: a engrenagem gira */
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-user-cog > :nth-child(n + 2) {
+[aria-current="page"] > .lucide-user-cog > :nth-child(n + 2) {
   transform-box: view-box;
   transform-origin: 18px 15px;
   animation: icone-gira 700ms var(--ease-out);
 }
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-settings {
+[aria-current="page"] > .lucide-settings {
   animation: icone-gira 700ms var(--ease-out);
 }
 /* auditoria: o relógio volta no tempo */
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-history {
+[aria-current="page"] > .lucide-history {
   animation: icone-volta 600ms var(--ease-out);
 }
 /* trocar senha: a chave dá meia volta na fechadura */
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-key-round {
+[aria-current="page"] > .lucide-key-round {
   animation: icone-chave 520ms var(--ease-spring);
-}
-/* sair e setas: avançam e voltam */
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-log-out > path:nth-child(-n + 2),
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-arrow-right {
-  animation: icone-avanca 480ms var(--ease-out);
-}
-/* página inicial: os ícones dos itens numerados respondem ao mouse */
-.anim-icone:hover > span > .lucide {
-  animation: icone-pula 520ms var(--ease-out);
 }
 
 @keyframes icone-pop {
@@ -1455,11 +1446,6 @@ body[data-confirmando] .deliver-btn {
 @keyframes icone-chave {
   50% {
     rotate: -35deg;
-  }
-}
-@keyframes icone-avanca {
-  50% {
-    translate: 3px 0;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1585,67 +1571,6 @@ body[data-confirmando] .deliver-btn {
   }
 }
 
-/* conteúdo das telas entra em cascata --------------------------------------------------------------
-   Ao abrir uma tela do sistema: cabeçalho, blocos e cartões sobem em sequência, e as linhas de tabelas e
-   listas aparecem uma depois da outra. Curto de propósito (menos de meio segundo no total) para não fazer
-   quem trabalha esperar. Linha que chega depois (pedido novo após uma ação) entra do mesmo jeito.
-   "backwards", não "both": terminada a entrada, nada fica preso no elemento. Com "both" cada linha virava
-   uma camada própria e a linha de baixo passava por cima do formulário aberto na linha de cima. */
-/* tudo assentado em menos de meio segundo: as linhas só escalonam até a sexta (120 ms entre a primeira e a sexta),
-   e sem desfoque, que custava em celular fraco a cada painel. Antes a última linha parava perto de 0,8 s */
-.pagina > *,
-.pagina :is(.grid, .space-y-6) > :is(.panel, section, article, div) {
-  animation: entra 320ms var(--ease-out) backwards;
-}
-.pagina > *:nth-child(2) { animation-delay: 40ms; }
-.pagina > *:nth-child(3) { animation-delay: 80ms; }
-.pagina > *:nth-child(n + 4) { animation-delay: 120ms; }
-.pagina :is(.grid, .space-y-6) > :is(.panel, section, article, div):nth-child(2) { animation-delay: 60ms; }
-.pagina :is(.grid, .space-y-6) > :is(.panel, section, article, div):nth-child(3) { animation-delay: 100ms; }
-.pagina :is(.grid, .space-y-6) > :is(.panel, section, article, div):nth-child(n + 4) { animation-delay: 140ms; }
-.pagina :is(.table tbody tr, .panel > ul > li) {
-  animation: linha 280ms var(--ease-out) backwards;
-  animation-delay: 100ms;
-}
-.pagina :is(.table tbody tr, .panel > ul > li):nth-child(2) { animation-delay: 124ms; }
-.pagina :is(.table tbody tr, .panel > ul > li):nth-child(3) { animation-delay: 148ms; }
-.pagina :is(.table tbody tr, .panel > ul > li):nth-child(4) { animation-delay: 172ms; }
-.pagina :is(.table tbody tr, .panel > ul > li):nth-child(5) { animation-delay: 196ms; }
-.pagina :is(.table tbody tr, .panel > ul > li):nth-child(n + 6) { animation-delay: 220ms; }
-/* linha nova: entra e ainda acende */
-.pagina :is(.table tbody tr, .panel > ul > li).row-new {
-  animation:
-    linha 280ms var(--ease-out) backwards,
-    flash 2.4s var(--ease-out);
-}
-/* cartão com transição própria (Entregas, data-vt) que chega depois da primeira cascata: já entra deslizando,
-   e a entrada de linha por cima o deixava invisível durante o atraso ou fazia duas entradas seguidas */
-.pagina[data-assentada] .panel > ul > li[data-vt] {
-  animation: none;
-}
-.pagina[data-assentada] .panel > ul > li[data-vt].row-new {
-  animation: flash 2.4s var(--ease-out);
-}
-@keyframes entra {
-  from {
-    opacity: 0;
-    translate: 0 10px;
-  }
-}
-@keyframes linha {
-  from {
-    opacity: 0;
-    translate: 0 4px;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .pagina > *,
-  .pagina :is(.grid, .space-y-6) > *,
-  .pagina :is(.table tbody tr, .panel > ul > li) {
-    animation: none !important;
-  }
-}
-
 /* janela de confirmação: cresce no centro com o fundo esmaecendo; no celular sobe de baixo como gaveta */
 .janela {
   margin: auto;
@@ -1668,10 +1593,10 @@ body[data-confirmando] .deliver-btn {
   border-radius: 16px;
   background: var(--surface);
   box-shadow: 0 30px 80px -20px rgb(0 0 0 / 0.45);
-  animation: janela-entra 280ms var(--ease-spring) both;
+  animation: janela-entra 280ms var(--ease-out) both;
 }
 .janela[data-saindo] .janela-cartao {
-  animation: janela-sai 170ms ease-in both;
+  animation: janela-sai 170ms var(--ease-out) both;
 }
 .janela[data-assentou]::backdrop {
   animation: none;
@@ -1692,7 +1617,7 @@ html[data-trocando-tema]:has(.janela[open]) .app-shell > :not(dialog) {
   filter: blur(3px);
 }
 .janela[data-saindo]::backdrop {
-  animation: fade-out 170ms ease-in both;
+  animation: fade-out 170ms var(--ease-out) both;
 }
 .btn-perigo {
   border-color: var(--danger);
@@ -1714,7 +1639,7 @@ html[data-trocando-tema]:has(.janela[open]) .app-shell > :not(dialog) {
     animation: gaveta-sobe 320ms var(--ease-out) both;
   }
   .janela[data-saindo] .janela-cartao {
-    animation: gaveta-desce 180ms ease-in both;
+    animation: gaveta-desce 180ms var(--ease-out) both;
   }
 }
 /* janela de Configurações: a mesma janela da confirmação, larga, com as seções num trilho à esquerda */
@@ -1799,7 +1724,7 @@ html[data-trocando-tema]:has(.janela[open]) .app-shell > :not(dialog) {
 }
 /* (a entrada é animação e segura a opacidade: a saída também precisa ser animação) */
 .config-conteudo[data-trocando] .config-secao {
-  animation: config-sai 110ms ease-in both;
+  animation: config-sai 110ms var(--ease-out) both;
 }
 @keyframes config-sai {
   to {
@@ -2376,7 +2301,8 @@ input[type="date"].input:hover::-webkit-calendar-picker-indicator {
   border-radius: inherit;
   background: var(--ok);
   opacity: 0;
-  animation: status-vivo 2.4s ease-out infinite;
+  /* algumas vezes e para: ponto aceso parado já diz "ao vivo" */
+  animation: status-vivo 2.4s ease-out 3;
 }
 @keyframes status-vivo {
   0% {
@@ -2469,38 +2395,18 @@ input[type="date"].input:hover::-webkit-calendar-picker-indicator {
   stroke: none;
   opacity: 0.35;
   clip-path: inset(calc((1 - var(--nivel)) * 100%) 0 0 0);
-  animation: vasilhame-enche 700ms var(--ease-chegada) calc(120ms + var(--i, 0) * 80ms) both;
 }
 .nivel-vasilhame.text-danger .nivel {
   fill: currentColor;
 }
-@keyframes vasilhame-enche {
-  from {
-    clip-path: inset(100% 0 0 0);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .nivel-vasilhame .nivel {
-    animation: none;
-  }
-}
 
-/* divisão do dinheiro: cada trecho da barra se estende da esquerda, um depois do outro */
+/* divisão do dinheiro: a barra já abre no tamanho certo (é dado lido toda hora, não anima ao abrir a tela) */
 .divisao > span {
-  transform-origin: left;
-  animation: divisao-trecho 520ms var(--ease-chegada) calc(150ms + var(--i, 0) * 110ms) both;
   /* o painel se atualiza sozinho: quando um valor muda, o trecho desliza até o tamanho novo em vez de pular */
-  transition: flex-grow 600ms var(--ease-out);
-}
-@keyframes divisao-trecho {
-  from {
-    scale: 0 1;
-    opacity: 0;
-  }
+  transition: flex-grow 300ms var(--ease-out);
 }
 @media (prefers-reduced-motion: reduce) {
   .divisao > span {
-    animation: none;
     transition: none;
   }
 }
@@ -2597,7 +2503,7 @@ input[type="date"].input:hover::-webkit-calendar-picker-indicator {
   opacity: 0;
   translate: 0 -4px;
   transition-duration: var(--dur-fast);
-  transition-timing-function: ease-in;
+  transition-timing-function: var(--ease-out);
 }
 
 /* estoque no celular: cada movimentação em três linhas curtas.
@@ -3456,11 +3362,11 @@ html:has(.pagina-escura) body {
   opacity: 1;
   filter: blur(0);
   transition:
-    scale 500ms cubic-bezier(0.34, 1.36, 0.64, 1),
-    opacity 400ms cubic-bezier(0.34, 1.36, 0.64, 1),
-    filter 500ms cubic-bezier(0.34, 1.36, 0.64, 1);
+    scale 250ms var(--ease-out),
+    opacity 200ms var(--ease-out),
+    filter 250ms var(--ease-out);
   @starting-style {
-    scale: 0;
+    scale: 0.5;
     opacity: 0;
     filter: blur(2px);
   }
@@ -3562,7 +3468,7 @@ main:has(.erro-form-acao:not([data-saindo])) .entrada-ainda {
   visibility: hidden;
   transition:
     grid-template-rows 250ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 150ms ease-in,
+    opacity 150ms var(--ease-out),
     visibility 0s 250ms;
 }
 .altura-suave {
@@ -3618,8 +3524,8 @@ main:has(.erro-form-acao:not([data-saindo])) .entrada-ainda {
     visibility: hidden;
     pointer-events: none;
     transition:
-      translate var(--dur) ease-in,
-      opacity var(--dur) ease-in,
+      translate var(--dur) var(--ease-out),
+      opacity var(--dur) var(--ease-out),
       visibility 0s linear var(--dur);
   }
 }
@@ -3852,18 +3758,13 @@ button.gaveta-mais-linha:active {
     overscroll-behavior: contain;
   }
 }
-/* os campos das janelas não refazem a cascata da tela a cada abertura (chegavam 0,7 s depois da gaveta) */
-.pagina dialog :is(.grid, .space-y-6) > :is(.panel, section, article, div),
-.pagina dialog :is(.table tbody tr, .panel > ul > li) {
-  animation: none;
-}
-/* a barra do carrinho sobe sozinha, sem esperar a cascata da tela */
+/* a barra do carrinho sobe ao aparecer */
 .pagina .barra-pedido.barra-pedido {
   animation: barra-sobe var(--dur-slow) var(--ease-chegada) both;
 }
 /* e desce ao sair: com a regra de cima mais forte, a barra (carrinho, pedidos marcados) sumia seca */
 .pagina .barra-pedido.barra-pedido[data-saindo] {
-  animation: barra-desce var(--dur) ease-in both;
+  animation: barra-desce var(--dur) var(--ease-out) both;
 }
 /* o esqueleto de carregamento só aparece se a tela demorar: em troca rápida de aba ele piscava escuro */
 .esqueleto-pagina {
@@ -4046,7 +3947,7 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 16px;
-  transition: opacity var(--dur-fast) ease-in;
+  transition: opacity var(--dur-fast) var(--ease-out);
 }
 .robo-conversa[data-limpando] {
   opacity: 0;
@@ -4220,13 +4121,13 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   translate: 0 -0.375rem;
   clip-path: inset(0 0 100% 0 round 0.5rem);
   transition:
-    clip-path 200ms cubic-bezier(0.4, 0, 1, 1),
-    translate 200ms cubic-bezier(0.4, 0, 1, 1),
-    opacity 120ms ease-in 80ms;
+    clip-path 200ms var(--ease-out),
+    translate 200ms var(--ease-out),
+    opacity 120ms var(--ease-out) 80ms;
 }
 .seletor-filial ~ .popover[data-saindo] > * {
   opacity: 0;
-  transition: opacity 80ms ease-in;
+  transition: opacity 80ms var(--ease-out);
 }
 @media (prefers-reduced-motion: reduce) {
   .seletor-filial ~ .popover,
@@ -4289,14 +4190,14 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   scale: 0.97 1;
   pointer-events: none;
   transition:
-    opacity 160ms ease-in,
-    scale 200ms ease-in;
+    opacity 160ms var(--ease-out),
+    scale 200ms var(--ease-out);
 }
 /* a barra também é .btn: a regra do botão saindo trocava a transição só para a cor, e ela sumia num quadro */
 .codigo-slots:not([data-junto]) .codigo-slots-barra[data-state] {
   transition:
-    opacity 160ms ease-in,
-    scale 200ms ease-in,
+    opacity 160ms var(--ease-out),
+    scale 200ms var(--ease-out),
     color 150ms 100ms;
 }
 .codigo-slots[data-junto] .codigo-slots-barra {
@@ -4454,7 +4355,7 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   overscroll-behavior: contain;
   /* a conversa numa coluna de leitura no meio do quadro: no computador o quadro ocupa a tela, o texto não */
   padding: 16px var(--folga);
-  transition: opacity var(--dur-fast) ease-in;
+  transition: opacity var(--dur-fast) var(--ease-out);
 }
 /* medido o quadro (até o pé da tela, acima da barra de baixo no celular), a conversa ocupa o que sobra e só ela rola:
    a caixa de pergunta fica sempre à vista, como nos apps de chat */
@@ -4539,7 +4440,7 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   opacity: 0;
 }
 .assistente-entrada[data-saindo] .assistente-fonte {
-  animation: 260ms ease-in both fade-out;
+  animation: 260ms var(--ease-out) both fade-out;
 }
 .assistente-entrada[data-saindo] > :not(.assistente-fonte) {
   animation: entrada-sobe 300ms var(--ease-out) both;

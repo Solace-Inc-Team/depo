@@ -4,11 +4,22 @@ import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } fr
 import { useRouter } from "next/navigation";
 import { CornerDownRight, RotateCcw, SendHorizontal } from "lucide-react";
 import type { Sugestao } from "@/lib/assistente";
+import { SemanaBarras } from "@/components/semana-barras";
 import { chamarAcao } from "@/components/action-form";
 import { Aparece, useSaida } from "@/components/saida";
 import { perguntarAssistenteAction } from "@/app/actions";
 
-type Turno = { chave: number; pergunta: string; resposta?: string; destaque?: string; fontes?: string[]; seguintes?: string[]; analise?: boolean };
+type Turno = {
+  chave: number;
+  pergunta: string;
+  resposta?: string;
+  destaque?: string;
+  fontes?: string[];
+  seguintes?: string[];
+  analise?: boolean;
+  /** vendas por dia, quando a pergunta foi de alguns dias: viram as barras do Painel dentro da resposta */
+  dias?: { day: string; cents: number }[];
+};
 
 // o que a espera diz, pelo assunto da pergunta: um palpite para a pessoa ver que algo acontece, não a consulta exata
 function etapa(p: string) {
@@ -54,7 +65,7 @@ function Esperando({ pergunta }: { pergunta: string }) {
 
 // A conversa mora fora do componente: trocar de tela desmonta a tela, mas o módulo continua carregado. Assim ela volta
 // inteira ao abrir o Assistente de novo, e a resposta que chega com a pessoa em outra tela entra nela do mesmo jeito.
-// Recarregar a página ou sair começa do zero. O dono é a chave: outro usuário no mesmo navegador não vê a conversa.
+// O dono é a chave: outro usuário no mesmo navegador não vê a conversa.
 type Estado = { dono: string; turnos: Turno[]; pendente: boolean; erro: string };
 const VAZIO: Estado = { dono: "", turnos: [], pendente: false, erro: "" };
 let conversa = VAZIO;
@@ -64,7 +75,31 @@ const assinarConversa = (f: () => void) => (ouvintes.add(f), () => void ouvintes
 function mudar(dono: string, f: (e: Estado) => Partial<Estado>) {
   const atual = conversa.dono === dono ? conversa : { ...VAZIO, dono };
   conversa = { ...atual, ...f(atual) };
+  guardar();
   ouvintes.forEach((o) => o());
+}
+
+// Recarregar a página também não perde a conversa: ela fica guardada na aba (sessionStorage), que some ao fechar a
+// aba. Só as perguntas já respondidas: uma que estava esperando resposta não volta pela metade.
+const GUARDADA = "depo-conversa";
+function guardar() {
+  try {
+    sessionStorage.setItem(GUARDADA, JSON.stringify({ dono: conversa.dono, turnos: conversa.turnos.filter((t) => t.resposta) }));
+  } catch {}
+}
+let lida = false;
+function lerGuardada() {
+  if (lida) return conversa;
+  lida = true;
+  try {
+    const g = JSON.parse(sessionStorage.getItem(GUARDADA) ?? "null");
+    const turnos: Turno[] = Array.isArray(g?.turnos) ? g.turnos.filter((t: Turno) => typeof t?.pergunta === "string" && typeof t?.resposta === "string") : [];
+    if (typeof g?.dono === "string" && turnos.length && !conversa.turnos.length) {
+      conversa = { ...VAZIO, dono: g.dono, turnos };
+      proximaChave = Math.max(0, ...turnos.map((t) => (Number.isInteger(t.chave) ? t.chave + 1 : 0)));
+    }
+  } catch {}
+  return conversa;
 }
 
 /** A luz que segue o ponteiro no cartão de sugestão. */
@@ -94,7 +129,7 @@ export function Conversa({
 }) {
   const router = useRouter();
   const jaPerguntou = useRef(false);
-  const estado = useSyncExternalStore(assinarConversa, () => conversa, () => VAZIO);
+  const estado = useSyncExternalStore(assinarConversa, lerGuardada, () => VAZIO);
   const { turnos, pendente, erro } = estado.dono === dono ? estado : VAZIO;
   const [texto, setTexto] = useState("");
   const [restam, setRestam] = useState(restamNoComeco);
@@ -247,6 +282,7 @@ export function Conversa({
                     <span className="sr-only">Assistente: </span>
                     {t.destaque && <span className="assistente-destaque">{t.destaque}</span>}
                     {t.resposta}
+                    {!!t.dias?.length && <SemanaBarras semana={t.dias} />}
                   </div>
                   {(t.fontes?.length || t.analise) && (
                     <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-[12px] text-muted">

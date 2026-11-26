@@ -175,7 +175,7 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
         </section>
 
         {/* o assistente no lugar onde o dono já olha: perguntas tiradas do dia de hoje */}
-        {user.role === "dono" && ehHoje && !entregador && assistenteLigado() && <PergunteAoDepo sugestoes={sugestoesVivas(d)} />}
+        {user.role === "dono" && ehHoje && !entregador && assistenteLigado() && <PergunteAoDepo sugestoes={sugestoesVivas({ ...d, contas })} />}
 
         {alertas.length > 0 && (
           // um bloco só, do mais grave para o menos: a gravidade fica no ponto (o urgente com um halo),

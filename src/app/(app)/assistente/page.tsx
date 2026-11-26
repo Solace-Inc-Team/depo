@@ -2,6 +2,7 @@ import { requireUser } from "@/lib/auth";
 import { PageHeader } from "@/components/ui";
 import { assistenteLigado, perguntasRestantes } from "@/domain/assistente";
 import { dashboard } from "@/domain/queries";
+import { contasVencendo } from "@/domain/contas";
 import { sugestoesVivas } from "@/lib/assistente";
 import { Conversa } from "./conversa";
 
@@ -22,7 +23,11 @@ export default async function Assistente({ searchParams }: { searchParams: Promi
       </div>
     );
   // as sugestões saem do dia de hoje, as mesmas do Painel
-  const [restam, d] = await Promise.all([perguntasRestantes(user.tenantId), dashboard(user.tenantId, { branchId: user.branchId })]);
+  const [restam, d, contas] = await Promise.all([
+    perguntasRestantes(user.tenantId),
+    dashboard(user.tenantId, { branchId: user.branchId }),
+    contasVencendo(user.tenantId, user.branchId),
+  ]);
   return (
     <div>
       <PageHeader title="Pergunte ao depo" />
@@ -30,7 +35,7 @@ export default async function Assistente({ searchParams }: { searchParams: Promi
         dono={user.userId}
         restamNoComeco={restam}
         saudacao={`${periodo(horaSP())}, ${user.name.split(" ")[0]}.`}
-        sugestoes={sugestoesVivas(d)}
+        sugestoes={sugestoesVivas({ ...d, contas })}
         perguntaInicial={q?.trim() || undefined}
       />
     </div>

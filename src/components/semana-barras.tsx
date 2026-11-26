@@ -33,7 +33,7 @@ export function SemanaBarras({ semana }: { semana: { day: string; cents: number 
         ))}
       </div>
       <figcaption className="sr-only">
-        Vendido nos últimos 7 dias:{" "}
+        Vendido por dia:{" "}
         {semana.map((d) => `${dia(d.day)} ${formatBRL(d.cents)}`).join(", ")}
       </figcaption>
     </figure>

@@ -11,9 +11,9 @@ export const company = {
 };
 
 /** Mudou o texto de forma relevante? Troque a versão: todo dono precisará aceitar de novo no próximo acesso. */
-export const TERMS_VERSION = "2026-11-15";
+export const TERMS_VERSION = "2026-11-26";
 
-export const termsDate = "15 de novembro de 2026";
+export const termsDate = "26 de novembro de 2026";
 
 /** Dias que a empresa tem para baixar os dados depois de cancelar, e prazo para apagar. */
 export const EXPORT_WINDOW_DAYS = 30;

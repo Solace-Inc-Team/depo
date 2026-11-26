@@ -336,7 +336,7 @@ export function PortalForm({
                   className={`btn justify-start gap-2.5 ${payment === v ? "border-accent bg-accent/10 hover:bg-accent/10" : ""}`}
                 >
                   <span aria-hidden="true" className={`grid size-4 shrink-0 place-items-center rounded-full border-[1.5px] transition-colors ${payment === v ? "border-accent" : "border-muted"}`}>
-                    <span className={`size-2 rounded-full bg-accent transition-transform duration-200 ${payment === v ? "scale-100" : "scale-0"}`} />
+                    <span className={`size-2 rounded-full bg-accent transition-[scale,opacity] duration-200 ${payment === v ? "scale-100 opacity-100" : "scale-50 opacity-0"}`} />
                   </span>
                   {l}
                 </button>

@@ -126,24 +126,32 @@ type Agora = {
   pending: number;
   oldestWaitingMin: number | null;
   lowStock: { name: string; fullStore: number }[];
+  byMethod: { fiado: number };
+  /** contas a pagar vencidas e vencendo até amanhã (só para quem cuida do dinheiro) */
+  contas?: { vencidas: number; vencendo: number } | null;
 };
 
 /**
- * Até três perguntas tiradas do dia, da mais urgente para a menos: atraso, estoque baixo, fila parada e vendas.
+ * Até três perguntas tiradas do dia, da mais urgente para a menos: atraso, conta vencida, estoque baixo, fila parada,
+ * fiado do dia e vendas.
  * O que faltar para três vem das perguntas de sempre.
  */
 export function sugestoesVivas(d: Agora): Sugestao[] {
   const s: Sugestao[] = [];
   const n = (q: number, um: string, varios: string) => `${q} ${q === 1 ? um : varios}`;
   if (d.late > 0) s.push({ fato: n(d.late, "pedido atrasado", "pedidos atrasados"), pergunta: "Quais pedidos estão atrasados?" });
+  const c = d.contas;
+  if (c?.vencidas) s.push({ fato: n(c.vencidas, "conta vencida", "contas vencidas"), pergunta: "Quais contas estão vencidas?" });
+  else if (c?.vencendo) s.push({ fato: `${n(c.vencendo, "conta vence", "contas vencem")} até amanhã`, pergunta: "Quais contas vencem essa semana?" });
   const baixo = d.lowStock[0];
   if (baixo) s.push({ fato: `${baixo.name}: ${n(baixo.fullStore, "cheio", "cheios")}`, pergunta: `Quando acaba o ${baixo.name}?` });
   if (d.pending > 0 && (d.oldestWaitingMin ?? 0) >= 10)
     s.push({ fato: `${n(d.pending, "pedido espera", "pedidos esperam")} há ${d.oldestWaitingMin} min`, pergunta: "Como está a fila agora?" });
+  if (d.byMethod.fiado > 0) s.push({ fato: `Fiado hoje: ${formatBRL(d.byMethod.fiado)}`, pergunta: "Quem está me devendo fiado?" });
   // o valor de hoje já está no Painel: a pergunta só vale com ontem para comparar
   if (d.revenue > 0 && d.previous > 0) s.push({ fato: `Hoje: ${formatBRL(d.revenue)}`, pergunta: "Vendi mais ou menos que ontem?" });
   // dia calmo completa com as perguntas de sempre: a lista não fica com um item só
-  return [...s, ...SEMPRE].slice(0, 3);
+  return [...s, ...SEMPRE.filter((x) => !s.some((y) => y.pergunta === x.pergunta))].slice(0, 3);
 }
 
 const SEMPRE: Sugestao[] = [

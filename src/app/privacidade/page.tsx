@@ -57,15 +57,17 @@ export default function Privacidade() {
         <li><strong>Hostinger</strong>: servidor onde o sistema e o banco de dados rodam, localizado no Brasil.</li>
         <li><strong>Cloudflare</strong>: guarda as cópias de backup do banco de dados, com criptografia em repouso.</li>
         <li><strong>Mercado Pago</strong>: gera e confirma as cobranças Pix. Recebe o valor e o número do pedido e, na cobrança da assinatura, o e-mail do dono da distribuidora. Quando a distribuidora conecta a própria conta, o dinheiro dos pedidos cai direto nela.</li>
+        <li><strong>Anthropic</strong>: quando o dono usa o “Pergunte ao depo”, a pergunta e os números que o sistema consulta para respondê-la (como vendas, estoque, contas e, quando a pergunta pede, o nome de clientes que devem fiado ou pararam de comprar) vão para o modelo Claude, que escreve a resposta. Telefones e endereços não são enviados. Pelos termos comerciais da Anthropic, esses dados não são usados para treinar modelos.</li>
         <li><strong>Telegram</strong>: recebe avisos técnicos de erro para a equipe da {name}. Os avisos trazem a mensagem técnica e a tela onde o erro aconteceu, sem dados de clientes.</li>
       </ul>
       <p>Também podemos fornecer dados quando exigido por lei ou por ordem judicial.</p>
 
       <h2>6. Transferência para fora do Brasil</h2>
       <p>
-        As cópias de backup ficam em servidores da Cloudflare na América do Norte. Essa transferência é feita apenas para garantir
-        a recuperação dos dados e segue as hipóteses do artigo 33 da LGPD, com fornecedor que adota padrões de segurança
-        compatíveis.
+        As cópias de backup ficam em servidores da Cloudflare na América do Norte, e as perguntas do “Pergunte ao depo” são
+        processadas pela Anthropic nos Estados Unidos. Essas transferências são feitas apenas para guardar as cópias e para
+        responder as perguntas do dono, e seguem as hipóteses do artigo 33 da LGPD, com fornecedores que adotam padrões de
+        segurança compatíveis.
       </p>
 
       <h2>7. Por quanto tempo guardamos</h2>
