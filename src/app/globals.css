@@ -1306,13 +1306,6 @@ body[data-confirmando] .deliver-btn {
 }
 :is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-receipt-text > path:nth-child(2) { animation-delay: 80ms; }
 :is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-receipt-text > path:nth-child(3) { animation-delay: 160ms; }
-/* assistente: as linhas da resposta se escrevem dentro do balão */
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-message-square-text > path:nth-child(n + 2) {
-  stroke-dasharray: 12;
-  animation: icone-escreve 500ms var(--ease-out) both;
-}
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-message-square-text > path:nth-child(3) { animation-delay: 80ms; }
-:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-message-square-text > path:nth-child(4) { animation-delay: 160ms; }
 /* entregas: o caminhão sacoleja e avança */
 :is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-truck {
   animation: icone-dirige 600ms ease-in-out;
@@ -4565,8 +4558,7 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
 .robo-balao-cliente[data-voando] {
   animation: none;
 }
-/* a fonte de luz: o ponto aceso, um brilho largo em volta e anéis que nascem dele e se abrem até sumir
-   (Magic Rings do React Bits, em CSS: sem WebGL rodando, igual nos dois temas) */
+/* a fonte de luz: o ponto aceso e um brilho largo e parado em volta */
 .assistente-fonte {
   position: relative;
   display: grid;
@@ -4580,48 +4572,11 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   z-index: -1;
   border-radius: 50%;
   background: radial-gradient(circle, color-mix(in srgb, var(--marca) 22%, transparent), color-mix(in srgb, var(--marca) 7%, transparent) 38%, transparent 68%);
-  animation: fonte-respira 6s ease-in-out infinite;
 }
 .assistente-fonte > .assistente-ponto {
   width: 12px;
   height: 12px;
   box-shadow: 0 0 0 5px color-mix(in srgb, var(--marca) 18%, transparent), 0 0 28px 6px color-mix(in srgb, var(--marca) 50%, transparent);
-}
-.assistente-anel {
-  position: absolute;
-  width: 520px;
-  height: 520px;
-  z-index: -1;
-  border-radius: 50%;
-  /* onda de luz, sem traço: passando por trás da saudação ela clareia o fundo em vez de riscar o texto */
-  background: radial-gradient(circle, transparent 52%, color-mix(in srgb, var(--marca) 26%, transparent) 64%, transparent 71%);
-  opacity: 0;
-  scale: 0.03;
-  animation: anel-abre 7.5s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
-}
-.assistente-anel:nth-child(2) {
-  animation-delay: 2.5s;
-}
-.assistente-anel:nth-child(3) {
-  animation-delay: 5s;
-}
-@keyframes anel-abre {
-  0% {
-    opacity: 0;
-    scale: 0.03;
-  }
-  12% {
-    opacity: 0.9;
-  }
-  100% {
-    opacity: 0;
-    scale: 1;
-  }
-}
-@keyframes fonte-respira {
-  50% {
-    opacity: 0.7;
-  }
 }
 /* a saudação entra palavra por palavra, saindo do desfoque (o Blur Text do React Bits, em CSS) */
 .assistente-saudacao > span {
@@ -4639,8 +4594,8 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
 .assistente-sugestoes {
   display: grid;
   width: 100%;
-  max-width: 34rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 28rem;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
 }
 /* cartão de sugestão com a luz que segue o ponteiro (Spotlight Card do React Bits, em CSS) */
@@ -4725,15 +4680,6 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  /* um anel só, parado no meio do caminho, e o brilho sem respirar */
-  .assistente-anel,
-  .assistente-fonte::before {
-    animation: none;
-  }
-  .assistente-anel:first-child {
-    opacity: 0.35;
-    scale: 0.45;
-  }
   .assistente-ponto[data-estado="pensando"],
   .texto-brilho {
     animation: none;

@@ -10,7 +10,6 @@ import {
   Ellipsis,
   HandCoins,
   History,
-  MessageSquareText,
   KeyRound,
   LayoutGrid,
   Package,
@@ -43,13 +42,12 @@ const icones: Record<string, LucideIcon> = {
   "/produtos": Tag,
   "/equipe": UserRoundCog,
   "/auditoria": History,
-  "/assistente": MessageSquareText,
 };
 
 export type ItemMais = { href: string; label: string };
 
 // nomes curtos nos blocos da gaveta: "Caixa e acertos" e "Produtos e preços" quebravam em duas linhas
-const curto: Record<string, string> = { "/caixa": "Caixa", "/produtos": "Produtos" };
+const curto: Record<string, string> = { "/caixa": "Caixa", "/produtos": "Produtos", "/assistente": "Perguntar" };
 
 const ativo = (path: string, href: string) =>
   href === "/" ? path === "/" : href === "/pedidos" ? /^\/pedidos(\/(?!novo).*)?$/.test(path) : path === href || path.startsWith(href + "/");
@@ -254,7 +252,13 @@ export function NavInferior({
                     <li key={l.href}>
                       {/* a gaveta sai no toque, junto com a troca de tela (antes esperava a tela nova chegar) */}
                       <Link href={l.href} onClick={(e) => ir(e, l.href)} aria-label={l.label} aria-current={on ? "page" : undefined} className="gaveta-mais-item" data-on={on || undefined}>
-                        <Icone size={20} strokeWidth={1.75} aria-hidden="true" />
+                        {l.href === "/assistente" ? (
+                          <span aria-hidden="true" className="grid size-5 place-items-center">
+                            <span className="assistente-ponto" />
+                          </span>
+                        ) : (
+                          <Icone size={20} strokeWidth={1.75} aria-hidden="true" />
+                        )}
                         <span aria-hidden="true">{curto[l.href] ?? l.label}</span>
                       </Link>
                     </li>

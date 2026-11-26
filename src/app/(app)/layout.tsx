@@ -65,6 +65,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       links: [
         { href: "/pedidos/novo", label: "Novo pedido" },
         { href: "/", label: "Painel" },
+        // o assistente perto do que o dono abre todo dia, e não perdido entre os cadastros
+        ...(user.role === "dono" ? [{ href: "/assistente", label: "Pergunte ao depo" }] : []),
       ],
     },
     {
@@ -88,7 +90,6 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           ? [
               { href: "/produtos", label: "Produtos e preços" },
               { href: "/equipe", label: "Equipe" },
-              { href: "/assistente", label: "Assistente" },
               { href: "/auditoria", label: "Auditoria" },
             ]
           : []),
@@ -200,7 +201,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       <NavInferior
         fila={fila}
         mais={[
-          { titulo: "Operação", links: groups[1].links.filter((l) => !["/pedidos", "/entregas"].includes(l.href)) },
+          { titulo: "Operação", links: [...groups[0].links.filter((l) => l.href === "/assistente"), ...groups[1].links.filter((l) => !["/pedidos", "/entregas"].includes(l.href))] },
           { titulo: "Gestão", links: groups[2].links },
         ]}
         usuario={{ iniciais: initials(user.name), nome: user.name, papel: roleLabel[user.role], empresa: user.branches.length > 1 ? `${user.tenantName}, ${user.branchName}` : user.tenantName }}

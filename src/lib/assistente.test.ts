@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { custoMicro, dolares, entradaTotal, historicoCurto, LIMITES, resultadoCurto, separarResposta, somarUso, usoZerado } from "./assistente.ts";
+import { custoMicro, dolares, entradaTotal, historicoCurto, LIMITES, resultadoCurto, separarResposta, somarUso, sugestoesVivas, usoZerado } from "./assistente.ts";
 
 test("custo da pergunta: cada tipo de token no preço do modelo, em milionésimos de dólar", () => {
   const u = { entrada: 2000, cacheGravado: 0, cacheLido: 8000, saida: 300 };
@@ -55,4 +55,15 @@ test("resposta em JSON cru não vai para a tela", () => {
   const r = separarResposta('{"total":"R$ 51,00"}\nSEGUIR: E ontem?');
   assert.equal(r.texto, "Não consegui montar a resposta. Tente perguntar de outro jeito.");
   assert.deepEqual(r.seguintes, []);
+});
+
+test("sugestões do dia: o mais urgente primeiro, no máximo três, e as de sempre sem movimento", () => {
+  const calmo = { revenue: 0, previous: 0, late: 0, pending: 0, oldestWaitingMin: null, lowStock: [] };
+  assert.equal(sugestoesVivas(calmo).length, 3);
+  assert.equal(sugestoesVivas(calmo)[0].pergunta, "Quanto vendi essa semana?");
+  const cheio = sugestoesVivas({ revenue: 211100, previous: 100000, late: 1, pending: 3, oldestWaitingMin: 12, lowStock: [{ name: "Galão de água 20L", fullStore: 5 }] });
+  assert.deepEqual(cheio.map((s) => s.fato), ["1 pedido atrasado", "Galão de água 20L: 5 cheios", "3 pedidos esperam há 12 min"]);
+  // fila recente e venda sem ontem para comparar não viram sugestão: ficam as de sempre
+  assert.equal(sugestoesVivas({ ...calmo, revenue: 5000, pending: 2, oldestWaitingMin: 3 })[0].pergunta, "Quanto vendi essa semana?");
+  assert.match(sugestoesVivas({ ...calmo, revenue: 5000, previous: 3000 })[0].fato, /Hoje: R\$\s50,00/);
 });

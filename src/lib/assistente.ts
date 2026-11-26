@@ -1,4 +1,5 @@
 // Contas do assistente sem banco nem rede, para serem testadas: modelos, preço, limites e o histórico enviado.
+import { formatBRL } from "./money.ts";
 
 /**
  * Toda pergunta começa no modelo barato. Ele mesmo chama `pedir_analise` quando a pergunta pede para cruzar
@@ -113,3 +114,40 @@ export function separarResposta(bruta: string) {
   if (/^[[{]/.test(texto)) return { texto: "Não consegui montar a resposta. Tente perguntar de outro jeito.", destaque: undefined, seguintes: [] };
   return { texto, destaque, seguintes };
 }
+
+/** fato vazio: pergunta de sempre, sem número do dia por trás */
+export type Sugestao = { fato: string; pergunta: string };
+
+/** O que o painel já sabe de agora, para a sugestão nascer de um fato do dia e não de uma lista fixa. */
+type Agora = {
+  revenue: number;
+  previous: number;
+  late: number;
+  pending: number;
+  oldestWaitingMin: number | null;
+  lowStock: { name: string; fullStore: number }[];
+};
+
+/**
+ * Até três perguntas tiradas do dia, da mais urgente para a menos: atraso, estoque baixo, fila parada e vendas.
+ * O que faltar para três vem das perguntas de sempre.
+ */
+export function sugestoesVivas(d: Agora): Sugestao[] {
+  const s: Sugestao[] = [];
+  const n = (q: number, um: string, varios: string) => `${q} ${q === 1 ? um : varios}`;
+  if (d.late > 0) s.push({ fato: n(d.late, "pedido atrasado", "pedidos atrasados"), pergunta: "Quais pedidos estão atrasados?" });
+  const baixo = d.lowStock[0];
+  if (baixo) s.push({ fato: `${baixo.name}: ${n(baixo.fullStore, "cheio", "cheios")}`, pergunta: `Quando acaba o ${baixo.name}?` });
+  if (d.pending > 0 && (d.oldestWaitingMin ?? 0) >= 10)
+    s.push({ fato: `${n(d.pending, "pedido espera", "pedidos esperam")} há ${d.oldestWaitingMin} min`, pergunta: "Como está a fila agora?" });
+  // o valor de hoje já está no Painel: a pergunta só vale com ontem para comparar
+  if (d.revenue > 0 && d.previous > 0) s.push({ fato: `Hoje: ${formatBRL(d.revenue)}`, pergunta: "Vendi mais ou menos que ontem?" });
+  // dia calmo completa com as perguntas de sempre: a lista não fica com um item só
+  return [...s, ...SEMPRE].slice(0, 3);
+}
+
+const SEMPRE: Sugestao[] = [
+  { fato: "", pergunta: "Quanto vendi essa semana?" },
+  { fato: "", pergunta: "Quem está me devendo fiado?" },
+  { fato: "", pergunta: "Quais clientes pararam de comprar?" },
+];

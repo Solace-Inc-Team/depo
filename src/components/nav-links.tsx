@@ -19,7 +19,6 @@ import {
   Tag,
   UserCog,
   History,
-  MessageSquareText,
   type LucideIcon,
 } from "lucide-react";
 
@@ -39,7 +38,6 @@ const icons: Record<string, LucideIcon> = {
   "/produtos": Tag,
   "/equipe": UserCog,
   "/auditoria": History,
-  "/assistente": MessageSquareText,
   "/ajuda": CircleHelp,
 };
 
@@ -53,7 +51,14 @@ function ItemMenu({ href, label, on, selo }: { href: string; label: string; on: 
         on ? "bg-subtle text-fg" : "text-muted hover:bg-subtle/70 hover:text-fg"
       }`}
     >
-      {Icon && <Icon size={16} strokeWidth={1.75} aria-hidden="true" />}
+      {/* o assistente leva o ponto aceso da marca, não um ícone: é o único item vivo do menu */}
+      {href === "/assistente" ? (
+        <span aria-hidden="true" className="grid size-4 shrink-0 place-items-center">
+          <span className="assistente-ponto" />
+        </span>
+      ) : (
+        Icon && <Icon size={16} strokeWidth={1.75} aria-hidden="true" />
+      )}
       {label}
       {selo !== undefined && <SeloMenu n={selo} />}
     </Link>

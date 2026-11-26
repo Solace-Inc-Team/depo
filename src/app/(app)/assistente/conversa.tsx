@@ -1,21 +1,14 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
-import { ChartColumn, CornerDownRight, HandCoins, Package, Receipt, RotateCcw, SendHorizontal, Users, type LucideIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { CornerDownRight, RotateCcw, SendHorizontal } from "lucide-react";
+import type { Sugestao } from "@/lib/assistente";
 import { chamarAcao } from "@/components/action-form";
 import { Aparece, useSaida } from "@/components/saida";
 import { perguntarAssistenteAction } from "@/app/actions";
 
 type Turno = { chave: number; pergunta: string; resposta?: string; destaque?: string; fontes?: string[]; seguintes?: string[]; analise?: boolean };
-
-const SUGESTOES: { icone: LucideIcon; texto: string }[] = [
-  { icone: ChartColumn, texto: "Quanto vendi essa semana?" },
-  { icone: Package, texto: "Vou ficar sem gás essa semana?" },
-  { icone: HandCoins, texto: "Quem está me devendo fiado?" },
-  { icone: Receipt, texto: "Quanto tenho de contas a pagar?" },
-  { icone: Users, texto: "Quais clientes pararam de comprar?" },
-  { icone: ChartColumn, texto: "Qual o horário de mais pedidos?" },
-];
 
 // o que a espera diz, pelo assunto da pergunta: um palpite para a pessoa ver que algo acontece, não a consulta exata
 function etapa(p: string) {
@@ -85,7 +78,22 @@ const luzNoPonteiro = (e: React.PointerEvent<HTMLElement>) => {
  * Conversa do dono com o assistente. As respostas anteriores vão junto em cada pergunta (o servidor corta para as
  * últimas, e curtas), então "e ontem?" entende do que se fala sem o histórico crescer sem fim.
  */
-export function Conversa({ dono, restamNoComeco, saudacao }: { dono: string; restamNoComeco: number; saudacao: string }) {
+export function Conversa({
+  dono,
+  restamNoComeco,
+  saudacao,
+  sugestoes,
+  perguntaInicial,
+}: {
+  dono: string;
+  restamNoComeco: number;
+  saudacao: string;
+  sugestoes: Sugestao[];
+  /** veio do Painel (?q=): pergunta sozinha ao abrir, uma vez */
+  perguntaInicial?: string;
+}) {
+  const router = useRouter();
+  const jaPerguntou = useRef(false);
   const estado = useSyncExternalStore(assinarConversa, () => conversa, () => VAZIO);
   const { turnos, pendente, erro } = estado.dono === dono ? estado : VAZIO;
   const [texto, setTexto] = useState("");
@@ -161,6 +169,15 @@ export function Conversa({ dono, restamNoComeco, saudacao }: { dono: string; res
     });
   }
 
+  // pergunta que veio do Painel: some do endereço (recarregar não pergunta de novo) e vai como se fosse digitada
+  useEffect(() => {
+    if (!perguntaInicial || jaPerguntou.current) return;
+    jaPerguntou.current = true;
+    router.replace("/assistente", { scroll: false });
+    perguntar(perguntaInicial.slice(0, 400), document.getElementById("assistente-texto"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- uma vez, ao abrir
+  }, []);
+
   function recomecar() {
     mudar(dono, () => ({ erro: "" }));
     setLimpando(true);
@@ -176,12 +193,8 @@ export function Conversa({ dono, restamNoComeco, saudacao }: { dono: string; res
       <div ref={area} className="assistente-conversa" data-limpando={limpando || undefined} role="log" aria-live="polite">
         {entrada.montado && (
           <div className="assistente-entrada" data-saindo={entrada.saindo || undefined}>
-            {/* a luz da tela nasce do ponto: um brilho em volta e anéis que se abrem devagar (o Magic Rings do React Bits,
-                em CSS); é a mesma língua do ponto que pulsa enquanto o assistente consulta */}
+            {/* a luz da tela nasce do ponto, parada: só o ponto da espera pulsa, enquanto o assistente consulta */}
             <span aria-hidden="true" className="assistente-fonte">
-              <span className="assistente-anel" />
-              <span className="assistente-anel" />
-              <span className="assistente-anel" />
               <span className="assistente-ponto" />
             </span>
             <div className="text-center">
@@ -196,7 +209,7 @@ export function Conversa({ dono, restamNoComeco, saudacao }: { dono: string; res
               <p className="mt-1 text-[13px] text-muted">Pergunte sobre vendas, estoque, contas e clientes. Os números vêm do próprio sistema.</p>
             </div>
             <div className="assistente-sugestoes">
-              {SUGESTOES.map(({ icone: Icone, texto: s }, i) => (
+              {sugestoes.map(({ fato, pergunta: s }, i) => (
                 <button
                   key={s}
                   type="button"
@@ -210,8 +223,11 @@ export function Conversa({ dono, restamNoComeco, saudacao }: { dono: string; res
                     perguntar(s, e.currentTarget);
                   }}
                 >
-                  <Icone size={16} strokeWidth={1.75} aria-hidden="true" />
-                  {s}
+                  <CornerDownRight size={16} strokeWidth={1.75} aria-hidden="true" />
+                  <span className="min-w-0">
+                    {fato && <span className="block text-[12px] text-muted">{fato}</span>}
+                    {s}
+                  </span>
                 </button>
               ))}
             </div>

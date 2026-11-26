@@ -15,6 +15,9 @@ import { FiltroPainel } from "./filtro-painel";
 import { PrimeirosPassos } from "./primeiros-passos";
 import { emTesteGratis } from "@/domain/assinatura";
 import { Chegada } from "./chegada";
+import { PergunteAoDepo } from "./pergunte-ao-depo";
+import { assistenteLigado } from "@/domain/assistente";
+import { sugestoesVivas } from "@/lib/assistente";
 import { PLANO } from "@/lib/plano";
 import { Money, StatusBadge, Empty, fmtTime, paymentLabel } from "@/components/ui";
 
@@ -170,6 +173,9 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
             </p>
           </div>
         </section>
+
+        {/* o assistente no lugar onde o dono já olha: perguntas tiradas do dia de hoje */}
+        {user.role === "dono" && ehHoje && !entregador && assistenteLigado() && <PergunteAoDepo sugestoes={sugestoesVivas(d)} />}
 
         {alertas.length > 0 && (
           // um bloco só, do mais grave para o menos: a gravidade fica no ponto (o urgente com um halo),
