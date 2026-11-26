@@ -102,6 +102,62 @@ function lerGuardada() {
   return conversa;
 }
 
+// A resposta que acabou de chegar entra contando: o número sobe até o valor, as palavras assentam e as barras crescem.
+// Só ela e só uma vez: some na pergunta seguinte, em "Nova conversa" e ao sair da tela, então voltar ou recarregar
+// mostra a conversa parada. Mora fora do componente como a conversa: a resposta que chega com a pessoa em outra tela
+// ainda entra contando quando ela volta.
+let nova: number | null = null;
+
+const NUMERO = /\d[\d.]*(?:,\d+)?/;
+/** O número em destaque sobe de zero até o valor (com o formato do texto: R$, pontos, vírgula), em 0,7 s. */
+function Destaque({ texto, sobe }: { texto: string; sobe: boolean }) {
+  const el = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    const m = texto.match(NUMERO);
+    const span = el.current;
+    if (!sobe || !m || !span || semMovimento()) return;
+    const casas = m[0].split(",")[1]?.length ?? 0;
+    const valor = Number(m[0].replace(/\./g, "").replace(",", "."));
+    const formato = new Intl.NumberFormat("pt-BR", { minimumFractionDigits: casas, maximumFractionDigits: casas, useGrouping: m[0].includes(".") });
+    const antes = texto.slice(0, m.index), depois = texto.slice(m.index! + m[0].length);
+    const inicio = performance.now();
+    let quadro = 0;
+    const passo = (agora: number) => {
+      const k = Math.min(1, (agora - inicio) / 700);
+      span.textContent = antes + formato.format(valor * (1 - (1 - k) ** 3)) + depois;
+      if (k < 1) quadro = requestAnimationFrame(passo);
+    };
+    quadro = requestAnimationFrame(passo);
+    return () => {
+      cancelAnimationFrame(quadro);
+      span.textContent = texto;
+    };
+  }, [texto, sobe]);
+  // o leitor de tela ouve o valor final uma vez; os números de passagem ficam só na tela
+  return (
+    <span className="assistente-destaque">
+      <span className="sr-only">{texto}</span>
+      <span ref={el} aria-hidden="true">{texto}</span>
+    </span>
+  );
+}
+
+/** As palavras da resposta nova assentam saindo do desfoque, em sequência curta (as depois da 24ª entram juntas). */
+function Palavras({ texto }: { texto: string }) {
+  let i = 0;
+  return (
+    <span className="assistente-palavras">
+      {texto.split(/(\s+)/).map((p, k) =>
+        /^\s*$/.test(p) ? p : (
+          <span key={k} style={{ "--i": Math.min(i++, 24) } as React.CSSProperties}>
+            {p}
+          </span>
+        ),
+      )}
+    </span>
+  );
+}
+
 /** A luz que segue o ponteiro no cartão de sugestão. */
 const luzNoPonteiro = (e: React.PointerEvent<HTMLElement>) => {
   const r = e.currentTarget.getBoundingClientRect();
@@ -190,6 +246,7 @@ export function Conversa({
     voo.current.ponto = turnos.length ? undefined : document.querySelector(".assistente-fonte > .assistente-ponto")?.getBoundingClientRect();
     const historico = turnos.filter((t) => t.resposta).map((t) => ({ pergunta: t.pergunta, resposta: t.resposta }));
     const id = proximaChave++;
+    nova = null;
     mudar(dono, (e) => ({ turnos: [...e.turnos, { chave: id, pergunta }], pendente: true, erro: "" }));
     void chamarAcao(() => perguntarAssistenteAction(pergunta, historico)).then((c) => {
       const falha = c.erro ?? c.r?.erro;
@@ -200,6 +257,7 @@ export function Conversa({
       }
       const r = c.r!;
       setRestam(r.restam ?? 0);
+      nova = id;
       mudar(dono, (e) => ({ turnos: e.turnos.map((t) => (t.chave === id ? { ...t, ...r, chave: id, pergunta } : t)), pendente: false }));
     });
   }
@@ -213,7 +271,11 @@ export function Conversa({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- uma vez, ao abrir
   }, []);
 
+  // saiu da tela: ao voltar, a última resposta já está lá, parada
+  useEffect(() => () => void (nova = null), []);
+
   function recomecar() {
+    nova = null;
     mudar(dono, () => ({ erro: "" }));
     setLimpando(true);
     setTimeout(() => {
@@ -227,8 +289,9 @@ export function Conversa({
     <section ref={painel} className="assistente-painel panel flex flex-col overflow-hidden">
       <div ref={area} className="assistente-conversa" data-limpando={limpando || undefined} role="log" aria-live="polite">
         {entrada.montado && (
-          <div className="assistente-entrada" data-saindo={entrada.saindo || undefined}>
-            {/* a luz da tela nasce do ponto, parada: só o ponto da espera pulsa, enquanto o assistente consulta */}
+          <div className="assistente-entrada" data-saindo={entrada.saindo || undefined} data-ouvindo={texto.trim() ? "" : undefined}>
+            {/* a luz da tela nasce do ponto: acende uma vez, respira fraco e fica mais forte com texto no campo; é a mesma
+                língua do ponto que pulsa enquanto o assistente consulta */}
             <span aria-hidden="true" className="assistente-fonte">
               <span className="assistente-ponto" />
             </span>
@@ -280,9 +343,9 @@ export function Conversa({
                 <div className="min-w-0">
                   <div className="robo-balao max-w-none">
                     <span className="sr-only">Assistente: </span>
-                    {t.destaque && <span className="assistente-destaque">{t.destaque}</span>}
-                    {t.resposta}
-                    {!!t.dias?.length && <SemanaBarras semana={t.dias} />}
+                    {t.destaque && <Destaque texto={t.destaque} sobe={t.chave === nova} />}
+                    {t.chave === nova ? <Palavras texto={t.resposta} /> : t.resposta}
+                    {!!t.dias?.length && <SemanaBarras semana={t.dias} cresce={t.chave === nova} />}
                   </div>
                   {(t.fontes?.length || t.analise) && (
                     <p className="mt-1.5 flex flex-wrap items-center gap-x-2 text-[12px] text-muted">

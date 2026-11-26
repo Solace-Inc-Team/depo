@@ -9,14 +9,21 @@ const dia = (iso: string) =>
     .format(new Date(`${iso}T12:00:00-03:00`))
     .replace(".", "");
 
-export function SemanaBarras({ semana }: { semana: { day: string; cents: number }[] }) {
+/** cresce: as barras sobem uma depois da outra (a resposta nova do assistente), a de hoje por último */
+export function SemanaBarras({ semana, cresce }: { semana: { day: string; cents: number }[]; cresce?: boolean }) {
   const max = Math.max(...semana.map((d) => d.cents), 1);
   const ultimo = semana.length - 1;
   return (
-    <figure className="mt-4">
+    <figure className="mt-4" data-cresce={cresce || undefined}>
       <Dicas toque contida className="flex h-10 items-end gap-0.5">
         {semana.map((d, i) => (
-          <div key={d.day} className="semana-barra group relative flex h-full flex-1 items-end" data-atual={i === ultimo || undefined} data-dica={formatBRL(d.cents)}>
+          <div
+            key={d.day}
+            className="semana-barra group relative flex h-full flex-1 items-end"
+            style={{ "--i": i } as React.CSSProperties}
+            data-atual={i === ultimo || undefined}
+            data-dica={formatBRL(d.cents)}
+          >
             <span
               className="w-full rounded-t-[4px]"
               // dia sem venda ainda deixa um traço na base, para a semana não ter buraco

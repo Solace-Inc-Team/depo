@@ -4558,7 +4558,9 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
 .robo-balao-cliente[data-voando] {
   animation: none;
 }
-/* a fonte de luz: o ponto aceso e um brilho largo e parado em volta */
+/* a fonte de luz: o ponto acende uma vez e o brilho se abre dele; depois só respira, fraco, para a tela ficar calma
+   enquanto a pessoa lê. Com texto no campo o brilho fica mais forte, como quem escuta. Um objeto com um estado para
+   cada momento (AI Tool Call do SmoothUI, Voice Orb do chatcn), sem nada repetindo à toa nem seguindo o ponteiro */
 .assistente-fonte {
   position: relative;
   display: grid;
@@ -4572,11 +4574,43 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   z-index: -1;
   border-radius: 50%;
   background: radial-gradient(circle, color-mix(in srgb, var(--marca) 22%, transparent), color-mix(in srgb, var(--marca) 7%, transparent) 38%, transparent 68%);
+  transition: scale 500ms var(--ease-out), background 500ms var(--ease-out);
+  animation: fonte-abre 1.6s cubic-bezier(0.2, 0.7, 0.3, 1) both, fonte-respira 7s ease-in-out 1.8s infinite;
 }
 .assistente-fonte > .assistente-ponto {
   width: 12px;
   height: 12px;
   box-shadow: 0 0 0 5px color-mix(in srgb, var(--marca) 18%, transparent), 0 0 28px 6px color-mix(in srgb, var(--marca) 50%, transparent);
+  transition: box-shadow 400ms var(--ease-out);
+  animation: ponto-acende 900ms var(--ease-out) both;
+}
+.assistente-entrada[data-ouvindo] .assistente-fonte::before {
+  scale: 1.15;
+  background: radial-gradient(circle, color-mix(in srgb, var(--marca) 34%, transparent), color-mix(in srgb, var(--marca) 11%, transparent) 38%, transparent 68%);
+}
+.assistente-entrada[data-ouvindo] .assistente-fonte > .assistente-ponto {
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--marca) 26%, transparent), 0 0 36px 9px color-mix(in srgb, var(--marca) 60%, transparent);
+}
+@keyframes ponto-acende {
+  0% {
+    opacity: 0;
+    scale: 0.2;
+    box-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent;
+  }
+  45% {
+    box-shadow: 0 0 0 9px color-mix(in srgb, var(--marca) 30%, transparent), 0 0 48px 14px color-mix(in srgb, var(--marca) 70%, transparent);
+  }
+}
+@keyframes fonte-abre {
+  from {
+    opacity: 0;
+    scale: 0.08;
+  }
+}
+@keyframes fonte-respira {
+  50% {
+    opacity: 0.8;
+  }
 }
 /* a saudação entra palavra por palavra, saindo do desfoque (o Blur Text do React Bits, em CSS) */
 .assistente-saudacao > span {
@@ -4663,6 +4697,24 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
 }
+/* a resposta nova assenta: as palavras saem do desfoque, mais rápido que a saudação, e as barras crescem da base,
+   a de hoje por último (AI Response do SmoothUI, Streaming text do transitions.dev) */
+.assistente-palavras > span {
+  display: inline-block;
+  animation: palavra-foco 420ms var(--ease-out) both;
+  animation-delay: calc(var(--i) * 28ms + 120ms);
+  --rise: 4px;
+}
+[data-cresce] .semana-barra > span:first-child {
+  transform-origin: bottom;
+  animation: barra-cresce 520ms var(--ease-out) both;
+  animation-delay: calc(var(--i) * 45ms + 260ms);
+}
+@keyframes barra-cresce {
+  from {
+    scale: 1 0;
+  }
+}
 /* esperando: a frase com um brilho que passa (o Shiny Text do React Bits, em CSS) */
 .texto-brilho {
   background: linear-gradient(110deg, var(--muted) 40%, var(--fg) 50%, var(--muted) 60%) 0 0 / 250% 100%;
@@ -4680,6 +4732,12 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   }
 }
 @media (prefers-reduced-motion: reduce) {
+  /* o ponto já aceso e o brilho parado; o campo com texto ainda acende, sem transição */
+  .assistente-fonte::before,
+  .assistente-fonte > .assistente-ponto {
+    animation: none;
+    transition: none;
+  }
   .assistente-ponto[data-estado="pensando"],
   .texto-brilho {
     animation: none;
@@ -4690,6 +4748,10 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   }
   .assistente-saudacao > span {
     animation-name: fade-in;
+  }
+  .assistente-palavras > span,
+  [data-cresce] .semana-barra > span:first-child {
+    animation: none;
   }
 }
 @media (forced-colors: active) {
