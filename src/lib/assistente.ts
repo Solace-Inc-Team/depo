@@ -28,8 +28,8 @@ export const MODELOS = {
 export type Nivel = keyof typeof MODELOS;
 
 export const LIMITES = {
-  perguntasDia: 40,
-  analisesDia: 8,
+  perguntasDia: 25,
+  analisesDia: 4,
   /** caracteres da pergunta */
   pergunta: 400,
   /** conversas anteriores mandadas junto, e o tamanho de cada resposta delas */
