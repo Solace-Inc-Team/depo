@@ -292,6 +292,8 @@ export const orders = pgTable(
     mpPixCode: text("mp_pix_code"),
     mpAmountCents: integer("mp_amount_cents"),
     mpExpiresAt: timestamp("mp_expires_at", { withTimezone: true }),
+    // o formulário de pedido manda uma chave por envio: o mesmo envio repetido (rede que reenvia) não vira dois pedidos
+    chaveEnvio: text("chave_envio"),
     changeForCents: integer("change_for_cents"),
     notes: text("notes").notNull().default(""),
     cancelReason: text("cancel_reason"),
@@ -315,6 +317,7 @@ export const orders = pgTable(
     // lista de clientes (último pedido) e ficha do cliente
     index("orders_tenant_customer_idx").on(t.tenantId, t.customerId, t.createdAt),
     uniqueIndex("orders_tenant_number_uq").on(t.tenantId, t.number),
+    uniqueIndex("orders_tenant_chave_envio_uq").on(t.tenantId, t.chaveEnvio),
     // o aviso do Mercado Pago chega só com o id da cobrança
     index("orders_mp_payment_idx").on(t.mpPaymentId),
   ],

@@ -25,12 +25,15 @@ export async function POST(req: Request) {
     // o limite vale só para aviso sem assinatura válida: os verdadeiros vêm todos dos mesmos IPs do Mercado Pago
     if (tipo === "subscription_authorized_payment" && assinado !== true && (await attempt(`aviso-mp:${await clientIp(req.headers)}`, MAX_AVISOS_CARTAO))) return new Response(null, { status: 200 });
     await avisoDoCartao(tipo, id).catch((e) => console.error("[assinatura] aviso do cartão falhou:", (e as Error).message));
-  } else if (assinado !== false && /^ORD[0-9A-Z]{10,40}$/.test(id)) {
-    // aviso de Pix com assinatura que não confere é ignorado (os verdadeiros passaram, conferido no log em 18/11).
-    // Os da mensalidade ficam de fora: podem vir assinados com a chave de outra aplicação da conta da Solace
-    const [o] = await db.select({ id: orders.id, tenantId: orders.tenantId }).from(orders).where(eq(orders.mpPaymentId, id));
-    if (o) await conferirPixMp(o.tenantId, o.id);
-    // mensalidade do depo, cobrada na conta da Solace
+  } else if (/^ORD[0-9A-Z]{10,40}$/.test(id)) {
+    // aviso de Pix de pedido com assinatura que não confere é ignorado (os verdadeiros passaram, conferido no log em 18/11)
+    if (assinado !== false) {
+      const [o] = await db.select({ id: orders.id, tenantId: orders.tenantId }).from(orders).where(eq(orders.mpPaymentId, id));
+      if (o) await conferirPixMp(o.tenantId, o.id);
+    }
+    // mensalidade do depo, cobrada na conta da Solace: vale mesmo com a assinatura que não confere, porque pode vir
+    // assinada com a chave de outra aplicação da conta. Não aceita nada do aviso: só um id que já é nosso dispara a
+    // consulta ao Mercado Pago, que é quem diz se foi pago
     const [c] = await db.select({ tenantId: assinaturaPagamentos.tenantId }).from(assinaturaPagamentos).where(eq(assinaturaPagamentos.mpPaymentId, id));
     if (c) await conferirAssinatura(c.tenantId);
   }

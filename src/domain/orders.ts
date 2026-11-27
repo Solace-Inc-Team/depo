@@ -32,6 +32,7 @@ export const newOrderSchema = z
     driverId: z.uuid().nullable(),
     // pedido do site: só aceita o que tem na loja agora (a atendente vê o estoque e decide por conta própria)
     exigirEstoque: z.boolean().default(false),
+    chaveEnvio: z.uuid().optional(),
   })
   .refine((o) => o.mode === "balcao" || o.customerId, { message: "Entrega precisa de cliente." })
   .refine((o) => o.paymentMethod !== "fiado" || o.customerId, { message: "Fiado precisa de cliente identificado." })
@@ -67,6 +68,16 @@ async function loadOrder(tx: Tx, ctx: Ctx, orderId: string) {
   // o estoque que se mexe é o da filial do pedido, não o da filial que o dono está vendo
   const c: Ctx = { ...ctx, branchId: o.branchId };
   return { o, items, name, returnable, c };
+}
+
+/**
+ * O pedido já criado por este mesmo envio do formulário (rede que reenvia, aba duplicada, resposta perdida), ou null.
+ * Chamar dentro da transação que vai criar o pedido: a trava faz o envio repetido esperar o primeiro terminar.
+ */
+export async function pedidoDoEnvio(tx: Tx, chave: string) {
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${chave}))`);
+  const [ja] = await tx.select({ id: orders.id }).from(orders).where(eq(orders.chaveEnvio, chave));
+  return ja?.id ?? null;
 }
 
 export async function createOrder(ctx: Ctx, raw: NewOrder) {
@@ -159,6 +170,7 @@ export async function criarPedidoNaTx(tx: Tx, ctx: Ctx, input: z.output<typeof n
       totalCents: total,
       changeForCents: input.paymentMethod === "dinheiro" ? input.changeForCents : null,
       notes: input.notes,
+      chaveEnvio: input.chaveEnvio,
       createdBy: ctx.userId,
       ...(input.mode === "balcao" ? { status: "entregue" as const, deliveredAt: now } : {}),
       // pedido do site pago no Pix só entra na fila de entrega depois que o Pix é confirmado
@@ -274,7 +286,13 @@ export async function confirmPix(ctx: Ctx, orderId: string) {
   await tenantTransaction(ctx, async (tx) => {
     const [o] = await tx
       .update(orders)
-      .set({ pixConfirmedAt: new Date(), pixConfirmedBy: ctx.userId, status: liberaParaFila })
+      .set({
+        pixConfirmedAt: new Date(),
+        pixConfirmedBy: ctx.userId,
+        status: liberaParaFila,
+        // cancelado (Pix na chave não conferido em 24 horas) e o Pix caiu: o pedido continua cancelado e o valor volta
+        pixDevolverCents: sql`case when ${orders.status} = 'cancelado' then ${orders.totalCents} - ${orders.cashPartCents} else ${orders.pixDevolverCents} end`,
+      })
       .where(
         and(
           eq(orders.id, orderId),
@@ -282,12 +300,12 @@ export async function confirmPix(ctx: Ctx, orderId: string) {
           ctx.role === "dono" ? undefined : eq(orders.branchId, ctx.branchId),
           eq(orders.paymentMethod, "pix"),
           isNull(orders.pixConfirmedAt),
-          inArray(orders.status, ["aguardando_pagamento", "aberto", "em_rota", "entregue"]),
+          inArray(orders.status, ["aguardando_pagamento", "aberto", "em_rota", "entregue", "cancelado"]),
         ),
       )
-      .returning({ id: orders.id });
+      .returning({ id: orders.id, devolver: orders.pixDevolverCents });
     if (!o) throw new DomainError("Este pedido não tem Pix a conferir.");
-    await audit(tx, ctx, "pedido.pix_conferido", "order", o.id);
+    await audit(tx, ctx, "pedido.pix_conferido", "order", o.id, o.devolver ? { pixDevolver: o.devolver } : undefined);
   });
   if (antes?.status === "aguardando_pagamento") void avisarCliente(ctx.tenantId, orderId, "pago");
 }

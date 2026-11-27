@@ -260,6 +260,13 @@
       "when": 1795600592838,
       "tag": "0036_assistente",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1795790500752,
+      "tag": "0037_pedido_chave_envio",
+      "breakpoints": true
     }
   ]
 }

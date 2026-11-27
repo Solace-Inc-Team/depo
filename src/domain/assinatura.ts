@@ -151,8 +151,9 @@ export async function conferirAssinatura(tenantId: string): Promise<boolean> {
         and(
           eq(assinaturaPagamentos.tenantId, tenantId),
           isNull(assinaturaPagamentos.pagoEm),
-          // vencida há mais de um dia não tem como ter sido paga agora
-          gt(assinaturaPagamentos.expiraEm, new Date(Date.now() - PRAZO_MS)),
+          // a cobrança só é paga antes de vencer, mas o aviso pode se perder e o dono só abrir a tela dias depois:
+          // olha a última semana (poucas cobranças em aberto, uma consulta cada)
+          gt(assinaturaPagamentos.expiraEm, new Date(Date.now() - 7 * 24 * 3600e3)),
         ),
       ),
   );

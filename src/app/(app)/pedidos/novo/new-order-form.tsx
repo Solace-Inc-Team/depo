@@ -65,6 +65,12 @@ export function NewOrderForm({
   const searchRef = useRef<HTMLInputElement>(null);
   // campo que existe sempre: a busca some quando o cliente já está escolhido
   const modeRef = useRef<HTMLInputElement>(null);
+  // uma chave por formulário aberto: o servidor reconhece o mesmo envio repetido (rede que reenvia) e não cria dois
+  // pedidos. Gravada no campo, e não no estado, para o HTML do servidor e o do navegador serem iguais
+  const chaveRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (chaveRef.current) chaveRef.current.value = crypto.randomUUID?.() ?? "";
+  }, []);
 
   const temItens = useRef(false);
   const [semProduto, setSemProduto] = useState(false);
@@ -181,6 +187,7 @@ export function NewOrderForm({
 
   return (
     <ActionForm action={createOrderAction} className="grid gap-6 pb-24 lg:grid-cols-[minmax(0,48rem)_20rem] lg:pb-0">
+      <input type="hidden" name="chaveEnvio" ref={chaveRef} />
       <input type="hidden" name="mode" value={mode} ref={modeRef} />
       <input type="hidden" name="items" value={JSON.stringify(items)} />
       <input type="hidden" name="customerId" value={creating ? "" : (customer?.id ?? "")} />

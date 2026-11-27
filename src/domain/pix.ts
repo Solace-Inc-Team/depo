@@ -148,8 +148,13 @@ export async function pixDoPedido(tenantId: string, orderId: string): Promise<{ 
 
   try {
     const token = await tokenMp(tenantId, { ...t, mpTokenEnc: t.mpTokenEnc });
-    // o total mudou (entrega parcial): a cobrança antiga não pode mais ser paga
-    if (o.mpPaymentId && o.mpAmountCents !== valor) await cancelarPixMp(token, o.mpPaymentId).catch(() => {});
+    // a cobrança antiga sai antes da nova (o total mudou ou ela ia vencer): o QR impresso ou copiado não pode ser pago
+    // à parte, sem pedido para reconhecer. Não deu para cancelar costuma ser porque já foi paga: confere, e pedido pago
+    // não precisa de Pix novo
+    if (o.mpPaymentId) {
+      const cancelou = await cancelarPixMp(token, o.mpPaymentId).then(() => true, () => false);
+      if (!cancelou && (await conferirPixMp(tenantId, orderId))) return null;
+    }
     const expiraEm = new Date(limite ?? Date.now() + PRAZO_MS);
     const novo = await criarPixMp(token, {
       valorCents: valor,
@@ -157,8 +162,9 @@ export async function pixDoPedido(tenantId: string, orderId: string): Promise<{ 
       // shortcut: o Mercado Pago exige um e-mail do pagador e o pedido não tem; vai um endereço do pedido. Conferir no sandbox.
       emailPagador: `pedido${o.number}@${t.slug}.pedidos.com.br`,
       expiraEm,
-      // mesmo pedido, mesmo valor, mesmo dia = mesma cobrança, mesmo com duas telas pedindo ao mesmo tempo
-      chave: `${orderId}:${valor}:${Math.floor(Date.now() / PRAZO_MS)}`,
+      // mesmo pedido, mesmo valor, mesma cobrança substituída = mesma cobrança nova, mesmo com duas telas pedindo ao
+      // mesmo tempo; a troca seguinte tem outra chave (com a do dia, o Mercado Pago devolvia a cobrança já cancelada)
+      chave: `${orderId}:${valor}:${o.mpPaymentId ?? "primeira"}`,
     });
     await withTenant(tenantId, () =>
       db
@@ -200,8 +206,9 @@ export async function conferirPixMp(tenantId: string, orderId: string): Promise<
         pixConfirmedAt: new Date(),
         pixConfirmedBy: null,
         status: liberaParaFila,
-        // pago depois de cancelado (o Mercado Pago estava fora quando o prazo venceu): o valor volta ao cliente
-        pixDevolverCents: sql`case when ${orders.status} = 'cancelado' then ${p.valorCents} else 0 end`,
+        // pago depois de cancelado (o Mercado Pago estava fora quando o prazo venceu): o valor volta ao cliente; pago
+        // no valor de antes de uma entrega parcial: volta o que passou do total
+        pixDevolverCents: sql`case when ${orders.status} = 'cancelado' then ${p.valorCents} else greatest(${p.valorCents} - (${orders.totalCents} - ${orders.cashPartCents}), 0) end`,
       })
       .where(and(eq(orders.id, orderId), eq(orders.mpPaymentId, o.mpPaymentId!), isNull(orders.pixConfirmedAt)))
       .returning({ id: orders.id, devolver: orders.pixDevolverCents });

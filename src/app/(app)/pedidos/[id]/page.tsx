@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { linkWhatsApp, mensagemSaida } from "@/lib/whatsapp";
 import { isUuid } from "@/lib/ctx";
+import { formatBRL } from "@/lib/money";
 import { requireUser } from "@/lib/auth";
 import { getOrder, getSettings, listDrivers, listShifts } from "@/domain/queries";
 import { conferirPixMp, pixDoPedido } from "@/domain/pix";
@@ -237,6 +238,17 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
                   <button className={`btn w-full ${pix?.automatico ? "" : "btn-primary"}`}>Pix conferido no extrato</button>
                 </ActionForm>
               )}
+            </section>
+          )}
+          {o.paymentMethod === "pix" && !o.pixConfirmedAt && o.status === "cancelado" && (user.role === "dono" || user.role === "caixa") && (
+            // Pix na chave cancelado sem conferir: se caiu depois, o dinheiro entrou e precisa voltar ao cliente
+            <section className="panel p-4">
+              <h2 className="h2 mb-1">O Pix caiu depois?</h2>
+              <p className="mb-3 text-sm text-muted">Se o valor apareceu no extrato, marque aqui. O pedido continua cancelado e o valor fica para devolver ao cliente.</p>
+              <ActionForm action={confirmPixAction} confirm={`Confirmar que o Pix de ${formatBRL(o.totalCents - o.cashPartCents)} caiu no extrato?`}>
+                <input type="hidden" name="orderId" value={o.id} />
+                <button className="btn w-full">Pix caiu no extrato</button>
+              </ActionForm>
             </section>
           )}
           {o.pixDevolverCents > 0 && (

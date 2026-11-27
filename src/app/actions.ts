@@ -15,7 +15,7 @@ import { DomainError } from "@/lib/ctx";
 import { formatBRL, parseBRL } from "@/lib/money";
 import { clientIp, siteUrl } from "@/lib/request";
 import type { ActionState } from "@/components/action-form";
-import { createOrder, dispatchOrders, deliverOrder, cancelOrder, refundOrder, newOrderSchema, reportOccurrence, reassignOrder, confirmPix, marcarPixDevolvido } from "@/domain/orders";
+import { createOrder, dispatchOrders, deliverOrder, cancelOrder, refundOrder, newOrderSchema, reportOccurrence, reassignOrder, confirmPix, marcarPixDevolvido, pedidoDoEnvio } from "@/domain/orders";
 import { inscreverAviso, placePortalOrder, portalOrderSchema, portalTenant } from "@/domain/portal";
 import { conectarMercadoPago, desconectarMercadoPago, liberarSemPix, pixDoPedido } from "@/domain/pix";
 import { cancelarConta, criarConta, pagarConta } from "@/domain/contas";
@@ -209,8 +209,12 @@ export async function logout() {
 export async function createOrderAction(fd: FormData): Promise<ActionState> {
   const user = await requireUser("dono", "atendente", "caixa");
   let id = "";
+  const chaveEnvio = z.uuid().safeParse(str(fd, "chaveEnvio")).data;
   // cliente novo e pedido na mesma transação: se o pedido falhar, o cliente não fica duplicado
-  const r = await run(() => tenantTransaction(user, async () => {
+  const r = await run(() => tenantTransaction(user, async (tx) => {
+    // o mesmo envio de novo: abre o pedido que ele já criou, sem cliente nem pedido em dobro
+    const ja = chaveEnvio ? await pedidoDoEnvio(tx, chaveEnvio) : null;
+    if (ja) return void (id = ja);
     let customerId = optId(fd, "customerId");
     const newName = str(fd, "newCustomerName");
     if (!customerId && newName) {
@@ -246,6 +250,7 @@ export async function createOrderAction(fd: FormData): Promise<ActionState> {
         changeForCents: money(fd, "changeFor", false),
         notes: str(fd, "notes"),
         driverId: optId(fd, "driverId"),
+        chaveEnvio,
       }),
     );
     id = order.id;

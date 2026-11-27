@@ -1203,6 +1203,12 @@ test("Pix já pago: cancelar ou entregar menos deixa o valor a devolver no pedid
   const e = await pedido(1, 0, null);
   await m.orders.cancelOrder(A.ctx, e.id, "lançado errado");
   assert.equal((await m.q.getOrder(A.t.id, e.id))!.pixDevolverCents, 0);
+  // cancelado sem conferir e o Pix caiu depois: continua cancelado e o valor fica para devolver
+  await m.orders.confirmPix(caixa, e.id);
+  const pe = (await m.q.getOrder(A.t.id, e.id))!;
+  assert.equal(pe.status, "cancelado");
+  assert.equal(pe.pixDevolverCents, 11000);
+  await m.orders.marcarPixDevolvido(caixa, e.id);
 
   // a lista do caixa mostra os dois a devolver, e outra empresa não vê nada
   const lista = await m.q.listPixDevolver(A.t.id, A.branch.id);
@@ -1215,6 +1221,18 @@ test("Pix já pago: cancelar ou entregar menos deixa o valor a devolver no pedid
   await m.orders.marcarPixDevolvido(caixa, c.id);
   assert.equal((await m.q.getOrder(A.t.id, c.id))!.pixDevolverCents, 0);
   await assert.rejects(m.orders.marcarPixDevolvido(caixa, c.id), /não tem Pix a devolver/);
+});
+
+test("pedido: o mesmo envio repetido acha o pedido que ele já criou", async () => {
+  const chave = crypto.randomUUID();
+  const o = await m.orders.createOrder(A.ctx, {
+    mode: "balcao", customerId: null, items: [{ productId: A.product.id, quantity: 1, returnsEmpty: true }],
+    paymentMethod: "dinheiro", deliveryFeeCents: 0, changeForCents: null, notes: "", driverId: null, chaveEnvio: chave,
+  });
+  assert.equal(await m.db.tenantTransaction(A.ctx, (tx) => m.orders.pedidoDoEnvio(tx, chave)), o.id);
+  assert.equal(await m.db.tenantTransaction(A.ctx, (tx) => m.orders.pedidoDoEnvio(tx, crypto.randomUUID())), null);
+  // a chave é da empresa: outra empresa não acha o pedido
+  assert.equal(await m.db.tenantTransaction(B.ctx, (tx) => m.orders.pedidoDoEnvio(tx, chave)), null);
 });
 
 test("aviso no celular: o cliente se inscreve pelo link do pedido e recebe saiu e entregue; ao terminar, a inscrição sai", async () => {
