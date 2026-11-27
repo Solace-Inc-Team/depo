@@ -289,7 +289,7 @@ export function Conversa({
     <section ref={painel} className="assistente-painel panel flex flex-col overflow-hidden">
       <div ref={area} className="assistente-conversa" data-limpando={limpando || undefined} role="log" aria-live="polite">
         {entrada.montado && (
-          <div className="assistente-entrada" data-saindo={entrada.saindo || undefined} data-ouvindo={texto.trim() ? "" : undefined}>
+          <div className="assistente-entrada" data-saindo={entrada.saindo || undefined}>
             {/* a luz da tela nasce do ponto: acende uma vez, respira fraco e fica mais forte com texto no campo; é a mesma
                 língua do ponto que pulsa enquanto o assistente consulta */}
             <span aria-hidden="true" className="assistente-fonte">
