@@ -2654,8 +2654,9 @@ input[type="date"].input:hover::-webkit-calendar-picker-indicator {
   .alvo,
   main td a:not(.btn) {
     display: inline-block;
-    padding-block: 13px;
-    margin-block: -13px;
+    /* 14 px e não 13: com a linha de 16 px, o alvo ficava em 42 e não nos 44 do mínimo de toque */
+    padding-block: 14px;
+    margin-block: -14px;
   }
   /* o número do pedido ("#5") tinha 15 px de largura: cresce para os lados também */
   main td a:not(.btn) {

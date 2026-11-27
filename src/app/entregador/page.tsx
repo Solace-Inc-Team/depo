@@ -183,7 +183,8 @@ export default async function Entregador() {
       </div>
 
       {/* o que se ajusta uma vez fica no pé, longe do trabalho */}
-      <footer className="flex items-center justify-center gap-2 border-t border-line px-4 py-4 text-[13px] text-muted">
+      {/* no app instalado no iPhone o rodapé fica acima da barra de gestos */}
+      <footer className="flex items-center justify-center gap-2 border-t border-line px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] text-[13px] text-muted">
         <Link href="/senha" className="tap rounded-md px-2 hover:text-fg">Trocar senha</Link>
         <span aria-hidden="true">·</span>
         <TemaBotao className="size-11" />
