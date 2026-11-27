@@ -4583,6 +4583,37 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   box-shadow: 0 0 22px 5px color-mix(in srgb, var(--marca) 50%, transparent);
   animation: ponto-acende 900ms var(--ease-out) backwards;
 }
+.assistente-anel {
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  z-index: -1;
+  border-radius: 50%;
+  /* onda de luz, sem traço: passando por trás da saudação ela clareia o fundo em vez de riscar o texto */
+  background: radial-gradient(circle, transparent 52%, color-mix(in srgb, var(--marca) 26%, transparent) 64%, transparent 71%);
+  opacity: 0;
+  scale: 0.03;
+  animation: anel-abre 7.5s cubic-bezier(0.2, 0.7, 0.3, 1) 0.6s infinite;
+}
+.assistente-anel:nth-child(2) {
+  animation-delay: 3.1s;
+}
+.assistente-anel:nth-child(3) {
+  animation-delay: 5.6s;
+}
+@keyframes anel-abre {
+  0% {
+    opacity: 0;
+    scale: 0.03;
+  }
+  12% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    scale: 1;
+  }
+}
 @keyframes ponto-acende {
   0% {
     opacity: 0;
@@ -4724,10 +4755,15 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  /* o ponto já aceso e o brilho parado */
+  /* o ponto já aceso, o brilho parado e um anel só, parado no meio do caminho */
   .assistente-fonte::before,
-  .assistente-fonte > .assistente-ponto {
+  .assistente-fonte > .assistente-ponto,
+  .assistente-anel {
     animation: none;
+  }
+  .assistente-anel:first-child {
+    opacity: 0.35;
+    scale: 0.45;
   }
   .assistente-ponto[data-estado="pensando"],
   .texto-brilho {

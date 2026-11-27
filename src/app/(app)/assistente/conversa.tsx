@@ -290,9 +290,12 @@ export function Conversa({
       <div ref={area} className="assistente-conversa" data-limpando={limpando || undefined} role="log" aria-live="polite">
         {entrada.montado && (
           <div className="assistente-entrada" data-saindo={entrada.saindo || undefined}>
-            {/* a luz da tela nasce do ponto: acende uma vez, respira fraco e fica mais forte com texto no campo; é a mesma
-                língua do ponto que pulsa enquanto o assistente consulta */}
+            {/* a luz da tela nasce do ponto: ele acende, o brilho respira e anéis de luz se abrem dele até sumir (Magic
+                Rings do React Bits, em CSS); é a mesma língua do ponto que pulsa enquanto o assistente consulta */}
             <span aria-hidden="true" className="assistente-fonte">
+              <span className="assistente-anel" />
+              <span className="assistente-anel" />
+              <span className="assistente-anel" />
               <span className="assistente-ponto" />
             </span>
             <div className="text-center">
