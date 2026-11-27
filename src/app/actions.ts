@@ -813,7 +813,7 @@ export async function acceptTermsAction(fd: FormData): Promise<ActionState> {
   if (!pendingTerms(user)) redirect("/");
   if (fd.get("agree") !== "on") return { error: "Para continuar, marque que leu e aceita os termos." };
   await acceptTerms(user, TERMS_VERSION);
-  redirect("/");
+  redirect(caminhoSeguro(str(fd, "next")) || "/");
 }
 
 export async function deleteTenantAction(fd: FormData): Promise<ActionState> {

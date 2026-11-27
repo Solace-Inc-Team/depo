@@ -299,7 +299,7 @@ export function ActionForm({
             // até a tela atualizar, e o liga e desliga ia e voltava
             // (a janela das Configurações também: ela fica aberta e cada campo já é o valor salvo)
             if (reset || menu || (janela && !salvaAoMudar && !janela.classList.contains("janela-config"))) form.reset();
-            if (janela && !salvaAoMudar && !janela.classList.contains("janela-config")) setVersao((v) => v + 1);
+            if (reset || (janela && !salvaAoMudar && !janela.classList.contains("janela-config"))) setVersao((v) => v + 1);
           } finally {
             enviando.current = false;
           }

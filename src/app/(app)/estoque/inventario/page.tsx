@@ -27,7 +27,7 @@ export default async function Inventario() {
           Há produtos com entregadores na rua. Eles não entram nesta contagem: conte só o que está na loja, de preferência com todos os turnos fechados.
         </p>
       )}
-      <ActionForm action={inventoryAction} className="space-y-4" confirm="Registrar o inventário? As diferenças serão ajustadas no estoque.">
+      <ActionForm action={inventoryAction} className="space-y-4" reset confirm="Registrar o inventário? As diferenças serão ajustadas no estoque.">
         <section className="rola-x panel overflow-x-auto">
           <table className="table tabela-pilha rotulada sm:min-w-[36rem]">
             <thead>

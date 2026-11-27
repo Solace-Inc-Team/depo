@@ -277,9 +277,18 @@ export async function perguntar(user: SessionUser, perguntaCrua: unknown, histor
   if (!assistenteLigado()) throw new DomainError("O assistente ainda não está ligado.");
   const pergunta = String(perguntaCrua ?? "").trim().slice(0, LIMITES.pergunta);
   if (!pergunta) throw new DomainError("Escreva a pergunta.");
-  // shortcut: duas perguntas ao mesmo tempo podem passar uma do limite do dia; com 40 por dia, não pesa
-  const hoje = await usoDeHoje(user.tenantId);
-  if (hoje.perguntas >= LIMITES.perguntasDia) throw new DomainError(`Chegou ao limite de ${LIMITES.perguntasDia} perguntas de hoje. Amanhã libera de novo.`);
+  // a pergunta é reservada (uma linha de uso zerada) antes de chamar o modelo, com uma trava por empresa: perguntas
+  // ao mesmo tempo não passam do limite do dia, que antes só contava depois da resposta
+  const { hoje, reserva } = await withTenant(user.tenantId, async () => {
+    await db.execute(sql`select pg_advisory_xact_lock(hashtext(${"assistente:" + user.tenantId}))`);
+    const hoje = await usoDeHoje(user.tenantId);
+    if (hoje.perguntas >= LIMITES.perguntasDia) throw new DomainError(`Chegou ao limite de ${LIMITES.perguntasDia} perguntas de hoje. Amanhã libera de novo.`);
+    const [reserva] = await db
+      .insert(assistenteUso)
+      .values({ tenantId: user.tenantId, userId: user.userId, nivel: "rapido", tokensEntrada: 0, tokensCache: 0, tokensSaida: 0, custoMicro: 0 })
+      .returning({ id: assistenteUso.id });
+    return { hoje, reserva };
+  });
   const podeAnalisar = hoje.analises < LIMITES.analisesDia;
 
   const mensagens: B.BetaMessageParam[] = historicoCurto(historico).flatMap((t): B.BetaMessageParam[] => [
@@ -309,20 +318,22 @@ export async function perguntar(user: SessionUser, perguntaCrua: unknown, histor
     }
     throw e;
   } finally {
-    // o que foi gasto conta mesmo se a pergunta falhou no meio
+    // o que foi gasto conta mesmo se a pergunta falhou no meio; sem gasto nenhum, a reserva sai e a pergunta não conta
     const soma = (k: keyof Uso) => usoRapido[k] + usoAnalise[k];
-    if (soma("entrada") + soma("cacheLido") + soma("saida") > 0)
-      await withTenant(user.tenantId, () =>
-        db.insert(assistenteUso).values({
-          tenantId: user.tenantId,
-          userId: user.userId,
-          nivel,
-          tokensEntrada: soma("entrada") + soma("cacheGravado"),
-          tokensCache: soma("cacheLido"),
-          tokensSaida: soma("saida"),
-          custoMicro: custoMicro("rapido", usoRapido) + custoMicro("analise", usoAnalise),
-        }),
-      );
+    await withTenant(user.tenantId, () =>
+      soma("entrada") + soma("cacheLido") + soma("saida") > 0
+        ? db
+            .update(assistenteUso)
+            .set({
+              nivel,
+              tokensEntrada: soma("entrada") + soma("cacheGravado"),
+              tokensCache: soma("cacheLido"),
+              tokensSaida: soma("saida"),
+              custoMicro: custoMicro("rapido", usoRapido) + custoMicro("analise", usoAnalise),
+            })
+            .where(eq(assistenteUso.id, reserva.id))
+        : db.delete(assistenteUso).where(eq(assistenteUso.id, reserva.id)),
+    );
   }
   const { texto, destaque, seguintes } = separarResposta(r.texto!);
   return {

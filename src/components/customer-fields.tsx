@@ -9,7 +9,7 @@ export function CustomerFields({ c = {} }: { c?: C }) {
     <>
       <div className="sm:col-span-2">
         <label className="label" htmlFor="c-name">Nome</label>
-        <input id="c-name" name="name" required minLength={2} defaultValue={c.name} className="input" />
+        <input id="c-name" name="name" required minLength={2} maxLength={120} defaultValue={c.name} className="input" />
       </div>
       <div className="sm:col-span-2">
         <label className="label" htmlFor="c-phone">Telefone</label>
@@ -20,11 +20,11 @@ export function CustomerFields({ c = {} }: { c?: C }) {
       <CamposEndereco key={`${c.address ?? ""}|${c.cep ?? ""}`} nome="address" id="c-end" inicial={c.address} cep={c.cep} className="sm:col-span-2" />
       <div className="sm:col-span-2">
         <label className="label" htmlFor="c-ref">Referência</label>
-        <input id="c-ref" name="reference" defaultValue={c.reference} className="input" />
+        <input id="c-ref" name="reference" maxLength={200} defaultValue={c.reference} className="input" />
       </div>
       <div className="sm:col-span-2">
         <label className="label" htmlFor="c-notes">Observações</label>
-        <input id="c-notes" name="notes" defaultValue={c.notes} className="input" />
+        <input id="c-notes" name="notes" maxLength={500} defaultValue={c.notes} className="input" />
       </div>
     </>
   );

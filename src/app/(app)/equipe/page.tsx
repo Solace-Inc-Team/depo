@@ -24,7 +24,7 @@ export default async function Equipe() {
           <ActionForm action={createUserAction} className="space-y-3" reset>
             <div>
               <label className="label" htmlFor="u-name">Nome</label>
-              <input id="u-name" name="name" required className="input" />
+              <input id="u-name" name="name" required maxLength={80} className="input" />
             </div>
             <AcessoCampos />
             {varias && (

@@ -152,7 +152,11 @@ export async function requireUser(...args: (Role | { mesmoBloqueado: true })[]):
     const next = caminho && caminho !== "/" ? `?next=${encodeURIComponent(caminho)}` : "";
     redirect(((await cookies()).has(COOKIE) ? "/login/sair" : "/login") + next);
   }
-  if (pendingTerms(user)) redirect("/aceite");
+  if (pendingTerms(user)) {
+    // termos novos: depois do aceite, volta para a tela que a pessoa ia abrir
+    const caminho = caminhoSeguro((await headers()).get("x-caminho"));
+    redirect(caminho && caminho !== "/" ? `/aceite?next=${encodeURIComponent(caminho)}` : "/aceite");
+  }
   if (!mesmoBloqueado && assinaturaBloqueada(user)) redirect("/assinatura");
   if (roles.length && !roles.includes(user.role)) redirect(user.role === "entregador" ? "/entregador?sem-acesso" : "/?sem-acesso");
   return user;

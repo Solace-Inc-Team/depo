@@ -82,6 +82,9 @@ export function NewOrderForm({
         e.preventDefault();
         searchRef.current?.focus();
       }
+      // Enter sozinho num campo (observação, taxa, troco, desconto) não lança o pedido pela metade: lançar é o botão
+      // ou Ctrl+Enter, como já era no cadastro do cliente
+      if (e.key === "Enter" && !e.ctrlKey && !e.metaKey && e.target instanceof HTMLInputElement && e.target.form === modeRef.current?.form) e.preventDefault();
       if (e.key === "Enter" && (e.ctrlKey || e.metaKey) && !e.repeat) {
         e.preventDefault();
         // carrinho vazio: o botão está desligado, então o atalho também não envia; diz o que falta

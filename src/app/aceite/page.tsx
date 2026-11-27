@@ -9,7 +9,8 @@ import { Marcar } from "@/components/controles";
 
 export const metadata = { title: "Termos de uso" };
 
-export default async function Aceite() {
+export default async function Aceite({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+  const { next } = await searchParams;
   const user = await getUser();
   if (!user) redirect("/login");
   if (!pendingTerms(user)) redirect("/");
@@ -40,6 +41,7 @@ export default async function Aceite() {
         </div>
 
         <ActionForm action={acceptTermsAction} className="mt-6 space-y-4">
+          {next && <input type="hidden" name="next" value={next} />}
           <label className="flex items-start gap-2.5 text-[13px]">
             <Marcar name="agree" required className="mt-0.5" />
             Li e aceito os Termos de uso e a Política de privacidade em nome de {user.tenantName}.

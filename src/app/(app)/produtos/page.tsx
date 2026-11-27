@@ -20,7 +20,7 @@ function Fields({ p = {}, rotulos = true }: { p?: P; rotulos?: boolean }) {
     <>
       <div className="col-span-2 lg:col-span-1">
         <label className={rotulo} htmlFor={`n-${k}`}>Nome</label>
-        <input id={`n-${k}`} name="name" required defaultValue={p.name} className="input" />
+        <input id={`n-${k}`} name="name" required maxLength={80} defaultValue={p.name} className="input" />
       </div>
       <div>
         <label className={rotulo} htmlFor={`p-${k}`}>Preço</label>

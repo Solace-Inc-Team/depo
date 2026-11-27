@@ -520,6 +520,11 @@ details[open] > :not(summary) {
   min-height: 0;
   overflow: hidden;
 }
+/* fechado, o conteúdo sai do Tab e do leitor de tela (só depois de recolher, para a saída ainda se ver) */
+.recolhe:not([data-aberto]) > * {
+  visibility: hidden;
+  transition: visibility 0s var(--dur);
+}
 
 /* barra do pedido no celular: desce ao esvaziar o carrinho, como subiu */
 /* (a entrada é animação, então a saída também: transição não age sobre o que a animação segura) */
@@ -3896,8 +3901,9 @@ button.gaveta-mais-linha:active {
   .filtro-recolhe {
     display: contents;
   }
-  .filtro-recolhe > * {
+  .recolhe.filtro-recolhe > * {
     overflow: visible;
+    visibility: visible;
   }
 }
 /* blocos que só recolhem no celular (outros passos dos primeiros passos): no computador ficam sempre à vista */
@@ -3905,8 +3911,9 @@ button.gaveta-mais-linha:active {
   .recolhe-celular {
     display: contents;
   }
-  .recolhe-celular > * {
+  .recolhe.recolhe-celular > * {
     overflow: visible;
+    visibility: visible;
   }
 }
 
@@ -4755,9 +4762,9 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  animation: brilho-passa 1.8s linear infinite;
+  animation: brilho-texto-passa 1.8s linear infinite;
 }
-@keyframes brilho-passa {
+@keyframes brilho-texto-passa {
   from {
     background-position: 125% 0;
   }
