@@ -58,3 +58,11 @@ test("repasse e gasto autorizado diminuem o esperado; desconto diminui o total",
   assert.equal(expectedCash(5000, [...orders], 4000), 5000 + 11000 + 1400 - 4000);
   assert.equal(orderTotal([{ quantity: 2, unitPriceCents: 1400 }], 300, 500), 2600);
 });
+
+test("porcentagens somam 100 mesmo quando o arredondamento daria 99 ou 101", async () => {
+  const { porcentagens } = await import("./money.ts");
+  assert.deepEqual(porcentagens([1, 1, 1]), [34, 33, 33]);
+  assert.deepEqual(porcentagens([1800, 22700, 14000]), [5, 59, 36]);
+  assert.equal(porcentagens([5, 59, 36]).reduce((s, v) => s + v, 0), 100);
+  assert.deepEqual(porcentagens([0, 0]), [0, 0]);
+});

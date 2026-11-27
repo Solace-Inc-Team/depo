@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useRef, useState, useTransition, type ReactNode, type RefObject } from "react";
+import { Fragment, useEffect, useId, useLayoutEffect, useRef, useState, useTransition, type ReactNode, type RefObject } from "react";
 import { ArrowRight, CircleAlert, CircleCheck, Info } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { progress } from "./nav-progress";
@@ -147,6 +147,9 @@ export function ActionForm({
     return () => f.removeEventListener("change", salvar);
   }, [salvaAoMudar]);
   const [error, setError] = useState<string>();
+  // janela que fecha ou salva: os campos remontam do zero. O reset nativo volta o que está na tela, mas não o estado
+  // do React (o "sem celular" da Equipe, a repetição da entrega programada, o endereço em partes, o aviso de telefone)
+  const [versao, setVersao] = useState(0);
   const [acao, setAcao] = useState<{ rotulo: string; href: string }>();
   const [pending, start] = useTransition();
   const errorRef = useRef<HTMLElement>(null);
@@ -167,6 +170,7 @@ export function ActionForm({
       f.reset();
       for (const c of f.querySelectorAll("[aria-invalid]")) c.removeAttribute("aria-invalid");
       setError(undefined);
+      setVersao((v) => v + 1);
     };
     janela.addEventListener("close", limpar);
     return () => janela.removeEventListener("close", limpar);
@@ -295,6 +299,7 @@ export function ActionForm({
             // até a tela atualizar, e o liga e desliga ia e voltava
             // (a janela das Configurações também: ela fica aberta e cada campo já é o valor salvo)
             if (reset || menu || (janela && !salvaAoMudar && !janela.classList.contains("janela-config"))) form.reset();
+            if (janela && !salvaAoMudar && !janela.classList.contains("janela-config")) setVersao((v) => v + 1);
           } finally {
             enviando.current = false;
           }
@@ -303,7 +308,7 @@ export function ActionForm({
     >
       {/* o fieldset recebe o layout (space-y, grid) para que o espaçamento chegue aos campos */}
       <fieldset disabled={pending && !salvaAoMudar} className={`min-w-0 ${className ?? ""}`}>
-        {children}
+        <Fragment key={versao}>{children}</Fragment>
         {aviso.montado && acao && (
           // não é erro, é um caminho: fundo neutro e o botão do próximo passo
           <div

@@ -767,7 +767,9 @@ details[open] > :not(summary) {
   inset: 0;
   border-radius: inherit;
   background: inherit;
-  animation: ping 1.8s var(--ease-out) infinite;
+  /* 4 pulsos ao aparecer e para: infinito, cada selo à vista ocupava a tela do celular o tempo todo (medido: 7 a 9
+     vezes mais trabalho com a tela parada) e nenhuma forma de pulsar ficou no compositor */
+  animation: ping 1.8s var(--ease-out) 4;
 }
 
 /* linha que acabou de chegar acende e apaga */
@@ -2793,8 +2795,9 @@ input[type="date"].input:hover::-webkit-calendar-picker-indicator {
     0 1px 1px 0 rgb(0 0 0 / 0.08),
     0 2px 6px 0 rgb(0 0 0 / 0.15);
 }
+/* no toque só os grupos com `toque` (gráficos) mostram a dica: nos botões o toque já faz a ação */
 @media (hover: none) {
-  .dica {
+  .dicas:not([data-toque]) .dica {
     display: none;
   }
 }
@@ -4797,4 +4800,10 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
     color: CanvasText;
     background: none;
   }
+}
+
+/* Estoque no notebook (1280, 1366): os seis cabeçalhos de duas palavras quebram em duas linhas, e a tabela cabe
+   sem cortar o "Total de vasilhames", que é a conferência da tela */
+.estoque-grade th {
+  white-space: normal;
 }

@@ -12,3 +12,14 @@ export function parseBRL(input: string): number | null {
 }
 
 export const centsToInput = (cents: number) => (cents / 100).toFixed(2).replace(".", ",");
+
+/** Porcentagem inteira de cada valor, somando sempre 100: arredonda para baixo e dá o ponto que falta às maiores sobras. */
+export function porcentagens(valores: number[]): number[] {
+  const total = valores.reduce((s, v) => s + v, 0);
+  if (total <= 0) return valores.map(() => 0);
+  const brutos = valores.map((v) => (v * 100) / total);
+  const r = brutos.map(Math.floor);
+  let falta = 100 - r.reduce((s, v) => s + v, 0);
+  for (const i of brutos.map((b, i) => i).sort((a, b) => brutos[b] - r[b] - (brutos[a] - r[a]))) if (falta-- > 0) r[i]++;
+  return r;
+}

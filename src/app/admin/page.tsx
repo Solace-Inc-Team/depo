@@ -2,7 +2,8 @@ import { requireAdmin } from "@/lib/auth";
 import { DELETE_DEADLINE_DAYS, assistenteNoMes, avisoAtual, listDeletions, listDiasDados, listTenants, recebidoNoMes } from "@/domain/platform";
 import { ActionForm } from "@/components/action-form";
 import { createTenantAction, darDiasAction, deleteTenantAction, ligarWhatsappAction, publicarAvisoAction, resetOwnerAccessAction, tirarAvisoAction, toggleTenantAction } from "@/app/actions";
-import { PopoverForm } from "@/components/popover-form";
+import { JanelaAcao } from "@/components/janela-acao";
+import { MaisAcoes } from "@/components/mais-acoes";
 import { Empty, Money, PageHeader, fmtDateTime } from "@/components/ui";
 import { dataBR, situacaoAssinatura } from "@/lib/plano";
 import { todayISO } from "@/lib/period";
@@ -108,57 +109,89 @@ export default async function Admin() {
                             Assistente: {t.iaPerguntas} {t.iaPerguntas === 1 ? "pergunta" : "perguntas"}, {dolares(t.iaMicro)} no mês
                           </p>
                         )}
-                        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
+                        {/* Exportar à vista; o resto, menos usado e com Suspender entre eles, num menu: a linha não vira escada */}
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
                           <a href={`/admin/exportar?empresa=${t.id}`} className="btn btn-sm">Exportar</a>
-                          {t.pagoAte && (
-                            <PopoverForm align="left" label="Dar dias" action={darDiasAction} submit="Dar dias">
+                          {!t.active && (
+                            <ActionForm action={toggleTenantAction}>
+                              <input type="hidden" name="tenantId" value={t.id} />
+                              <input type="hidden" name="active" value="true" />
+                              <button className="btn btn-sm">Reativar</button>
+                            </ActionForm>
+                          )}
+                          <MaisAcoes
+                            itens={[
+                              ...(t.pagoAte ? [{ label: "Dar dias", janela: `dias-${t.id}` }] : []),
+                              { label: t.whatsappNumeroId ? "WhatsApp ligado" : "Ligar WhatsApp", janela: `wa-${t.id}` },
+                              { label: "Redefinir acesso", janela: `acesso-${t.id}` },
+                              ...(t.active ? [{ label: "Suspender", janela: `suspender-${t.id}` }] : [{ label: "Excluir", janela: `excluir-${t.id}` }]),
+                            ]}
+                          />
+                        </div>
+                        {t.pagoAte && (
+                          <JanelaAcao label="Dar dias" titulo={`Dar dias a ${t.name}`} id={`dias-${t.id}`} semBotao>
+                            <ActionForm action={darDiasAction} className="grid gap-3">
                               <input type="hidden" name="tenantId" value={t.id} />
                               <p className="text-[13px] text-muted">Somam a partir de {t.pagoAte > hoje ? `${dataBR(t.pagoAte)}, quando vence` : "hoje"}.</p>
-                              <label className="label mb-0" htmlFor={`dd-${t.id}`}>Dias</label>
-                              <input id={`dd-${t.id}`} name="dias" type="number" inputMode="numeric" min={1} max={90} defaultValue={7} required className="input num w-24" />
-                              <label className="label mb-0" htmlFor={`dm-${t.id}`}>Motivo</label>
-                              <input id={`dm-${t.id}`} name="motivo" required minLength={3} maxLength={200} autoComplete="off" placeholder="Ex.: Pix não caiu" className="input" />
-                            </PopoverForm>
-                          )}
-                          {/* o robô responde no número ligado aqui (Meta ou Evolution); vazio desliga */}
-                          <PopoverForm align="left" label={t.whatsappNumeroId ? "WhatsApp ligado" : "Ligar WhatsApp"} action={ligarWhatsappAction} submit="Salvar">
+                              <div>
+                                <label className="label" htmlFor={`dd-${t.id}`}>Dias</label>
+                                <input id={`dd-${t.id}`} name="dias" type="number" inputMode="numeric" min={1} max={90} defaultValue={7} required className="input num w-24" />
+                              </div>
+                              <div>
+                                <label className="label" htmlFor={`dm-${t.id}`}>Motivo</label>
+                                <input id={`dm-${t.id}`} name="motivo" required minLength={3} maxLength={200} autoComplete="off" placeholder="Ex.: Pix não caiu" className="input" />
+                              </div>
+                              <button className="btn btn-primary mt-1">Dar dias</button>
+                            </ActionForm>
+                          </JanelaAcao>
+                        )}
+                        {/* o robô responde no número ligado aqui (Meta ou Evolution); vazio desliga */}
+                        <JanelaAcao label="WhatsApp" titulo={`WhatsApp de ${t.name}`} id={`wa-${t.id}`} semBotao>
+                          <ActionForm action={ligarWhatsappAction} className="grid gap-3">
                             <input type="hidden" name="tenantId" value={t.id} />
-                            <label className="label mb-0" htmlFor={`wa-${t.id}`}>Instância na Evolution ou ID na Meta</label>
-                            <input id={`wa-${t.id}`} name="numeroId" defaultValue={t.whatsappNumeroId ?? ""} pattern="[a-z0-9\-]*" maxLength={40} autoComplete="off" placeholder="Ex.: depo-teste" className="input" />
-                            <p className="text-[13px] text-muted">Deixe vazio para desligar.</p>
-                          </PopoverForm>
-                          <PopoverForm align="left" label="Redefinir acesso" action={resetOwnerAccessAction} submit="Redefinir" confirm="Redefinir o acesso do dono? A senha dele será trocada e a verificação em duas etapas, desligada.">
+                            <div>
+                              <label className="label" htmlFor={`wa-campo-${t.id}`}>Instância na Evolution ou ID na Meta</label>
+                              <input id={`wa-campo-${t.id}`} name="numeroId" defaultValue={t.whatsappNumeroId ?? ""} pattern="[a-z0-9\-]*" maxLength={40} autoComplete="off" placeholder="Ex.: depo-teste" className="input" />
+                              <p className="mt-1 text-[13px] text-muted">Deixe vazio para desligar.</p>
+                            </div>
+                            <button className="btn btn-primary mt-1">Salvar</button>
+                          </ActionForm>
+                        </JanelaAcao>
+                        <JanelaAcao label="Redefinir acesso" titulo={`Redefinir o acesso do dono de ${t.name}`} id={`acesso-${t.id}`} semBotao>
+                          <ActionForm action={resetOwnerAccessAction} className="grid gap-3" confirm="Redefinir o acesso do dono? A senha dele será trocada e a verificação em duas etapas, desligada.">
                             <input type="hidden" name="tenantId" value={t.id} />
-                            <label className="label mb-0" htmlFor={`o-${t.id}`}>Senha nova do dono</label>
-                            <input id={`o-${t.id}`} name="password" type="text" minLength={8} required autoComplete="off" className="input" />
-                          </PopoverForm>
-                          {!t.active && (
-                            <PopoverForm
-                              align="left"
-                              label="Excluir"
-                              action={deleteTenantAction}
-                              submit="Excluir de vez"
-                              danger
-                              confirm={`Apagar todos os dados de ${t.name}? Não tem volta.`}
-                            >
+                            <div>
+                              <label className="label" htmlFor={`o-${t.id}`}>Senha nova do dono</label>
+                              <input id={`o-${t.id}`} name="password" type="text" minLength={8} required autoComplete="off" className="input" />
+                            </div>
+                            <button className="btn btn-primary mt-1">Redefinir</button>
+                          </ActionForm>
+                        </JanelaAcao>
+                        {t.active ? (
+                          <JanelaAcao label="Suspender" titulo={`Suspender ${t.name}`} id={`suspender-${t.id}`} perigo semBotao>
+                            <ActionForm action={toggleTenantAction} className="grid gap-3">
+                              <input type="hidden" name="tenantId" value={t.id} />
+                              <input type="hidden" name="active" value="false" />
+                              <p className="text-sm text-muted">Ninguém da empresa vai conseguir entrar até ela ser reativada.</p>
+                              <button className="btn btn-danger mt-1">Suspender</button>
+                            </ActionForm>
+                          </JanelaAcao>
+                        ) : (
+                          <JanelaAcao label="Excluir" titulo={`Excluir ${t.name}`} id={`excluir-${t.id}`} perigo semBotao>
+                            <ActionForm action={deleteTenantAction} className="grid gap-3" confirm={`Apagar todos os dados de ${t.name}? Não tem volta.`}>
                               <input type="hidden" name="tenantId" value={t.id} />
                               <p className="text-[13px] text-muted">
                                 Apaga clientes, pedidos, caixa, estoque, equipe e histórico. Não tem volta.{" "}
                                 <a href={`/admin/exportar?empresa=${t.id}`} className="underline">Exporte antes</a>.
                               </p>
-                              <label className="label mb-0" htmlFor={`d-${t.id}`}>Digite o nome da empresa</label>
-                              <input id={`d-${t.id}`} name="confirmName" required autoComplete="off" placeholder={t.name} className="input" />
-                            </PopoverForm>
-                          )}
-                          <ActionForm
-                            action={toggleTenantAction}
-                            confirm={t.active ? `Suspender ${t.name}? Ninguém da empresa vai conseguir entrar.` : undefined}
-                          >
-                            <input type="hidden" name="tenantId" value={t.id} />
-                            <input type="hidden" name="active" value={String(!t.active)} />
-                            <button className={`btn fino:h-8 ${t.active ? "btn-danger" : ""}`}>{t.active ? "Suspender" : "Reativar"}</button>
-                          </ActionForm>
-                        </div>
+                              <div>
+                                <label className="label" htmlFor={`d-${t.id}`}>Digite o nome da empresa</label>
+                                <input id={`d-${t.id}`} name="confirmName" required autoComplete="off" placeholder={t.name} className="input" />
+                              </div>
+                              <button className="btn btn-danger mt-1">Excluir de vez</button>
+                            </ActionForm>
+                          </JanelaAcao>
+                        )}
                       </td>
                       <td>
                         <p className={`font-medium ${t.active ? tomCor[plano.tom] : ""}`}>{plano.rotulo}</p>

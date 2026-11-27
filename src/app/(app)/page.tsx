@@ -155,7 +155,7 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
               com {d.openShifts.length} {d.openShifts.length === 1 ? "entregador" : "entregadores"}
             </p>
             {/* com quem está o dinheiro: a mesma barra das formas de pagamento, um trecho por entregador */}
-            <DivisaoPagamento className="mt-4 max-sm:hidden" partes={d.openShifts.map((s) => ({ rotulo: s.driverName, cents: s.expected }))} />
+            <DivisaoPagamento className="mt-4 max-sm:hidden" partes={[...d.openShifts].sort((a, b) => b.expected - a.expected).map((s) => ({ rotulo: s.driverName, cents: s.expected }))} />
           </div>
           <div className="flex flex-col border-t border-line p-5 max-sm:p-4 sm:border-t-0">
             <p className="text-muted max-sm:text-[13px]">Fila agora</p>
@@ -204,7 +204,7 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
 
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <section className="panel">
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
             <h2 className="h2">Pedidos {ehHoje ? "de hoje" : noDia}</h2>

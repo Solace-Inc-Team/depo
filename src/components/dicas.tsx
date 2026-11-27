@@ -69,6 +69,7 @@ export function Dicas({
       ref={grupo}
       className={`dicas ${className}`}
       data-lado={lado}
+      data-toque={toque || undefined}
       onPointerOver={(e) => e.pointerType === "mouse" && mostrar(e.target as Element)}
       onPointerDown={(e) => {
         if (!toque || e.pointerType === "mouse") return;
