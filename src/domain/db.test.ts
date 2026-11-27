@@ -656,6 +656,10 @@ test("portal: só com portal ligado, reconhece o cliente pelo telefone e não us
   assert.equal((await m.q.getOrder(A.t.id, second.id))!.customerAddress, "Outro lugar, 5");
   assert.match(second.notes, /Confirmar com o cliente/);
   assert.equal((await db.select().from(customers).where(eq(customers.phone, "(11) 97777-1234"))).length, 1);
+  // o mesmo envio duas vezes ao mesmo tempo (rede ruim, toque repetido): um pedido só, devolvido aos dois
+  const chaveEnvio = crypto.randomUUID();
+  const [r1, r2] = await Promise.all([1, 2].map(() => m.portal.placePortalOrder(A.t.id, A.branch.id, { ...input, chaveEnvio })));
+  assert.equal(r1.id, r2.id);
   // a loja cadastrou outra pessoa com o mesmo telefone (pode, só recebe aviso): o pedido do site vai para a mais recente
   const parente = await m.registry.saveCustomer(A.ctx, { name: "Parente do Site", phone: "11 97777-1234", address: "Rua do Site, 10", reference: "", notes: "" });
   assert.equal((await m.portal.placePortalOrder(A.t.id, A.branch.id, input)).customerId, parente.id);

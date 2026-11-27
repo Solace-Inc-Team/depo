@@ -82,6 +82,13 @@ export function PortalForm({
   const [pending, start] = useTransition();
   const errorRef = useRef<HTMLParagraphElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  // envio em andamento: o fieldset desabilitado chega à tela tarde no 3G, e um segundo toque mandava outro pedido
+  const enviando = useRef(false);
+  // uma chave por pedido: tocar de novo depois de um erro de rede reenvia o mesmo pedido, e o servidor não o duplica
+  const chaveRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (chaveRef.current) chaveRef.current.value = crypto.randomUUID?.() ?? "";
+  }, []);
   // dados da última compra neste aparelho (lidos só no navegador; o texto guardado é o que muda, não o objeto)
   const bruto = useSyncExternalStore(
     outraAba,
@@ -200,6 +207,8 @@ export function PortalForm({
           setResult({ error: aviso });
           return;
         }
+        if (enviando.current) return;
+        enviando.current = true;
         const fd = new FormData(e.currentTarget);
         const campo = (n: string) => String(fd.get(n) ?? "").trim();
         start(async () => {
@@ -212,14 +221,19 @@ export function PortalForm({
               try {
                 localStorage.setItem(chaveSalvo(slug), JSON.stringify(novo));
               } catch {}
+              // o próximo pedido deste aparelho é outro envio
+              if (chaveRef.current) chaveRef.current.value = crypto.randomUUID?.() ?? "";
             }
             setResult(r);
           } catch {
             setResult({ error: navigator.onLine ? "Não deu para enviar o pedido agora. Toque em Fazer pedido de novo." : "Sem internet. Seu pedido não foi enviado: quando a conexão voltar, toque em Fazer pedido de novo." });
+          } finally {
+            enviando.current = false;
           }
         });
       }}
     >
+      <input type="hidden" name="chaveEnvio" ref={chaveRef} />
       <input type="hidden" name="items" value={JSON.stringify(items)} />
       <input type="hidden" name="paymentMethod" value={payment} />
       {/* armadilha para robô: escondido de quem usa a tela */}

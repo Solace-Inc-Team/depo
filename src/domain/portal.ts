@@ -3,7 +3,7 @@ import { and, asc, desc, eq, isNull, sql } from "drizzle-orm";
 import { db, withTenant } from "@/db";
 import { branches, customers, orderItems, orders, products, tenants, users } from "@/db/schema";
 import { type Ctx, DomainError, isUuid } from "@/lib/ctx";
-import { createOrder } from "./orders";
+import { createOrder, pedidoDoEnvio } from "./orders";
 import { audit, disponivelNaLoja } from "./stock";
 import { telefoneSchema } from "./telefone";
 import { cepSchema } from "./registry";
@@ -58,6 +58,7 @@ export const portalOrderSchema = z.object({
   paymentMethod: z.enum(["dinheiro", "pix", "cartao"], { message: "Escolha como vai pagar." }),
   changeForCents: z.int().min(0).max(100_000_00).nullable(),
   notes: z.string().trim().max(300, "A observação pode ter até 300 letras."),
+  chaveEnvio: z.uuid().optional(),
 });
 
 /**
@@ -78,6 +79,9 @@ export async function placePortalOrder(tenantId: string, branchId: string, input
 
   return withTenant(tenantId, () =>
     db.transaction(async (tx) => {
+      // o mesmo envio de novo (rede ruim no celular, "Fazer pedido" tocado outra vez depois do erro): o pedido que já foi feito
+      const ja = input.chaveEnvio ? await pedidoDoEnvio(tx, input.chaveEnvio) : null;
+      if (ja) return (await tx.select().from(orders).where(eq(orders.id, ja)))[0];
       const [known] = await tx
         .select({ id: customers.id })
         .from(customers)
@@ -114,6 +118,7 @@ export async function placePortalOrder(tenantId: string, branchId: string, input
         notes: [input.notes, known ? `Confirmar com o cliente: pedido do site em nome de "${input.name}"` : ""].filter(Boolean).join(" | "),
         driverId: null,
         origin: "portal",
+        chaveEnvio: input.chaveEnvio,
       });
       return order;
     }),

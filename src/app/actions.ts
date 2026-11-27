@@ -350,6 +350,7 @@ export async function portalOrderAction(slug: string, filial: string, fd: FormDa
         paymentMethod: str(fd, "paymentMethod"),
         changeForCents: money(fd, "changeFor", false),
         notes: str(fd, "notes"),
+        chaveEnvio: z.uuid().safeParse(str(fd, "chaveEnvio")).data,
       }),
     );
     revalidatePath("/", "layout");
