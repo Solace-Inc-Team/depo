@@ -73,12 +73,15 @@ export default async function Equipe() {
                           </select>
                         </PopoverForm>
                       )}
-                      {!semAcesso(u.email) && (
+                      {!semAcesso(u.email) ? (
                       <PopoverForm label="Redefinir senha" titulo={u.name} action={resetUserPasswordAction} submit="Salvar senha nova">
                         <input type="hidden" name="userId" value={u.id} />
                         <label className="label mb-0" htmlFor={`p-${u.id}`}>Senha nova</label>
                         <input id={`p-${u.id}`} name="password" type="text" minLength={8} required autoComplete="off" className="input" />
                       </PopoverForm>
+                      ) : (
+                        // quem trabalha sem celular não tem senha: o espaço fica, para os botões das linhas baterem na mesma coluna
+                        <span aria-hidden="true" className="btn btn-sm invisible max-sm:hidden">Redefinir senha</span>
                       )}
                       <ActionForm action={toggleUserAction}>
                         <input type="hidden" name="userId" value={u.id} />

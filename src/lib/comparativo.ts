@@ -18,5 +18,6 @@ export function comparar(atual: number, anterior: number, base: keyof typeof fra
   const bruto = ((atual - anterior) / anterior) * 100;
   const pct = Math.sign(bruto) * Math.round(Math.abs(bruto));
   if (pct === 0) return { texto: `igual a ${f.ref}`, tom: "igual" };
-  return pct > 0 ? { texto: `+${pct}% que ${f.ref}`, tom: "sobe" } : { texto: `−${-pct}% que ${f.ref}`, tom: "desce" };
+  // "12% a mais que ontem": com o sinal ("−99% que ontem") a frase ficava sem o "do que" e difícil de ler
+  return pct > 0 ? { texto: `${pct}% a mais que ${f.ref}`, tom: "sobe" } : { texto: `${-pct}% a menos que ${f.ref}`, tom: "desce" };
 }

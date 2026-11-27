@@ -35,10 +35,14 @@ export function LiveNumber({
   const visible = useInView(ref, fromZero === "visible");
   // começa no zero e depois vai para o valor real: é isso que faz rolar ao abrir. Ao abrir a tela espera a
   // troca de tela terminar, senão as duas animações disputam o mesmo quadro em celular fraco
-  const [ready, setReady] = useState(() => !fromZero || (fromZero === "once" && !isFirstOpen()));
+  // no servidor a primeira abertura não é medida (ficava marcada desde o primeiro acesso ao servidor): ele manda o
+  // zero, igual ao navegador, e o número não aparece cheio, volta a zero e sobe
+  const [ready, setReady] = useState(() => !fromZero || (fromZero === "once" && typeof window !== "undefined" && !isFirstOpen()));
   useEffect(() => {
     if (ready || !visible) return;
-    const id = setTimeout(() => setReady(true), fromZero === "visible" ? 0 : 340);
+    // com menos movimento o valor entra logo, sem o zero parado na tela
+    const ja = fromZero === "visible" || matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const id = setTimeout(() => setReady(true), ja ? 0 : 340);
     return () => clearTimeout(id);
   }, [ready, visible, fromZero]);
   const shown = ready ? value : 0;

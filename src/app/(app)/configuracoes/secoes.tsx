@@ -243,7 +243,7 @@ export async function secoesConfig(tenantId: string, pagoAte: string | null) {
           <ActionForm action={saveSettingsAction}>
             <input type="hidden" name="section" value="portal" />
             <Grupo>
-              <Linha icone={Globe} titulo="Clientes podem pedir pelo link" descricao="Desligado, o link não abre.">
+              <Linha icone={Globe} titulo="Clientes podem pedir pelo link" descricao="Se desligar, o link para de abrir.">
                 {/* salva ao marcar */}
                 <CaixaQueSalva name="portalEnabled" defaultChecked={s.portalEnabled} />
               </Linha>

@@ -115,6 +115,13 @@ export function NavInferior({
   useEffect(() => {
     fechar(true);
   }, [path]);
+  // a janela alargou até o computador: a gaveta sai, senão ficava por cima da barra lateral travando os cliques
+  useEffect(() => {
+    const larga = matchMedia("(min-width: 1024px)");
+    const aoMudar = () => larga.matches && fechar();
+    larga.addEventListener("change", aoMudar);
+    return () => larga.removeEventListener("change", aoMudar);
+  }, []);
   // puxar para baixo fecha, como as gavetas do celular: com a lista no topo, o cartão acompanha o dedo;
   // soltando depois de 80 px (ou num puxão rápido) ela desce e fecha, antes disso volta para o lugar
   useEffect(() => {

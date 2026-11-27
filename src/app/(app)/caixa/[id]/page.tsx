@@ -19,6 +19,11 @@ import { Fragment } from "react";
 
 export const metadata = { title: "Acerto" };
 
+const quando = (d: Date) => {
+  const q = fmtQuando(d);
+  return /^(hoje|ontem)/.test(q) ? q : `em ${q}`;
+};
+
 export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
   const user = await requireUser("dono", "atendente", "caixa");
   const { id } = await params;
@@ -42,9 +47,10 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
         <h1 className="h1">Acerto de {s.driverName}</h1>
       </div>
       <p className="-mt-4 mb-6 text-muted">
-        Turno aberto em {fmtQuando(s.openedAt)}
+        {/* "aberto hoje, 07:36" e "aberto em 21/11, 07:36": "em ontem" não se diz */}
+        Turno aberto {quando(s.openedAt)}
         {s.openedByName && ` por ${s.openedByName}`}
-        {s.closedAt && `, conferido em ${fmtQuando(s.closedAt)}`}
+        {s.closedAt && `, conferido ${quando(s.closedAt)}`}
         {s.closedAt && s.closedByName && ` por ${s.closedByName}`}
       </p>
 

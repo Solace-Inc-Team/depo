@@ -2657,6 +2657,11 @@ input[type="date"].input:hover::-webkit-calendar-picker-indicator {
     padding-block: 13px;
     margin-block: -13px;
   }
+  /* o número do pedido ("#5") tinha 15 px de largura: cresce para os lados também */
+  main td a:not(.btn) {
+    padding-inline: 12px;
+    margin-inline: -12px;
+  }
 }
 
 /* caixas de seleção e opções na cor da marca, nos dois temas (o padrão do navegador é outro azul) */

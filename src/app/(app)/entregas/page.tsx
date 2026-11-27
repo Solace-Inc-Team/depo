@@ -193,14 +193,15 @@ export default async function Entregas() {
               {queue.map((o, i) => (
                 <Card key={o.id} id={o.id}>
                   <li className={`border-b border-line px-4 py-3 last:border-0 ${minutesSince(o.createdAt) < 1 ? "row-new" : ""}`}>
-                    <div className="flex items-baseline justify-between gap-x-3">
+                    {/* em 320 px o selo de atraso desce para a linha de baixo em vez de cortar o nome do cliente */}
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                       {podeJuntar && (
                         // o rótulo em volta dá ao toque 44 px, sem aumentar a caixa nem afastar o título
                         <label className="-m-[13px] flex shrink-0 cursor-pointer self-center p-[13px]">
                           <Marcar form={FORM_GRUPO} name="orderId" value={o.id} aria-label={`Marcar o pedido #${o.number} para sair junto`} />
                         </label>
                       )}
-                      <Link href={`/pedidos/${o.id}`} className="alvo mr-auto min-w-0 truncate font-semibold hover:text-accent">
+                      <Link href={`/pedidos/${o.id}`} className="alvo mr-auto min-w-[9rem] truncate font-semibold hover:text-accent">
                         <span className="num text-muted">#{o.number}</span> {o.customerName ?? "Cliente"}
                         {o.origin === "portal" && <SiteBadge />}
                       </Link>
@@ -303,6 +304,9 @@ export default async function Entregas() {
                           <span className={`text-[13px] ${esquecido(minutesSince(o.dispatchedAt)) ? "font-medium text-warn-fg" : late(o) ? "font-semibold text-danger" : "text-muted"}`}>
                             saiu {ha(minutesSince(o.dispatchedAt))}
                             {esquecido(minutesSince(o.dispatchedAt)) && ". Confira se foi entregue"}
+                            {/* o atraso também em palavra: a cor sozinha não chega a quem não distingue vermelho */}
+                            {!esquecido(minutesSince(o.dispatchedAt)) && late(o) && ", atrasado"}
+                            {!late(o) && minutesSince(o.createdAt) >= 0.7 * Math.max(1, settings.lateAfterMinutes) && <span className="sr-only">, perto do limite</span>}
                           </span>
                         </div>
                         {/* quanto do tempo de atraso da loja já passou: o dono vê quem está perto do limite antes de ler o número.

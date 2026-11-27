@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import { comparar } from "./comparativo.ts";
 
 test("sobe e desce em porcentagem arredondada", () => {
-  assert.deepEqual(comparar(11200, 10000, "andamento"), { texto: "+12% que ontem até agora", tom: "sobe" });
-  assert.deepEqual(comparar(9150, 10000, "fechado"), { texto: "−9% que o dia anterior", tom: "desce" });
+  assert.deepEqual(comparar(11200, 10000, "andamento"), { texto: "12% a mais que ontem até agora", tom: "sobe" });
+  assert.deepEqual(comparar(9150, 10000, "fechado"), { texto: "9% a menos que o dia anterior", tom: "desce" });
 });
 
 test("diferença que arredonda para zero conta como igual", () => {
@@ -19,5 +19,5 @@ test("sem venda no dia anterior não vira porcentagem infinita", () => {
 
 test("dia em andamento ainda sem venda não aparece como queda", () => {
   assert.deepEqual(comparar(0, 8000, "andamento"), { texto: "nenhuma venda ainda hoje", tom: "igual" });
-  assert.deepEqual(comparar(0, 8000, "fechado"), { texto: "−100% que o dia anterior", tom: "desce" });
+  assert.deepEqual(comparar(0, 8000, "fechado"), { texto: "100% a menos que o dia anterior", tom: "desce" });
 });

@@ -201,9 +201,10 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
             ) : (
               <p className="text-muted">Venda no balcão</p>
             )}
-            <p className="mt-3 text-sm text-muted">
+            {/* venda de balcão já diz "Venda no balcão" logo acima: não repete a origem */}
+            {o.origin !== "balcao" && <p className="mt-3 text-sm text-muted">
               {o.origin === "programado" ? "Pedido programado" : o.origin === "portal" ? "Chegou pelo site" : `Chegou por ${originLabel[o.origin as keyof typeof originLabel] ?? o.origin}`}
-            </p>
+            </p>}
             {o.driverName && <p className="mt-1">Entregador: <b>{o.driverName}</b></p>}
             {/* pedido feito por telefone ou WhatsApp também ganha o link: a loja manda e o cliente acompanha */}
             {acompanhar && (

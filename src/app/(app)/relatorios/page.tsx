@@ -208,29 +208,29 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
         </section>
       </div>
 
-      <section className="panel mb-6 grid grid-cols-2 sm:grid-cols-6 sm:divide-x sm:divide-line" aria-label="Fora do normal no período">
-        {(
-          [
-            ["Cancelados", breakdown.cancelled],
-            ["Estornados", breakdown.refunded],
-            ["Voltaram da rua", breakdown.occurrences],
-            ["Entregas parciais", breakdown.partials],
-          ] as const
-        ).map(([label, n]) => (
-          <div key={label} className="p-4">
-            <p className="text-[13px] text-muted">{label}</p>
-            <p className="num mt-1 text-xl font-semibold">{n}</p>
-          </div>
-        ))}
-        <div className="p-4">
-          <p className="text-[13px] text-muted">Descontos dados</p>
-          <Money cents={breakdown.discounts} className="mt-1 block text-xl font-semibold" />
-        </div>
-        <div className="p-4">
-          <p className="text-[13px] text-muted">Taxas de entrega</p>
-          <Money cents={breakdown.fees} className="mt-1 block text-xl font-semibold" />
-        </div>
-      </section>
+      {/* só o que aconteceu: seis zeros grandes em destaque pareciam problema; tudo zerado vira uma linha */}
+      {(() => {
+        const itens = [
+          { rotulo: "Cancelados", n: breakdown.cancelled },
+          { rotulo: "Estornados", n: breakdown.refunded },
+          { rotulo: "Voltaram da rua", n: breakdown.occurrences },
+          { rotulo: "Entregas parciais", n: breakdown.partials },
+          { rotulo: "Descontos dados", cents: breakdown.discounts },
+          { rotulo: "Taxas de entrega", cents: breakdown.fees },
+        ].filter((i) => (i.n ?? i.cents ?? 0) > 0);
+        return itens.length ? (
+          <section className="panel mb-6 flex flex-wrap sm:divide-x sm:divide-line" aria-label="Fora do normal no período">
+            {itens.map((i) => (
+              <div key={i.rotulo} className="min-w-[9rem] flex-1 p-4">
+                <p className="text-[13px] text-muted">{i.rotulo}</p>
+                {i.cents !== undefined ? <Money cents={i.cents} className="mt-1 block text-xl font-semibold" /> : <p className="num mt-1 text-xl font-semibold">{i.n}</p>}
+              </div>
+            ))}
+          </section>
+        ) : (
+          <p className="mb-6 text-sm text-muted">Nada fora do normal no período: nenhum cancelamento, estorno, volta da rua, entrega parcial, desconto ou taxa.</p>
+        );
+      })()}
 
       <section className="panel overflow-x-auto">
         <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line px-4 py-3">
