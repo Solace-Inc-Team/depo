@@ -196,14 +196,16 @@ export function Conversa({
   const entrada = useSaida(!turnos.length && !limpando, 320);
 
   // o quadro vai do lugar onde começa até o pé da tela (acima da barra de baixo, no celular): a caixa de pergunta
-  // fica sempre à vista e só a conversa rola. Remede quando a tela, o teclado ou o aviso do topo mudam a conta
+  // fica sempre à vista e só a conversa rola. Remede quando a tela ou o aviso do topo mudam a conta. O teclado fica
+  // de fora (innerHeight, não visualViewport): encolher o quadro depois que o iPhone já rolou a página até o campo
+  // jogava a caixa para o alto da tela, com um vão vazio até o teclado
   useLayoutEffect(() => {
     const el = painel.current;
     if (!el) return;
     const medir = () => {
       const nav = document.querySelector<HTMLElement>(".nav-inferior");
       const baixo = nav && getComputedStyle(nav).display !== "none" ? nav.offsetHeight : 0;
-      const tela = window.visualViewport?.height ?? window.innerHeight;
+      const tela = window.innerHeight;
       const topo = el.getBoundingClientRect().top + window.scrollY;
       el.style.setProperty("--altura-painel", `${Math.max(320, Math.floor(tela - topo - baixo - 16))}px`);
       el.dataset.medido = "";
@@ -211,11 +213,9 @@ export function Conversa({
     medir();
     const ro = new ResizeObserver(medir);
     ro.observe(document.documentElement);
-    window.visualViewport?.addEventListener("resize", medir);
     window.addEventListener("resize", medir);
     return () => {
       ro.disconnect();
-      window.visualViewport?.removeEventListener("resize", medir);
       window.removeEventListener("resize", medir);
     };
   }, []);

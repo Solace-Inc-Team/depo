@@ -4574,21 +4574,38 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   z-index: -1;
   border-radius: 50%;
   background: radial-gradient(circle, color-mix(in srgb, var(--marca) 22%, transparent), color-mix(in srgb, var(--marca) 7%, transparent) 38%, transparent 68%);
-  transition: scale 500ms var(--ease-out), background 500ms var(--ease-out);
-  animation: fonte-abre 1.6s cubic-bezier(0.2, 0.7, 0.3, 1) both, fonte-respira 7s ease-in-out 1.8s infinite;
+  animation: fonte-abre 1.6s cubic-bezier(0.2, 0.7, 0.3, 1) backwards, fonte-respira 7s ease-in-out 1.8s infinite;
+}
+/* o brilho de quem escuta: uma camada própria por cima, que só muda opacidade e tamanho (um degradê não se anima
+   para outro degradê, ele troca seco); acende devagar ao digitar e apaga mais devagar ainda quando o campo esvazia */
+.assistente-fonte::after {
+  content: "";
+  position: absolute;
+  width: 560px;
+  height: 560px;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--marca) 16%, transparent), color-mix(in srgb, var(--marca) 6%, transparent) 40%, transparent 68%);
+  opacity: 0;
+  scale: 0.85;
+  transition: opacity 1.1s ease-in-out, scale 1.3s ease-in-out;
+}
+.assistente-entrada[data-ouvindo] .assistente-fonte::after {
+  opacity: 1;
+  scale: 1.1;
+  transition: opacity 900ms ease-in-out, scale 1.1s ease-in-out;
 }
 .assistente-fonte > .assistente-ponto {
   width: 12px;
   height: 12px;
   box-shadow: 0 0 0 5px color-mix(in srgb, var(--marca) 18%, transparent), 0 0 28px 6px color-mix(in srgb, var(--marca) 50%, transparent);
-  transition: box-shadow 400ms var(--ease-out);
-  animation: ponto-acende 900ms var(--ease-out) both;
-}
-.assistente-entrada[data-ouvindo] .assistente-fonte::before {
-  scale: 1.15;
-  background: radial-gradient(circle, color-mix(in srgb, var(--marca) 34%, transparent), color-mix(in srgb, var(--marca) 11%, transparent) 38%, transparent 68%);
+  /* backwards: terminada a entrada, o ponto volta a obedecer à transição (com both o último quadro ficava preso
+     e a troca ao digitar saía seca) */
+  transition: box-shadow 1.1s ease-in-out;
+  animation: ponto-acende 900ms var(--ease-out) backwards;
 }
 .assistente-entrada[data-ouvindo] .assistente-fonte > .assistente-ponto {
+  transition-duration: 900ms;
   box-shadow: 0 0 0 6px color-mix(in srgb, var(--marca) 26%, transparent), 0 0 36px 9px color-mix(in srgb, var(--marca) 60%, transparent);
 }
 @keyframes ponto-acende {
@@ -4734,6 +4751,7 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
 @media (prefers-reduced-motion: reduce) {
   /* o ponto já aceso e o brilho parado; o campo com texto ainda acende, sem transição */
   .assistente-fonte::before,
+  .assistente-fonte::after,
   .assistente-fonte > .assistente-ponto {
     animation: none;
     transition: none;
