@@ -221,7 +221,7 @@ test("assinatura: o selo do plano fica à vista desde o cadastro; vencida, o sis
   // logo depois de criar a conta: o selo no menu e o aviso nos primeiros passos
   const selo = page.getByRole("link", { name: /Teste grátis.*Assinar/ });
   await expect(selo).toContainText("Faltam 14 dias");
-  await expect(page.getByText(/Teste grátis até .* Depois, R\$.129,00 por mês/)).toBeVisible();
+  await expect(page.getByText(/Teste grátis até .* Depois, R\$.149,00 por mês/)).toBeVisible();
   await page.screenshot({ path: "../qa/evidencias/selo-plano.png" });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: "../qa/evidencias/selo-plano-celular.png" });

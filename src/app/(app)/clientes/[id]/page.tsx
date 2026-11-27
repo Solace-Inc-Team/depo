@@ -280,12 +280,13 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
             </>
           )}
         </div>
-        <section className="panel self-start overflow-x-auto">
+        <section className="rola-x panel self-start overflow-x-auto">
           <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line px-4 py-3">
             <h2 className="h2">Pedidos</h2>
           </div>
           {orders.length ? (
-            <table className="table">
+            // de 1024 a 1280 a coluna fica estreita: recuo menor nas células para o valor caber sem rolar
+            <table className="table lg:max-xl:[&_td]:px-2">
               <tbody>
                 {orders.map((o) => (
                   <tr key={o.id}>

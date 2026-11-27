@@ -291,8 +291,9 @@ body {
     padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--line);
     vertical-align: middle;
-    /* palavra comprida sem espaço (e-mail, link) quebra na célula em vez de alargar a tabela */
-    overflow-wrap: anywhere;
+    /* palavra comprida sem espaço (e-mail, link) quebra na célula; break-word e não anywhere, que entra na largura
+       mínima da coluna e deixava "Cartão" uma letra por linha nas colunas estreitas */
+    overflow-wrap: break-word;
   }
   .table tbody tr:last-child td {
     border-bottom: 0;

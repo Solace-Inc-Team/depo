@@ -155,10 +155,11 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-6">
-        <section className="panel overflow-x-auto">
+        <section className="rola-x panel overflow-x-auto">
           <h2 className="h2 border-b border-line px-4 py-3">Pedidos do turno</h2>
           {s.orders.length === 0 && <p className="px-4 py-5 text-muted">Nenhum pedido neste turno.</p>}
-          <table className="table">
+          {/* de 1024 a 1280 a coluna fica estreita: recuo menor nas células para o valor caber sem rolar */}
+          <table className="table lg:max-xl:[&_td]:px-2">
             <tbody>
               {s.orders.map((o) => (
                 <Fragment key={o.id}>

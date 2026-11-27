@@ -15,7 +15,9 @@ export function CustomerFields({ c = {} }: { c?: C }) {
         <label className="label" htmlFor="c-phone">Telefone</label>
         <TelefoneCliente id="c-phone" name="phone" defaultValue={c.phone} className="input" outroQue={c.id} />
       </div>
-      <CamposEndereco nome="address" id="c-end" inicial={c.address} cep={c.cep} className="sm:col-span-2" />
+      {/* a key remonta as partes quando o endereço salvo muda: sem ela, a janela reaberta voltava ao endereço de antes
+          e o próximo salvamento gravava o antigo por cima */}
+      <CamposEndereco key={`${c.address ?? ""}|${c.cep ?? ""}`} nome="address" id="c-end" inicial={c.address} cep={c.cep} className="sm:col-span-2" />
       <div className="sm:col-span-2">
         <label className="label" htmlFor="c-ref">Referência</label>
         <input id="c-ref" name="reference" defaultValue={c.reference} className="input" />
