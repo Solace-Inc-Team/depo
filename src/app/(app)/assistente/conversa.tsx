@@ -96,6 +96,7 @@ function lerGuardada() {
     const turnos: Turno[] = Array.isArray(g?.turnos) ? g.turnos.filter((t: Turno) => typeof t?.pergunta === "string" && typeof t?.resposta === "string") : [];
     if (typeof g?.dono === "string" && turnos.length && !conversa.turnos.length) {
       conversa = { ...VAZIO, dono: g.dono, turnos };
+      turnos.forEach((t) => paradas.add(t.chave));
       proximaChave = Math.max(0, ...turnos.map((t) => (Number.isInteger(t.chave) ? t.chave + 1 : 0)));
     }
   } catch {}
@@ -107,6 +108,9 @@ function lerGuardada() {
 // mostra a conversa parada. Mora fora do componente como a conversa: a resposta que chega com a pessoa em outra tela
 // ainda entra contando quando ela volta.
 let nova: number | null = null;
+// As respostas que já estavam na tela quando a pessoa voltou ou recarregou: montam paradas, sem a subida e o traço
+// do ponto que toda mensagem faz ao chegar
+const paradas = new Set<number>();
 
 const NUMERO = /\d[\d.]*(?:,\d+)?/;
 /** O número em destaque sobe de zero até o valor (com o formato do texto: R$, pontos, vírgula), em 0,7 s. */
@@ -142,11 +146,15 @@ function Destaque({ texto, sobe }: { texto: string; sobe: boolean }) {
   );
 }
 
-/** As palavras da resposta nova assentam saindo do desfoque, em sequência curta (as depois da 24ª entram juntas). */
-function Palavras({ texto }: { texto: string }) {
+/**
+ * As palavras da resposta nova assentam saindo do desfoque, em sequência curta (as depois da 24ª entram juntas).
+ * As antigas ficam com os mesmos spans, só paradas: trocar por texto puro fazia o leitor de tela (role=log) anunciar
+ * a resposta anterior de novo a cada pergunta.
+ */
+function Palavras({ texto, anima }: { texto: string; anima: boolean }) {
   let i = 0;
   return (
-    <span className="assistente-palavras">
+    <span className="assistente-palavras" data-parada={anima ? undefined : ""}>
       {texto.split(/(\s+)/).map((p, k) =>
         /^\s*$/.test(p) ? p : (
           <span key={k} style={{ "--i": Math.min(i++, 24) } as React.CSSProperties}>
@@ -198,16 +206,25 @@ export function Conversa({
   // o quadro vai do lugar onde começa até o pé da tela (acima da barra de baixo, no celular): a caixa de pergunta
   // fica sempre à vista e só a conversa rola. Remede quando a tela ou o aviso do topo mudam a conta. O teclado fica
   // de fora (innerHeight, não visualViewport): encolher o quadro depois que o iPhone já rolou a página até o campo
-  // jogava a caixa para o alto da tela, com um vão vazio até o teclado
+  // jogava a caixa para o alto da tela, com um vão vazio até o teclado. Embaixo desconta o recuo do main, que no
+  // celular já reserva a barra de baixo (e a margem do iPhone): com a conta antiga a página rolava 16 a 24 px, e o
+  // piso de 320 px empurrava a caixa para baixo da barra no iPhone SE e no celular deitado
   useLayoutEffect(() => {
     const el = painel.current;
     if (!el) return;
+    let primeira = true;
     const medir = () => {
-      const nav = document.querySelector<HTMLElement>(".nav-inferior");
-      const baixo = nav && getComputedStyle(nav).display !== "none" ? nav.offsetHeight : 0;
+      const main = document.getElementById("conteudo");
+      const pe = main ? parseFloat(getComputedStyle(main).paddingBottom) || 0 : 0;
       const tela = window.innerHeight;
       const topo = el.getBoundingClientRect().top + window.scrollY;
-      el.style.setProperty("--altura-painel", `${Math.max(320, Math.floor(tela - topo - baixo - 16))}px`);
+      const livre = Math.floor(tela - topo - pe);
+      // tela baixa (celular deitado): o título e o aviso não deixam espaço; o quadro ocupa a tela acima da barra e a
+      // página desce até ele uma vez, ao abrir, com a caixa de pergunta à vista
+      const cabe = livre >= 200;
+      el.style.setProperty("--altura-painel", `${cabe ? livre : Math.floor(tela - pe - 8)}px`);
+      if (!cabe && primeira) window.scrollTo({ top: topo - 8 });
+      primeira = false;
       el.dataset.medido = "";
     };
     medir();
@@ -236,7 +253,9 @@ export function Conversa({
     voar(ponto, dePonto, (dx, dy) => [{ translate: `${dx}px ${dy}px`, scale: 1.5 }, { translate: "0 0", scale: 1 }], 620);
   }, [turnos.length]);
 
+  // só com conversa: ao abrir, rolar até o fim cortava a saudação no alto do quadro
   useEffect(() => {
+    if (!turnos.length) return;
     area.current?.scrollTo({ top: area.current.scrollHeight, behavior: "smooth" });
   }, [turnos, pendente]);
 
@@ -248,18 +267,22 @@ export function Conversa({
     const id = proximaChave++;
     nova = null;
     mudar(dono, (e) => ({ turnos: [...e.turnos, { chave: id, pergunta }], pendente: true, erro: "" }));
-    void chamarAcao(() => perguntarAssistenteAction(pergunta, historico)).then((c) => {
-      const falha = c.erro ?? c.r?.erro;
-      if (falha) {
-        // a pergunta sem resposta sai da conversa e volta para o campo: dá para mandar de novo sem redigitar
-        mudar(dono, (e) => ({ turnos: e.turnos.filter((t) => t.chave !== id), pendente: false, erro: falha }));
-        return setTexto(pergunta);
-      }
-      const r = c.r!;
-      setRestam(r.restam ?? 0);
-      nova = id;
-      mudar(dono, (e) => ({ turnos: e.turnos.map((t) => (t.chave === id ? { ...t, ...r, chave: id, pergunta } : t)), pendente: false }));
-    });
+    // a pergunta sem resposta sai da conversa e volta para o campo: dá para mandar de novo sem redigitar
+    const desfazer = (falha: string) => {
+      mudar(dono, (e) => ({ turnos: e.turnos.filter((t) => t.chave !== id), pendente: false, erro: falha }));
+      setTexto(pergunta);
+    };
+    void chamarAcao(() => perguntarAssistenteAction(pergunta, historico))
+      .then((c) => {
+        const falha = c.erro ?? c.r?.erro;
+        if (falha) return desfazer(falha);
+        const r = c.r!;
+        setRestam(r.restam ?? 0);
+        nova = id;
+        mudar(dono, (e) => ({ turnos: e.turnos.map((t) => (t.chave === id ? { ...t, ...r, chave: id, pergunta } : t)), pendente: false }));
+      })
+      // erro que não é de regra nem de rede: sem isto o ponto ficava "pensando" para sempre e travava as próximas
+      .catch(() => desfazer("Não deu para responder agora. Tente de novo em instantes."));
   }
 
   // pergunta que veio do Painel: some do endereço (recarregar não pergunta de novo) e vai como se fosse digitada
@@ -271,16 +294,27 @@ export function Conversa({
     // eslint-disable-next-line react-hooks/exhaustive-deps -- uma vez, ao abrir
   }, []);
 
-  // saiu da tela: ao voltar, a última resposta já está lá, parada
-  useEffect(() => () => void (nova = null), []);
+  // saiu da tela: ao voltar, as respostas já estão lá, paradas
+  useEffect(
+    () => () => {
+      nova = null;
+      conversa.turnos.forEach((t) => t.resposta && paradas.add(t.chave));
+    },
+    [],
+  );
 
-  function recomecar() {
+  function recomecar(e: React.MouseEvent) {
+    // o botão some com o rodapé: o foco vai para o campo, e não para o começo da página (no toque não, que abriria o
+    // teclado; e.detail 0 é o clique pelo teclado)
+    const focar = e.detail === 0 || matchMedia("(pointer: fine)").matches;
     nova = null;
+    paradas.clear();
     mudar(dono, () => ({ erro: "" }));
     setLimpando(true);
     setTimeout(() => {
       mudar(dono, () => ({ turnos: [] }));
       setLimpando(false);
+      if (focar) document.getElementById("assistente-texto")?.focus();
     }, 180);
   }
 
@@ -336,18 +370,18 @@ export function Conversa({
         )}
         {turnos.map((t) => (
           <div key={t.chave} className="contents">
-            <p className="robo-balao robo-balao-cliente">
+            <p className="robo-balao robo-balao-cliente" data-parada={paradas.has(t.chave) || undefined}>
               <span className="sr-only">Você: </span>
               {t.pergunta}
             </p>
             {t.resposta && (
-              <div className="assistente-msg" data-destaque={t.destaque ? "" : undefined}>
+              <div className="assistente-msg" data-destaque={t.destaque ? "" : undefined} data-parada={paradas.has(t.chave) || undefined}>
                 <span aria-hidden="true" className="assistente-ponto" />
                 <div className="min-w-0">
                   <div className="robo-balao max-w-none">
                     <span className="sr-only">Assistente: </span>
                     {t.destaque && <Destaque texto={t.destaque} sobe={t.chave === nova} />}
-                    {t.chave === nova ? <Palavras texto={t.resposta} /> : t.resposta}
+                    <Palavras texto={t.resposta} anima={t.chave === nova} />
                     {!!t.dias?.length && <SemanaBarras semana={t.dias} cresce={t.chave === nova} />}
                   </div>
                   {(t.fontes?.length || t.analise) && (
@@ -384,7 +418,8 @@ export function Conversa({
         onSubmit={(e) => {
           e.preventDefault();
           const t = texto.trim();
-          if (!t) return;
+          // com uma resposta a caminho, o que foi digitado fica no campo: antes ele era apagado sem ser enviado
+          if (!t || pendente || !restam) return;
           setTexto("");
           perguntar(t, document.getElementById("assistente-texto"));
         }}
@@ -408,7 +443,7 @@ export function Conversa({
       <Aparece quando={restam <= 10 || turnos.length > 0}>
         <div className="assistente-faixa flex min-h-12 items-center justify-between gap-3 border-t border-line py-2 text-[12px] text-muted">
           <span className="num">{restam > 10 ? "" : restam === 1 ? "Resta 1 pergunta hoje" : `Restam ${restam} perguntas hoje`}</span>
-          <button type="button" className="btn btn-sm" onClick={recomecar} disabled={!turnos.length || limpando || pendente}>
+          <button type="button" className="btn btn-sm" onClick={(e) => recomecar(e)} disabled={!turnos.length || limpando || pendente}>
             <RotateCcw size={14} aria-hidden="true" /> Nova conversa
           </button>
         </div>

@@ -4729,6 +4729,13 @@ li:has(input[form="saida-grupo"]:checked) .saida-unica {
   animation-delay: calc(var(--i) * 28ms + 120ms);
   --rise: 4px;
 }
+/* o que já estava na conversa ao voltar ou recarregar monta parado: nada sobe, o ponto não vira traço de novo */
+.assistente-palavras[data-parada] > span,
+.assistente-msg[data-parada],
+.assistente-msg[data-parada] > .assistente-ponto,
+.robo-balao-cliente[data-parada] {
+  animation: none;
+}
 [data-cresce] .semana-barra > span:first-child {
   transform-origin: bottom;
   animation: barra-cresce 520ms var(--ease-out) both;

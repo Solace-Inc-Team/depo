@@ -1,5 +1,6 @@
 // Contas do assistente sem banco nem rede, para serem testadas: modelos, preço, limites e o histórico enviado.
 import { formatBRL } from "./money.ts";
+import { duracao } from "./period.ts";
 
 /**
  * Toda pergunta começa no modelo barato. Ele mesmo chama `pedir_analise` quando a pergunta pede para cruzar
@@ -146,7 +147,7 @@ export function sugestoesVivas(d: Agora): Sugestao[] {
   const baixo = d.lowStock[0];
   if (baixo) s.push({ fato: `${baixo.name}: ${n(baixo.fullStore, "cheio", "cheios")}`, pergunta: `Quando acaba o ${baixo.name}?` });
   if (d.pending > 0 && (d.oldestWaitingMin ?? 0) >= 10)
-    s.push({ fato: `${n(d.pending, "pedido espera", "pedidos esperam")} há ${d.oldestWaitingMin} min`, pergunta: "Como está a fila agora?" });
+    s.push({ fato: `${n(d.pending, "pedido espera", "pedidos esperam")} há ${duracao(d.oldestWaitingMin!)}`, pergunta: "Como está a fila agora?" });
   if (d.byMethod.fiado > 0) s.push({ fato: `Fiado hoje: ${formatBRL(d.byMethod.fiado)}`, pergunta: "Quem está me devendo fiado?" });
   // o valor de hoje já está no Painel: a pergunta só vale com ontem para comparar
   if (d.revenue > 0 && d.previous > 0) s.push({ fato: `Hoje: ${formatBRL(d.revenue)}`, pergunta: "Vendi mais ou menos que ontem?" });
