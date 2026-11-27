@@ -312,6 +312,8 @@ export const orders = pgTable(
     uniqueIndex("orders_tracking_uq").on(t.trackingId),
     index("orders_tenant_status_idx").on(t.tenantId, t.status),
     index("orders_branch_status_idx").on(t.branchId, t.status),
+    // "entregues hoje" do Painel e dos relatórios: só o dia, e não todos os entregues da filial
+    index("orders_branch_status_delivered_idx").on(t.branchId, t.status, t.deliveredAt),
     index("orders_trip_idx").on(t.tripId),
     index("orders_tenant_created_idx").on(t.tenantId, t.createdAt),
     // lista de clientes (último pedido) e ficha do cliente
@@ -569,7 +571,12 @@ export const stockMovements = pgTable(
       .references(() => users.id),
     createdAt: createdAt(),
   },
-  (t) => [index("stock_tenant_product_idx").on(t.tenantId, t.productId), index("stock_branch_product_idx").on(t.branchId, t.productId)],
+  (t) => [
+    index("stock_tenant_product_idx").on(t.tenantId, t.productId),
+    index("stock_branch_product_idx").on(t.branchId, t.productId),
+    // tendência do estoque e últimos movimentos: por data, sem varrer o histórico inteiro
+    index("stock_branch_created_idx").on(t.branchId, t.createdAt),
+  ],
 );
 
 export const suppliers = pgTable(

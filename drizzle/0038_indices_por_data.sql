@@ -1,0 +1,2 @@
+CREATE INDEX "orders_branch_status_delivered_idx" ON "orders" USING btree ("branch_id","status","delivered_at");--> statement-breakpoint
+CREATE INDEX "stock_branch_created_idx" ON "stock_movements" USING btree ("branch_id","created_at");

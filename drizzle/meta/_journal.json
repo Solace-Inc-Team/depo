@@ -267,6 +267,13 @@
       "when": 1795790500752,
       "tag": "0037_pedido_chave_envio",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1795792084989,
+      "tag": "0038_indices_por_data",
+      "breakpoints": true
     }
   ]
 }

@@ -13,7 +13,13 @@ function connect() {
   // no `next build` não há banco; o cliente postgres só conecta na primeira consulta
   if (!url && process.env.NEXT_PHASE !== "phase-production-build")
     throw new Error("DATABASE_URL não definido. Em desenvolvimento, use `npm run dev` (sobe o Postgres local).");
-  const client = postgres(url ?? "", { max: 20, onnotice: () => {} });
+  const client = postgres(url ?? "", {
+    max: 20,
+    onnotice: () => {},
+    // processo travado (memória, CPU da VPS) não segura trava nem conexão para sempre: a transação parada cai em
+    // 1 minuto e a consulta presa em 1 minuto, e o resto da empresa volta a lançar pedidos
+    connection: { idle_in_transaction_session_timeout: 60_000, statement_timeout: 60_000 },
+  });
   return { client, db: drizzle(client, { schema }) };
 }
 
